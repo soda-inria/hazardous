@@ -1,2 +1,3 @@
 # hazardous
-Competing Risks and Survival Analysis
+
+Predictive Competing Risks and Survival Analysis.
