@@ -1,0 +1,46 @@
+name: Run the tests
+
+on:
+  push:
+    branches:
+      - "main"
+
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: 3.9
+            nox-session: test_latest_from_pypi
+          - python-version: 3.10
+            nox-session: test_latest_from_pypi
+          - python-version: 3.11
+            nox-session: test_latest_from_pypi
+          - python-version: 3.10
+            nox-session: test_latest_conda_forge
+          - python-version: 3.11
+            nox-session: test_latest_conda_forge
+          - python-version: 3.11
+            nox-session: test_oldest_from_pypi
+
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - name: Setup test env and run the tests
+        run: |
+          nox -s ${{ matrix.nox-session }} -p ${{ matrix.python-version }}
+
+      # TODO: collect code coverage data and upload to codecov
