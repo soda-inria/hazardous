@@ -38,19 +38,19 @@ TODO: this is just a placeholder for now
 
 .. code-block:: default
 
-    import hazardous
+    import hazardous  # noqa: F401
     import numpy as np
     import matplotlib.pyplot as plt
 
     x = np.linspace(-3, 3, 100)
-    plt.plot(x, x ** 2, label="$x^2$")
-    plt.plot(x, x ** 3, label="$x^3$")
+    plt.plot(x, x**2, label="$x^2$")
+    plt.plot(x, x**3, label="$x^3$")
     _ = plt.legend()
 
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** ( 0 minutes  0.170 seconds)
+   **Total running time of the script:** ( 0 minutes  0.141 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_something.py:
