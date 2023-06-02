@@ -1,7 +1,6 @@
 [project]
 name = "hazardous"
 description = "Predictive Competing Risks and Survival Analysis."
-version = "0.1.0"
 authors = [
     { name = "Olivier Grisel", email = "olivier.grisel@ensta.org" },
     { name = "Vincent Maladière", email = "vincent.maladiere@inria.fr" } 
@@ -20,6 +19,7 @@ dependencies = [
     # doc and tests.
     "lifelines",
 ]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
