@@ -63,7 +63,7 @@ jobs:
             powershell
           cache-environment: true
           post-cleanup: 'all'
-          environment-name: test-env
+          environment-name: nox-env
           create-args: >-
             python=${{ matrix.python-version }}
             nox
@@ -71,6 +71,7 @@ jobs:
 
       - name: Setup test env and run the tests
         run: |
+          micromamba activate nox-env
           nox -s ${{ matrix.nox-session }} -p ${{ matrix.python-version }}
 
       # TODO: collect code coverage data and upload to codecov
