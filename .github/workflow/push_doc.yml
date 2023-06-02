@@ -19,11 +19,11 @@ jobs:
           python-version: '3.10'
       - run: pip install .[doc]
       - name: Sphinx build
-        run: sphinx-build doc _build
+        run: sphinx-build doc build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: _build/
+          publish_dir: ./build
           force_orphan: true
