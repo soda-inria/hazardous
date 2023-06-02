@@ -58,9 +58,7 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v1
         with:
-          init-shell: >-
-            bash
-            powershell
+          init-shell: bash
           cache-environment: true
           post-cleanup: 'all'
           environment-name: nox-env
@@ -71,7 +69,7 @@ jobs:
 
       - name: Setup test env and run the tests
         run: |
-          micromamba activate nox-env
           nox -s ${{ matrix.nox-session }} -p ${{ matrix.python-version }}
+        shell: bash -el {0}
 
       # TODO: collect code coverage data and upload to codecov
