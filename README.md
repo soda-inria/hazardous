@@ -24,6 +24,7 @@ Install in "editable" mode in your current Python env:
 
 ```
 pip install -e ".[dev]" --no-build-isolation -v
+pre-commit install
 ```
 
 Run the tests with nox to test in an environment that matches exactly on
