@@ -2,7 +2,7 @@
 
 Predictive Competing Risks and Survival Analysis.
 
-# Installation and usage
+## Installation and usage
 
 XXX: the following will work only once the 0.1.0 release is out!
 
@@ -18,7 +18,7 @@ conda install -c conda-forge hazardous
 
 Then browse and run the `examples/` to get started.
 
-# Development
+## Development
 
 Install in "editable" mode in your current Python env:
 
@@ -26,7 +26,13 @@ Install in "editable" mode in your current Python env:
 pip install -e ".[dev]" --no-build-isolation -v
 ```
 
-# Building a release
+## Building the doc
+
+```
+pip install -e ".[doc]" --no-build-isolation -v
+```
+
+## Building a release
 
 ```
 pip install build

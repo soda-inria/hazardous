@@ -24,6 +24,13 @@ dev = [
     "pytest",
     "pandas",  # some tests check pandas compatibility
 ]
+doc = [
+    "sphinx",
+    "pydata-sphinx-theme",
+    "sphinx-gallery",
+    "matplotlib",
+    "pillow",  # to scrape images from the examples
+]
 
 [project.urls]
 "Homepage" = "https://github.com/soda-inria/hazardous"
