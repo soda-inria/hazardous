@@ -2,6 +2,8 @@
 
 Predictive Competing Risks and Survival Analysis.
 
+[![Tests](https://github.com/soda-inria/hazardous/actions/workflows/test.yml/badge.svg)](https://github.com/soda-inria/hazardous/actions/workflows/test.yml)
+
 ## Installation and usage
 
 XXX: the following will work only once the 0.1.0 release is out!
