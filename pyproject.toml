@@ -1,0 +1,50 @@
+[project]
+name = "hazardous"
+description = "Predictive Competing Risks and Survival Analysis."
+version = "0.1.0"
+authors = [
+    { name = "Olivier Grisel", email = "olivier.grisel@ensta.org" },
+    { name = "Vincent Maladière", email = "vincent.maladiere@inria.fr" } 
+]
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "scikit-learn",
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "pytest",
+    "pandas",  # some tests check pandas compatibility
+]
+
+[project.urls]
+"Homepage" = "https://github.com/soda-inria/hazardous"
+"Bug Tracker" = "https://github.com/soda-inria/hazardous/issues"
+
+[build-system]
+build-backend = "flit_core.buildapi"
+requires = ["flit_core"]
+
+[tool.black]
+line-length = 88
+target_version = ['py38', 'py39', 'py310', 'py311']
+preview = true
+exclude = '''
+/(
+    \.eggs         # exclude a few common directories in the
+  | \.git          # root of the project
+  | \.mypy_cache
+  | \.vscode
+  | build
+  | dist
+)/
+'''
+
