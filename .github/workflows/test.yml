@@ -16,17 +16,17 @@ jobs:
       matrix:
         include:
           - python-version: "3.9"
-            nox-session: test_latest_from_pypi
-          - python-version: "3.10"
-            nox-session: test_latest_from_pypi
-          - python-version: "3.11"
-            nox-session: test_latest_from_pypi
-          - python-version: "3.10"
-            nox-session: test_latest_conda_forge
-          - python-version: "3.11"
-            nox-session: test_latest_conda_forge
-          - python-version: "3.11"
             nox-session: test_oldest_from_pypi
+          - python-version: "3.9"
+            nox-session: test_latest_from_pypi
+          - python-version: "3.10"
+            nox-session: test_latest_from_pypi
+          - python-version: "3.11"
+            nox-session: test_latest_from_pypi
+          - python-version: "3.10"
+            nox-session: test_latest_from_conda_forge
+          - python-version: "3.11"
+            nox-session: test_latest_from_conda_forge
 
       fail-fast: false
 
