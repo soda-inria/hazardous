@@ -10,7 +10,7 @@ on:
       - '*'
 
 jobs:
-  test:
+  test-pypi:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -23,8 +23,6 @@ jobs:
             nox-session: test_latest_from_pypi
           - python-version: "3.11"
             nox-session: test_latest_from_pypi
-          - python-version: "3.11"
-            nox-session: test_latest_from_conda_forge
 
       fail-fast: false
 
@@ -39,7 +37,40 @@ jobs:
 
       - name: Setup test env and run the tests
         run: |
-          python -m pip install nox mamba
+          python -m pip install nox
+          nox -s ${{ matrix.nox-session }} -p ${{ matrix.python-version }}
+
+      # TODO: collect code coverage data and upload to codecov
+
+
+  test-conda-forge:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: "3.11"
+            nox-session: test_latest_from_conda_forge
+
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          init-shell: >-
+            bash
+            powershell
+          cache-environment: true
+          post-cleanup: 'all'
+          environment-name: test-env
+          create-args: >-
+            python=${{ matrix.python-version }}
+            nox
+            mamba
+
+      - name: Setup test env and run the tests
+        run: |
           nox -s ${{ matrix.nox-session }} -p ${{ matrix.python-version }}
 
       # TODO: collect code coverage data and upload to codecov
