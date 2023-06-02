@@ -18,7 +18,8 @@ or
 conda install -c conda-forge hazardous
 ```
 
-Then browse and run the `examples/` to get started.
+Then browse the [online documentation](https://soda-inria.github.io/hazardous/)
+and run the `examples/` to get started.
 
 ## Development and testing
 
