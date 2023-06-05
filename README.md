@@ -49,6 +49,14 @@ pytest -vl -x -k test_name_pattern
 
 ## Building the doc
 
+Using `nox`:
+
+```
+nox -s doc -r
+```
+
+or manually:
+
 ```
 pip install -e ".[doc]" --no-build-isolation -v
 cd doc

@@ -21,6 +21,4 @@ Welcome to hazardous's documentation!
 .. toctree::
    :hidden:
 
-   documentation
-   api
    auto_examples/index
