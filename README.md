@@ -1,4 +1,4 @@
-# hazardous
+# HΛZΛRDOUS
 
 Predictive Competing Risks and Survival Analysis.
 
