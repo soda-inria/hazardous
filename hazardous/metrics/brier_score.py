@@ -21,7 +21,8 @@ class BrierScoreComputer:
         self.event_of_interest = event_of_interest
         self.rng = check_random_state(random_state)
 
-        # Estimate the censoring distribution from on the training set using Kaplan-Meier.
+        # Estimate the censoring distribution from the training set
+        # using Kaplan-Meier.
         self.ipcw_est = IpcwEstimator().fit(self.y_train_any_event)
 
         # Precompute the censoring probabilities at the time of the events on the
