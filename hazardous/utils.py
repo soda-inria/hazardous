@@ -23,26 +23,16 @@ def _df_to_recarray(y):
 
 
 def _check_y_survival(y):
-    """Convert DataFrame and dictionnary to record array.
-    """
+    """Convert DataFrame and dictionnary to record array."""
     y_keys = ["event", "duration"]
 
-    if (
-        isinstance(y, np.ndarray)
-        and sorted(y.dtype.names, reverse=True) == y_keys
-    ):
+    if isinstance(y, np.ndarray) and sorted(y.dtype.names, reverse=True) == y_keys:
         pass
 
-    elif (
-        isinstance(y, dict)
-        and sorted(y, reverse=True) == y_keys
-    ):
+    elif isinstance(y, dict) and sorted(y, reverse=True) == y_keys:
         y_rec = _dict_to_recarray(y)
 
-    elif (
-        isinstance(y, pd.DataFrame)
-        and sorted(y.columns, reverse=True) == y_keys
-    ):
+    elif isinstance(y, pd.DataFrame) and sorted(y.columns, reverse=True) == y_keys:
         y_rec = _df_to_recarray(y)
 
     else:
@@ -53,4 +43,3 @@ def _check_y_survival(y):
         )
 
     return y_rec
-    

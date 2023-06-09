@@ -1,5 +1,4 @@
 import numpy as np
-
 from sklearn.utils.validation import check_random_state
 
 from .._ipcw import IpcwEstimator
@@ -14,7 +13,7 @@ class BrierScoreComputer:
     ):
         if event_of_interest != "any" and event_of_interest < 1:
             raise ValueError(
-                f"event_of_interest must be a strictly positive integer or 'any', "
+                "event_of_interest must be a strictly positive integer or 'any', "
                 f"got: event_of_interest={self.event_of_interest:!r}"
             )
         self.y_train = y_train
@@ -24,7 +23,7 @@ class BrierScoreComputer:
 
         # Estimate the censoring distribution from on the training set using Kaplan-Meier.
         self.ipcw_est = IpcwEstimator().fit(self.y_train_any_event)
-        
+
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
         self.ipcw_y_train = self.ipcw_est.predict(y_train["duration"])
@@ -34,7 +33,7 @@ class BrierScoreComputer:
             y.shape[0],
             dtype=[("event", bool), ("duration", float)],
         )
-        y_any_event["event"] = (y["event"] > 0)
+        y_any_event["event"] = y["event"] > 0
         y_any_event["duration"] = y["duration"]
         return y_any_event
 
@@ -87,7 +86,6 @@ class BrierScoreComputer:
         return y_binary, weights
 
     def brier_score(self, y_true, y_pred, times):
-
         if self.event_of_interest == "any":
             if y_true is self.y_train:
                 y_true = self.y_train_any_event
