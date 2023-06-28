@@ -51,7 +51,7 @@ doc = [
 
 [build-system]
 build-backend = "flit_core.buildapi"
-requires = ["flit_core", "setuptools"]
+requires = ["flit_core", "setuptools"]  # setuptools is needed to install pkg_resources, used in lifelines
 
 [tool.black]
 line-length = 88
