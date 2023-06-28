@@ -2,43 +2,109 @@ import numpy as np
 from sklearn.utils.validation import check_random_state
 
 from .._ipcw import IpcwEstimator
+from ..utils import check_event_of_interest, check_y_survival
 
 
 class BrierScoreComputer:
+    """Compute the Brier Score.
+
+    Base class used for computing the Brier Score metric.
+
+    Parameters
+    ----------
+    y_train : np.array, dictionnary or dataframe
+        The target, consisting in the 'event' and 'duration' columns.
+        This is used to fit the IPCW estimator.
+
+    event_of_interest : int or "any", default="any"
+        The event to consider in competitive events setting.
+        "any" indicates that all events except the censoring 0 are
+        considered as a single event.
+        In single event settings, "any" and 1 are equivalent.
+
+    """
+
     def __init__(
         self,
         y_train,
         event_of_interest="any",
-        random_state=None,
     ):
-        if event_of_interest != "any" and event_of_interest < 1:
-            raise ValueError(
-                "event_of_interest must be a strictly positive integer or 'any', "
-                f"got: event_of_interest={self.event_of_interest:!r}"
-            )
         self.y_train = y_train
-        self.y_train_any_event = self._any_event(y_train)
+        self.event_train, self.duration_train = check_y_survival(y_train)
+        self.any_event_train = self.event_train > 0
         self.event_of_interest = event_of_interest
-        self.rng = check_random_state(random_state)
 
         # Estimate the censoring distribution from the training set
         # using Kaplan-Meier.
-        self.ipcw_est = IpcwEstimator().fit(self.y_train_any_event)
+        self.ipcw_est = IpcwEstimator().fit(
+            dict(
+                event=self.any_event_train,
+                duration=self.duration_train,
+            )
+        )
 
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
-        self.ipcw_y_train = self.ipcw_est.predict(y_train["duration"])
+        self.ipcw_train = self.ipcw_est.predict(self.duration_train)
 
-    def _any_event(self, y):
-        y_any_event = np.empty(
-            y.shape[0],
-            dtype=[("event", bool), ("duration", float)],
+    def brier_score(self, y_true, y_pred, times):
+        """Compute the Brier Score.
+
+        For each sample, apply the Brier Score formula, then
+        average each individual Brier Score column-wise.
+
+        Parameters
+        ----------
+        y_true : record-array, dictionnary or dataframe of shape (n_samples, 2)
+            The ground truth, consisting in the 'event' and 'duration' columns.
+
+        y_pred : array-like of shape (n_samples, n_times)
+            Survival probability estimates predicted at ``times``.
+
+        times : array-like of shape (n_times)
+            Times to estimate the survival probability and to compute the
+            Brier Score.
+
+        Returns
+        -------
+        brier_score : np.ndarray
+            Average value of individual Brier Scores computed for ``times``.
+        """
+        event_true, duration_true = check_y_survival(y_true)
+        check_event_of_interest(self.event_of_interest)
+
+        if self.event_of_interest == "any":
+            if y_true is self.y_train:
+                event_true = self.any_event_train
+            else:
+                event_true = event_true > 0
+
+        if y_pred.shape[1] != times.shape[0]:
+            raise ValueError(
+                f"'times' length ({times.shape[0]}) "
+                f"must be equal to y_pred.shape[1] ({y_pred.shape[1]})."
+            )
+
+        n_samples = event_true.shape[0]
+        n_time_steps = times.shape[0]
+        brier_scores = np.empty(
+            shape=(n_samples, n_time_steps),
+            dtype=np.float64,
         )
-        y_any_event["event"] = y["event"] > 0
-        y_any_event["duration"] = y["duration"]
-        return y_any_event
+        ipcw_y = self.ipcw_est.predict(duration_true)
+        for t_idx, t in enumerate(times):
+            y_true_binary, weights = self._ibs_components(
+                event=event_true,
+                duration=duration_true,
+                times=np.full(shape=n_samples, fill_value=t),
+                ipcw_y=ipcw_y,
+            )
+            squared_error = (y_true_binary - y_pred[:, t_idx]) ** 2
+            brier_scores[:, t_idx] = weights * squared_error
 
-    def _ibs_components(self, y, times, ipcw_y):
+        return brier_scores.mean(axis=0)
+
+    def _ibs_components(self, event, duration, times, ipcw_y):
         if self.event_of_interest == "any":
             # y should already be provided as binary indicator
             k = 1
@@ -59,8 +125,8 @@ class BrierScoreComputer:
         #   Otherwise, they are discarded by setting their weight to 0 in the
         #   following.
 
-        y_binary = np.zeros(y.shape[0], dtype=np.int32)
-        y_binary[(y["event"] == k) & (y["duration"] <= times)] = 1
+        y_binary = np.ones(event.shape[0], dtype=np.int32)
+        y_binary[(event == k) & (duration <= times)] = 0
 
         # Compute the weights for each term contributing to the Brier score
         # at the specified time horizons.
@@ -78,68 +144,160 @@ class BrierScoreComputer:
 
         # Estimate the probability of censoring at current time point t.
         ipcw_t = self.ipcw_est.predict(times)
-        before = times < y["duration"]
+        before = times < duration
         weights = np.where(before, ipcw_t, 0)
 
-        after_any_observed_event = (y["event"] > 0) & (times >= y["duration"])
+        after_any_observed_event = (event > 0) & (duration <= times)
         weights = np.where(after_any_observed_event, ipcw_y, weights)
 
         return y_binary, weights
 
-    def brier_score(self, y_true, y_pred, times):
-        if self.event_of_interest == "any":
-            if y_true is self.y_train:
-                y_true = self.y_train_any_event
-            else:
-                y_true = self._any_event(y_true)
 
-        n_samples = y_true.shape[0]
-        n_time_steps = times.shape[0]
-        brier_scores = np.empty(
-            shape=(n_samples, n_time_steps),
-            dtype=np.float64,
-        )
-        ipcw_y = self.ipcw_est.predict(y_true["duration"])
-        for t_idx, t in enumerate(times):
-            y_true_binary, weights = self._ibs_components(
-                y=y_true,
-                times=np.full(shape=n_samples, fill_value=t),
-                ipcw_y=ipcw_y,
-            )
-            squared_error = (y_true_binary - y_pred[:, t_idx]) ** 2
-            brier_scores[:, t_idx] = weights * squared_error
-
-        return brier_scores.mean(axis=0)
-
-
-def cif_brier_score(
+def brier_score(
     y_train,
     y_test,
-    cif_pred,
+    y_pred,
     times,
     event_of_interest="any",
 ):
+    """Compute the Brier Score.
+
+    .. math::
+
+        \\mathrm{BS}(t) = \\frac{1}{n} \\sum_{i=1}^n \\mathbb{I}
+        (y_i \\leq t \\land \\delta_i = 1)
+        \\frac{(0 - \\hat{S}(t | \\mathbf{x}_i))^2}{\\hat{G}(y_i)} +
+        \\mathbb{I}(y_i > t)
+        \\frac{(1 - \\hat{S}(t | \\mathbf{x}_i))^2}{\\hat{G}(t)} ,
+
+    where :math:`\\hat{S}(t | \\mathbf{x})` is the predicted probability of
+    surviving up to time point :math:`t` for a feature vector :math:`\\mathbf{x}`,
+    and :math:`1/\\hat{G}(t)` is a inverse probability of censoring weight, estimated by
+    the Kaplan-Meier estimator.
+
+    Parameters
+    ----------
+    y_train : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        The target, consisting in the 'event' and 'duration' columns.
+        This is used to fit the IPCW estimator.
+
+    y_test : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        The ground truth, consisting in the 'event' and 'duration' columns.
+
+    y_pred : array-like of shape (n_samples, n_times)
+        Survival probability estimates predicted at ``times``.
+
+    times : array-like of shape (n_times)
+        Times at which the survival probability ``y_pred`` has been estimated
+        and for which we compute the Brier Score.
+
+    event_of_interest : int or "any", default="any"
+        The event to consider in competitive events setting.
+        "any" indicates that all events except the censoring 0 are
+        considered as a single event.
+        In single event settings, "any" and 1 are equivalent.
+
+    Returns
+    -------
+    times : np.ndarray of shape (n_times)
+        No-op, this is the same as the input.
+
+    brier_score : np.ndarray of shape (n_times)
+    """
     # XXX: make times an optional kwarg to be compatible with
     # sksurv.metrics.brier_score?
-    ibsts = BrierScoreComputer(
+    # XXX: 'times' must match the times of y_pred,
+    # but we have no way to check that.
+    # In this sense, 'y_pred[:, t_idx]' is incorrect when 'times'
+    # is not the time used during the prediction.
+    computer = BrierScoreComputer(
         y_train,
         event_of_interest=event_of_interest,
     )
-    return times, ibsts.brier_score(y_test, cif_pred, times)
+    return times, computer.brier_score(y_test, y_pred, times)
 
 
-def cif_integrated_brier_score(
+def integrated_brier_score(
     y_train,
     y_test,
-    cif_pred,
+    y_pred,
     times,
     event_of_interest="any",
 ):
-    times, brier_scores = cif_brier_score(
+    """Compute the Integrated Brier Score.
+
+    .. math::
+
+        \\mathrm{IBS}(t) = \\frac{1}{t_{max} - t_{min}} \\int^{t_{max}}_{t_{min}}
+        \\mathrm{BS}(u) du
+
+
+    Parameters
+    ----------
+    y_train : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        The target, consisting in the ``"event"`` and ``"duration"`` columns.
+        This is used to fit the IPCW estimator.
+
+    y_test : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        The ground truth, consisting in the ``"event"`` and ``"duration"`` columns.
+
+    y_pred : array-like of shape (n_samples, n_times)
+        Survival probability estimates predicted at ``times``.
+
+    times : array-like of shape (n_times)
+        Times at which the survival probabilities ``y_pred`` has been estimated
+        and for which we compute the Brier Score.
+
+    event_of_interest : int or "any", default="any"
+        The event to consider in competitive events setting.
+        ``"any"`` indicates that all events except the censoring ``0`` are
+        considered as a single event.
+        In single event settings, ``"any"`` and ``1`` are equivalent.
+
+    Returns
+    -------
+    ibs : float
+    """
+    times, brier_scores = brier_score(
         y_train,
         y_test,
-        cif_pred,
+        y_pred,
         times,
         event_of_interest=event_of_interest,
     )
     return np.trapz(brier_scores, times) / (times[-1] - times[0])
+
+
+class BrierScoreSampler(BrierScoreComputer):
+    """Sample random times uniformly to compute the IPCW.
+
+    Parameters
+    ----------
+    random_state : int, RandomState instance or None, default=None
+        Controls the randomness of the uniform time sampler
+    """
+
+    def __init__(self, y_train, event_of_interest="any", random_state=None):
+        self.rng = check_random_state(random_state)
+        super().__init__(y_train, event_of_interest)
+
+    def draw(self):
+        # Sample time horizons uniformly on the observed time range:
+        duration = self.duration_train
+        min_times = duration.min()
+        max_times = duration.max()
+        times = self.rng.uniform(min_times, max_times, duration.shape[0])
+
+        if self.event_of_interest == "any":
+            # Collapse all event types together.
+            event = self.any_event_train
+        else:
+            event = self.event_train
+
+        y_binary, sample_weights = self._ibs_components(
+            event,
+            duration,
+            times,
+            ipcw_y=self.ipcw_train,
+        )
+        return times.reshape(-1, 1), y_binary, sample_weights

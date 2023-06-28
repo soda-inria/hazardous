@@ -42,6 +42,7 @@ doc = [
     "sphinx-gallery",
     "matplotlib",
     "pillow",  # to scrape images from the examples
+    "numpydoc",
 ]
 
 [project.urls]
@@ -50,7 +51,7 @@ doc = [
 
 [build-system]
 build-backend = "flit_core.buildapi"
-requires = ["flit_core"]
+requires = ["flit_core", "setuptools"]
 
 [tool.black]
 line-length = 88

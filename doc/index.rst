@@ -22,3 +22,4 @@ Welcome to hazardous's documentation!
    :hidden:
 
    auto_examples/index
+   api
