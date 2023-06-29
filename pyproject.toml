@@ -18,6 +18,7 @@ dependencies = [
     # TODO: implement KM and make this a soft dependency for the
     # doc and tests.
     "lifelines",
+    "tqdm",
 ]
 dynamic = ["version"]
 
