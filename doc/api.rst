@@ -5,14 +5,16 @@ This page lists all the functions and classes of hazardous:
 
 .. currentmodule:: hazardous
 
-Inverse Probability Censoring Weight
-------------------------------------
+
+Estimators
+----------
 
 .. autosummary::
     :toctree: generated/
     :template: class.rst
     :nosignatures:
 
+    GradientBoostingIncidence
     IpcwEstimator
 
 Metrics

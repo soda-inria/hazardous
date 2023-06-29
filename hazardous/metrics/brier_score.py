@@ -99,7 +99,8 @@ class BrierScoreComputer:
                 times=np.full(shape=n_samples, fill_value=t),
                 ipcw_y=ipcw_y,
             )
-            squared_error = (y_true_binary - y_pred[:, t_idx]) ** 2
+            y_brier_score_ref = np.logical_not(y_true_binary).astype(np.int32)
+            squared_error = (y_brier_score_ref - y_pred[:, t_idx]) ** 2
             brier_scores[:, t_idx] = weights * squared_error
 
         return brier_scores.mean(axis=0)
@@ -125,8 +126,8 @@ class BrierScoreComputer:
         #   Otherwise, they are discarded by setting their weight to 0 in the
         #   following.
 
-        y_binary = np.ones(event.shape[0], dtype=np.int32)
-        y_binary[(event == k) & (duration <= times)] = 0
+        y_binary = np.zeros(event.shape[0], dtype=np.int32)
+        y_binary[(event == k) & (duration <= times)] = 1
 
         # Compute the weights for each term contributing to the Brier score
         # at the specified time horizons.

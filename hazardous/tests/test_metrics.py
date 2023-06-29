@@ -86,7 +86,7 @@ def test_brier_score_sampler():
     assert times_.shape == (y_train["event"].shape[0], 1)
 
     y_binary_expected = np.array(
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
         dtype=np.int32,
     )
 
