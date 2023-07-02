@@ -141,8 +141,7 @@ class BrierScoreComputer:
                 times=np.full(shape=n_samples, fill_value=t),
                 ipcw_y=ipcw_y,
             )
-            y_brier_score_ref = np.logical_not(y_true_binary).astype(np.int32)
-            squared_error = (y_brier_score_ref - y_pred[:, t_idx]) ** 2
+            squared_error = (y_true_binary - y_pred[:, t_idx]) ** 2
             brier_scores[:, t_idx] = weights * squared_error
 
         return brier_scores.mean(axis=0)
