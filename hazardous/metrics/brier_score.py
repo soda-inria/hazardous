@@ -1,8 +1,10 @@
+import warnings
+
 import numpy as np
 from sklearn.utils.validation import check_random_state
 
 from .._ipcw import IpcwEstimator
-from ..utils import check_event_of_interest, check_y_survival
+from ..utils import check_event_of_interest, check_y_mean_increasing, check_y_survival
 
 
 class BrierScoreComputer:
@@ -31,6 +33,7 @@ class BrierScoreComputer:
     ):
         self.y_train = y_train
         self.event_train, self.duration_train = check_y_survival(y_train)
+        self.event_ids_ = np.unique(self.event_train)
         self.any_event_train = self.event_train > 0
         self.event_of_interest = event_of_interest
 
@@ -60,6 +63,7 @@ class BrierScoreComputer:
 
         y_pred : array-like of shape (n_samples, n_times)
             Survival probability estimates predicted at ``times``.
+            In the binary event settings, this is 1 - incidence_probability.
 
         times : array-like of shape (n_times)
             Times to estimate the survival probability and to compute the
@@ -69,6 +73,42 @@ class BrierScoreComputer:
         -------
         brier_score : np.ndarray
             Average value of individual Brier Scores computed for ``times``.
+
+        """
+        if (self.event_ids_ > 0).sum() > 1 and self.event_of_interest != "any":
+            warnings.warn(
+                "Computing the Brier Score only make "
+                "sense when the model is trained with a binary event "
+                "indicator or when setting event_of_interest='any'. "
+                "Instead this model was fit on data with event ids "
+                f"{self.event_ids_.tolist()} and with "
+                f"event_of_interest={self.event_of_interest}."
+            )
+        return self.brier_score_incidence(y_true, 1 - y_pred, times)
+
+    def brier_score_incidence(self, y_true, y_pred, times):
+        """Compute the Brier Score Incidence for the kth cause of failure.
+
+        For each sample, apply the Brier Score Incidence formula, then
+        average each individual Brier Score column-wise.
+
+        Parameters
+        ----------
+        y_true : record-array, dictionnary or dataframe of shape (n_samples, 2)
+            The ground truth, consisting in the 'event' and 'duration' columns.
+
+        y_pred : array-like of shape (n_samples, n_times)
+            Incidence probability estimates predicted at ``times``.
+            In the binary event settings, this is 1 - survival_probability.
+
+        times : array-like of shape (n_times)
+            Times to estimate the survival probability and to compute the
+            Brier Score.
+
+        Returns
+        -------
+        brier_score_incidence : np.ndarray
+            Average value of individual Brier Scores Incidence computed for ``times``.
         """
         event_true, duration_true = check_y_survival(y_true)
         check_event_of_interest(self.event_of_interest)
@@ -84,6 +124,8 @@ class BrierScoreComputer:
                 f"'times' length ({times.shape[0]}) "
                 f"must be equal to y_pred.shape[1] ({y_pred.shape[1]})."
             )
+
+        check_y_mean_increasing(y_pred, times)
 
         n_samples = event_true.shape[0]
         n_time_steps = times.shape[0]
@@ -125,8 +167,8 @@ class BrierScoreComputer:
         #   Otherwise, they are discarded by setting their weight to 0 in the
         #   following.
 
-        y_binary = np.ones(event.shape[0], dtype=np.int32)
-        y_binary[(event == k) & (duration <= times)] = 0
+        y_binary = np.zeros(event.shape[0], dtype=np.int32)
+        y_binary[(event == k) & (duration <= times)] = 1
 
         # Compute the weights for each term contributing to the Brier score
         # at the specified time horizons.
@@ -204,12 +246,6 @@ def brier_score(
 
     brier_score : np.ndarray of shape (n_times)
     """
-    # XXX: make times an optional kwarg to be compatible with
-    # sksurv.metrics.brier_score?
-    # XXX: 'times' must match the times of y_pred,
-    # but we have no way to check that.
-    # In this sense, 'y_pred[:, t_idx]' is incorrect when 'times'
-    # is not the time used during the prediction.
     computer = BrierScoreComputer(
         y_train,
         event_of_interest=event_of_interest,
@@ -230,7 +266,6 @@ def integrated_brier_score(
 
         \\mathrm{IBS}(t) = \\frac{1}{t_{max} - t_{min}} \\int^{t_{max}}_{t_{min}}
         \\mathrm{BS}(u) du
-
 
     Parameters
     ----------
@@ -259,6 +294,139 @@ def integrated_brier_score(
     ibs : float
     """
     times, brier_scores = brier_score(
+        y_train,
+        y_test,
+        y_pred,
+        times,
+        event_of_interest=event_of_interest,
+    )
+    return np.trapz(brier_scores, times) / (times[-1] - times[0])
+
+
+def brier_score_incidence(
+    y_train,
+    y_test,
+    y_pred,
+    times,
+    event_of_interest="any",
+):
+    """Compute the Brier Score for the kth cause of failure.
+
+    .. math::
+
+        \\mathrm{BS}_k(t) = \\frac{1}{n} \\sum_{i=1}^n \\hat{\\omega}_i(t)
+        (\\mathbb{I}(t_i \\leq t, \\delta_i = k) - \\hat{F}_k(t|\\mathbf{x}_i))^2
+
+    where :math:`\\hat{F}_k(t | \\mathbf{x}_i)` is the predicted probability of
+    incidence of the kth event up to time point :math:`t`
+    for a feature vector :math:`\\mathbf{x}_i`,
+    and
+
+    .. math::
+
+        \\hat{\\omega}_i(t)=\\mathbb{I}(t_i \\leq t, \\delta_i \\neq 0)/\\hat{G}(t_i)
+        + \mathbb{I}(t_i > t)/\\hat{G}(t)
+
+    are weigths based on the Kaplan-Meier estimate of the censoring
+    distribution :math:`\\hat{G}(t)`.
+
+    Parameters
+    ----------
+    y_train : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        The target, consisting in the 'event' and 'duration' columns.
+        This is used to fit the IPCW estimator.
+
+    y_test : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        The ground truth, consisting in the 'event' and 'duration' columns.
+
+    y_pred : array-like of shape (n_samples, n_times)
+        Incidence probability estimates predicted at ``times``.
+        In the binary event settings, this is 1 - survival_probability.
+
+    times : array-like of shape (n_times)
+        Times at which the survival probability ``y_pred`` has been estimated
+        and for which we compute the Brier Score.
+
+    event_of_interest : int or "any", default="any"
+        The event to consider in competitive events setting.
+        "any" indicates that all events except the censoring 0 are
+        considered as a single event.
+        In single event settings, "any" and 1 are equivalent.
+
+    Returns
+    -------
+    times : np.ndarray of shape (n_times)
+        No-op, this is the same as the input.
+
+    brier_score : np.ndarray of shape (n_times)
+
+    References
+    ----------
+
+    [1] M. Kretowska, "Tree-based models for survival data with competing risks",
+        Computer Methods and Programs in Biomedicine 159 (2018) 185-198.
+    """
+    # XXX: make times an optional kwarg to be compatible with
+    # sksurv.metrics.brier_score?
+    # XXX: 'times' must match the times of y_pred,
+    # but we have no way to check that.
+    # In this sense, 'y_pred[:, t_idx]' is incorrect when 'times'
+    # is not the time used during the prediction.
+    computer = BrierScoreComputer(
+        y_train,
+        event_of_interest=event_of_interest,
+    )
+    return times, computer.brier_score_incidence(y_test, y_pred, times)
+
+
+def integrated_brier_score_incidence(
+    y_train,
+    y_test,
+    y_pred,
+    times,
+    event_of_interest="any",
+):
+    """Compute the Integrated Brier Score Incidence for the kth cause of failure.
+
+    .. math::
+
+        \\mathrm{IBS}_k(t) = \\frac{1}{t_{max} - t_{min}} \\int^{t_{max}}_{t_{min}}
+        \\mathrm{BS}_k(u) du
+
+    Parameters
+    ----------
+    y_train : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        The target, consisting in the ``"event"`` and ``"duration"`` columns.
+        This is used to fit the IPCW estimator.
+
+    y_test : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        The ground truth, consisting in the ``"event"`` and ``"duration"`` columns.
+
+    y_pred : array-like of shape (n_samples, n_times)
+        Incidence probability estimates predicted at ``times``.
+        In the binary event settings, this is 1 - survival_probability.
+
+    times : array-like of shape (n_times)
+        Times at which the survival probabilities ``y_pred`` has been estimated
+        and for which we compute the Brier Score.
+
+    event_of_interest : int or "any", default="any"
+        The event to consider in competitive events setting.
+        ``"any"`` indicates that all events except the censoring ``0`` are
+        considered as a single event.
+        In single event settings, ``"any"`` and ``1`` are equivalent.
+
+    Returns
+    -------
+    ibs : float
+
+    References
+    ----------
+
+    [1] M. Kretowska, "Tree-based models for survival data with competing risks",
+        Computer Methods and Programs in Biomedicine 159 (2018) 185-198.
+    """
+    times, brier_scores = brier_score_incidence(
         y_train,
         y_test,
         y_pred,

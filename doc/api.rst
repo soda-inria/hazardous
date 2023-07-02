@@ -24,7 +24,9 @@ Metrics
     :nosignatures:
 
     metrics.brier_score
+    metrics.brier_score_incidence
     metrics.integrated_brier_score
+    metrics.integrated_brier_score_incidence
 
 .. autosummary::
     :toctree: generated/

@@ -7,7 +7,13 @@ from lifelines import CoxPHFitter
 from lifelines.datasets import load_regression_dataset
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
-from ..metrics import BrierScoreSampler, brier_score, integrated_brier_score
+from ..metrics import (
+    BrierScoreSampler,
+    brier_score,
+    brier_score_incidence,
+    integrated_brier_score,
+    integrated_brier_score_incidence,
+)
 
 X = load_regression_dataset()
 X_train, X_test = X.iloc[:150], X.iloc[150:]
@@ -79,6 +85,89 @@ def test_brier_score_computer(event_of_interest):
     assert abs(ibs - ibs_expected) < 1e-6
 
 
+@pytest.mark.parametrize("event_of_interest", [1, "any"])
+def test_brier_score_incidence_computer(event_of_interest):
+    times_, loss = brier_score(
+        y_train,
+        y_test,
+        y_pred,
+        times,
+        event_of_interest,
+    )
+    times_incidence_, loss_incidence = brier_score_incidence(
+        y_train,
+        y_test,
+        1 - y_pred,
+        times,
+        event_of_interest,
+    )
+
+    assert_array_equal(times_, times_incidence_)
+    assert_array_equal(loss, loss_incidence)
+
+    ibs = integrated_brier_score(
+        y_train,
+        y_test,
+        y_pred,
+        times,
+        event_of_interest,
+    )
+    ibs_incidence = integrated_brier_score_incidence(
+        y_train,
+        y_test,
+        1 - y_pred,
+        times,
+        event_of_interest,
+    )
+
+    assert ibs == ibs_incidence
+
+
+def test_brier_score_warnings_on_competive_event():
+    coef = np.random.choice([1, 2], size=y_train["event"].shape[0])
+    y_train["event"] *= coef
+
+    msg = "Computing the Brier Score only make sense"
+    with pytest.warns(match=msg):
+        brier_score(
+            y_train,
+            y_test,
+            y_pred,
+            times,
+            event_of_interest=2,
+        )
+
+    with pytest.warns(None):
+        brier_score_incidence(
+            y_train,
+            y_test,
+            1 - y_pred,
+            times,
+            event_of_interest=2,
+        )
+
+
+def test_brier_score_incidence_warnings_surv_input():
+    msg = "\n\nThe average shape of the y_pred curve is decreasing."
+    with pytest.warns(match=re.escape(msg)):
+        brier_score_incidence(
+            y_train,
+            y_test,
+            y_pred,
+            times,
+            event_of_interest="any",
+        )
+
+    with pytest.warns(None):
+        brier_score(
+            y_train,
+            y_test,
+            y_pred,
+            times,
+            event_of_interest="any",
+        )
+
+
 def test_brier_score_sampler():
     sampler = BrierScoreSampler(y_train, random_state=0)
     times_, y_binary, sample_weights = sampler.draw()
@@ -86,7 +175,7 @@ def test_brier_score_sampler():
     assert times_.shape == (y_train["event"].shape[0], 1)
 
     y_binary_expected = np.array(
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
         dtype=np.int32,
     )
 
