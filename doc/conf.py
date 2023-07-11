@@ -17,6 +17,7 @@ release = '0.1.0'
 extensions = [
     'sphinx_gallery.gen_gallery',
     'sphinx.ext.autosummary',
+    "sphinx.ext.intersphinx",
     'numpydoc',
 ]
 templates_path = ['_templates']
@@ -36,3 +37,10 @@ sphinx_gallery_conf = {
     'examples_dirs': '../examples',   # path to example scripts
     'gallery_dirs': 'auto_examples',  # path to gallery generated output
 }
+
+# intersphinx configuration
+intersphinx_mapping = {
+    "sklearn": ("https://scikit-learn.org/stable/", None),
+}
+
+numpydoc_show_class_members = False 

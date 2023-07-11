@@ -23,9 +23,9 @@ Metrics
     :template: function.rst
     :nosignatures:
 
-    metrics.brier_score
+    metrics.brier_score_survival
     metrics.brier_score_incidence
-    metrics.integrated_brier_score
+    metrics.integrated_brier_score_survival
     metrics.integrated_brier_score_incidence
 
 .. autosummary::
@@ -34,4 +34,3 @@ Metrics
     :nosignatures:
 
     metrics.BrierScoreComputer
-    metrics.BrierScoreSampler
