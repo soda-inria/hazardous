@@ -1,7 +1,6 @@
 import warnings
 
 import numpy as np
-from sklearn.utils.validation import check_random_state
 
 from .._ipcw import IpcwEstimator
 from ..utils import check_event_of_interest, check_y_mean_increasing, check_y_survival
@@ -195,7 +194,7 @@ class BrierScoreComputer:
         return y_binary, weights
 
 
-def brier_score(
+def brier_score_survival(
     y_train,
     y_test,
     y_pred,
@@ -253,7 +252,7 @@ def brier_score(
     return times, computer.brier_score(y_test, y_pred, times)
 
 
-def integrated_brier_score(
+def integrated_brier_score_survival(
     y_train,
     y_test,
     y_pred,
@@ -293,7 +292,7 @@ def integrated_brier_score(
     -------
     ibs : float
     """
-    times, brier_scores = brier_score(
+    times, brier_scores = brier_score_survival(
         y_train,
         y_test,
         y_pred,
@@ -434,38 +433,3 @@ def integrated_brier_score_incidence(
         event_of_interest=event_of_interest,
     )
     return np.trapz(brier_scores, times) / (times[-1] - times[0])
-
-
-class BrierScoreSampler(BrierScoreComputer):
-    """Sample random times uniformly to compute the IPCW.
-
-    Parameters
-    ----------
-    random_state : int, RandomState instance or None, default=None
-        Controls the randomness of the uniform time sampler
-    """
-
-    def __init__(self, y_train, event_of_interest="any", random_state=None):
-        self.rng = check_random_state(random_state)
-        super().__init__(y_train, event_of_interest)
-
-    def draw(self):
-        # Sample time horizons uniformly on the observed time range:
-        duration = self.duration_train
-        min_times = duration.min()
-        max_times = duration.max()
-        times = self.rng.uniform(min_times, max_times, duration.shape[0])
-
-        if self.event_of_interest == "any":
-            # Collapse all event types together.
-            event = self.any_event_train
-        else:
-            event = self.event_train
-
-        y_binary, sample_weights = self._ibs_components(
-            event,
-            duration,
-            times,
-            ipcw_y=self.ipcw_train,
-        )
-        return times.reshape(-1, 1), y_binary, sample_weights
