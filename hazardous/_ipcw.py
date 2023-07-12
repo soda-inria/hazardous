@@ -10,31 +10,30 @@ from .utils import check_y_survival
 class IPCWEstimator(BaseEstimator):
     """Estimate the Inverse Probability Censoring Weight (IPCW).
 
-    Estimate the inverse of the probability of "survival" to censoring using the
-    Kaplan-Meier estimator on a binary indicator for censoring, that is the negative
-    of the binary indicator for any-event occurrence.
+    Estimate the inverse of the probability of "survival" to censoring using
+    the Kaplan-Meier estimator on a binary indicator for censoring, that is the
+    negative of the binary indicator for any-event occurrence.
 
-    Note that the name IPCW name is a bit misleading: IPCW values are the inverse of
-    the probability of remaining censoring-free (or uncensored) at a given time:
-    at t=0, the probability of being censored is 0, therefore the probability of being
-    uncensored is 1.0, and its inverse is also 1.0.
+    Note that the name IPCW name is a bit misleading: IPCW values are the
+    inverse of the probability of remaining censoring-free (or uncensored) at a
+    given time: at t=0, the probability of being censored is 0, therefore the
+    probability of being uncensored is 1.0, and its inverse is also 1.0.
 
     By construction, IPCW values are always larger or equal to 1.0 and can only
-    increase with time. If no observations are censored, the IPCW values are uniformly
-    1.0.
+    increase with time. If no observations are censored, the IPCW values are
+    uniformly 1.0.
 
     Parameters
     ----------
-    min_censoring_prob: float, default=1e-30
-        Lower bound of the censoring survival probability used to avoid zero-division
-        when taking its inverse to get the IPCW values. As a result, IPCW values
-        are upper bounded by the inverse of this value.
+    min_censoring_survival_prob: float, default=1e-30
+        Lower bound of the censoring survival probability used to avoid
+        zero-division when taking its inverse to get the IPCW values. As a
+        result, IPCW values are upper bounded by the inverse of this value.
     """
 
-    def __init__(self, min_censoring_prob=1e-30):
-        self.min_censoring_prob = (
-            min_censoring_prob  # XXX: study the effect and set a better default
-        )
+    def __init__(self, min_censoring_survival_prob=1e-30):
+        # XXX: study the effect and maybe set a better default value.
+        self.min_censoring_survival_prob = min_censoring_survival_prob
 
     def fit(self, y):
         """Compute the censoring survival function using Kaplan Meier
@@ -64,7 +63,7 @@ class IPCWEstimator(BaseEstimator):
         self.censoring_survival_probs_ = df.values[:, 0]
         self.censoring_survival_func_ = interp1d(
             self.unique_times_,
-            self.censor_probs_,
+            self.censoring_survival_probs_,
             kind="previous",
             bounds_error=False,
             fill_value="extrapolate",
@@ -87,7 +86,7 @@ class IPCWEstimator(BaseEstimator):
         ipcw : np.ndarray of shape (n_times,)
             The IPCW for times
         """
-        check_is_fitted(self, "censor_probs_func_")
+        check_is_fitted(self, "censoring_survival_func_")
 
         last_censoring = self.unique_times_[-1]
         is_beyond_last = times > last_censoring
@@ -98,7 +97,7 @@ class IPCWEstimator(BaseEstimator):
                 f"duration: {last_censoring}"
             )
 
-        censoring_survival_probs = self.censor_survival_func_(times)
+        censoring_survival_probs = self.censoring_survival_func_(times)
         censoring_survival_probs = np.clip(
             censoring_survival_probs, self.min_censoring_survival_prob, 1
         )

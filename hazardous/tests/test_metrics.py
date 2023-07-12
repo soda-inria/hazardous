@@ -124,7 +124,7 @@ def test_brier_score_warnings_on_competive_event():
     coef = np.random.choice([1, 2], size=y_train["event"].shape[0])
     y_train["event"] *= coef
 
-    msg = "Computing the Brier Score only make sense"
+    msg = "Computing the survival Brier score only makes sense"
     with pytest.warns(match=msg):
         brier_score_survival(
             y_train,
