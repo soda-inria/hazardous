@@ -10,9 +10,14 @@ from .utils import check_y_survival
 class IPCWEstimator(BaseEstimator):
     """Estimate the Inverse Probability Censoring Weight (IPCW).
 
-    Estimate the inverse of the probability of "survival" to censoring using
-    the Kaplan-Meier estimator on a binary indicator for censoring, that is the
-    negative of the binary indicator for any-event occurrence.
+    This class estimates the inverse of the probability of "survival" to
+    censoring using the Kaplan-Meier estimator on a binary indicator for
+    censoring, that is the negative of the binary indicator for any-event
+    occurrence.
+
+    This is useful to correct for the bias introduced by right censoring in
+    survival analysis when computing model evaluation metrics such as the Brier
+    score or the concordance index.
 
     Note that the name IPCW name is a bit misleading: IPCW values are the
     inverse of the probability of remaining censoring-free (or uncensored) at a
