@@ -93,15 +93,6 @@ class IPCWEstimator(BaseEstimator):
         """
         check_is_fitted(self, "censoring_survival_func_")
 
-        last_censoring = self.unique_times_[-1]
-        is_beyond_last = times > last_censoring
-
-        if any(is_beyond_last):
-            raise ValueError(
-                "'times' can't be higher than the last observed "
-                f"duration: {last_censoring}"
-            )
-
         censoring_survival_probs = self.censoring_survival_func_(times)
         censoring_survival_probs = np.clip(
             censoring_survival_probs, self.min_censoring_survival_prob, 1

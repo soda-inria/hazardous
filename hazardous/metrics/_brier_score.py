@@ -474,4 +474,5 @@ def integrated_brier_score_incidence(
         times,
         event_of_interest=event_of_interest,
     )
+    # XXX: sort times here!
     return np.trapz(brier_scores, times) / (times[-1] - times[0])
