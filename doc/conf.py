@@ -16,11 +16,14 @@ release = '0.1.0'
 
 extensions = [
     'sphinx_gallery.gen_gallery',
+    'sphinx.ext.autosummary',
+    'numpydoc',
 ]
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ["_templates"]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
