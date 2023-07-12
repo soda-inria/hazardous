@@ -14,7 +14,8 @@ def test_ipcw(competitive_risk):
         duration=X["T"],
     )
     if competitive_risk:
-        coef = np.random.choice([1, 2], size=y["event"].shape[0])
+        rng = np.random.default_rng(0)
+        coef = rng.choice([1, 2], size=y["event"].shape[0])
         y["event"] *= coef
 
     times = np.arange(

@@ -10,14 +10,25 @@ from .utils import check_y_survival
 class IpcwEstimator(BaseEstimator):
     """Estimate the Inverse Probability Censoring Weight (IPCW).
 
-    This estimator compute the inverse censoring probability,
-    using the Kaplan Meier estimator on the censoring
-    instead of the event.
+    Estimate the inverse of the probability of "survival" to censoring using the
+    Kaplan-Meier estimator on a binary indicator for censoring, that is the negative
+    of the binary indicator for any-event occurrence.
+
+    Note that the name IPCW name is a bit misleading: IPCW values are the inverse of
+    the probability of remaining censoring-free (or uncensored) at a given time:
+    at t=0, the probability of being censored is 0, therefore the probability of being
+    uncensored is 1.0, and its inverse is also 1.0.
+
+    By construction, IPCW values are always larger or equal to 1.0 and can only
+    increase with time. If no observations are censored, the IPCW values are uniformly
+    1.0.
 
     Parameters
     ----------
     min_censoring_prob: float, default=1e-30
-        Lower bound of the censoring probability used to avoid zero-division
+        Lower bound of the censoring survival probability used to avoid zero-division
+        when taking its inverse to get the IPCW values. As a result, IPCW values
+        are upper bounded by the inverse of this value.
     """
 
     def __init__(self, min_censoring_prob=1e-30):
@@ -50,8 +61,8 @@ class IpcwEstimator(BaseEstimator):
 
         df = km.survival_function_
         self.unique_times_ = df.index
-        self.censor_probs_ = df.values[:, 0]
-        self.censor_probs_func_ = interp1d(
+        self.censoring_survival_probs_ = df.values[:, 0]
+        self.censoring_survival_func_ = interp1d(
             self.unique_times_,
             self.censor_probs_,
             kind="previous",
@@ -87,7 +98,8 @@ class IpcwEstimator(BaseEstimator):
                 f"duration: {last_censoring}"
             )
 
-        censor_probs = self.censor_probs_func_(times)
-        censor_probs = np.clip(censor_probs, self.min_censoring_prob, 1)
-
-        return 1 / censor_probs
+        censoring_survival_probs = self.censor_survival_func_(times)
+        censoring_survival_probs = np.clip(
+            censoring_survival_probs, self.min_censoring_survival_prob, 1
+        )
+        return 1 / censoring_survival_probs

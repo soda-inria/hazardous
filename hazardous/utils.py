@@ -44,10 +44,9 @@ def check_event_of_interest(k):
 
 
 def check_y_mean_increasing(y_pred, times):
-    """Check that the mean of y is increasing
-    when sorting with times.
+    """Check that the mean of y is increasing with time.
 
-    This allow to warn users of spurious survival probability inputs,
+    This allows to warn users of spurious survival probability inputs,
     when the incidence probability is expected instead.
 
     Parameters

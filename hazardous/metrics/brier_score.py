@@ -50,10 +50,13 @@ class BrierScoreComputer:
         self.ipcw_train = self.ipcw_est.predict(self.duration_train)
 
     def brier_score(self, y_true, y_pred, times):
-        """Compute the Brier Score.
+        """Time-dependent Brier score of a survival function estimate.
 
-        For each sample, apply the Brier Score formula, then
-        average each individual Brier Score column-wise.
+        Compute the time-dependent Brier score value for each individual and each
+        time point in `times` and then average over individuals.
+
+        This estimate is adjusted for censoring by leveraging the Inverse Probability
+        of Censoring Weighting (IPCW) scheme.
 
         Parameters
         ----------
@@ -70,16 +73,16 @@ class BrierScoreComputer:
 
         Returns
         -------
-        brier_score : np.ndarray
-            Average value of individual Brier Scores computed for ``times``.
+        brier_score : np.ndarray of shape (n_times)
+            Time-dependent Brier scores averaged over the individuals.
 
         """
         if (self.event_ids_ > 0).sum() > 1 and self.event_of_interest != "any":
             warnings.warn(
-                "Computing the Brier Score only make "
-                "sense when the model is trained with a binary event "
-                "indicator or when setting event_of_interest='any'. "
-                "Instead this model was fit on data with event ids "
+                "Computing the survival Brier score only makes "
+                "sense with a binary event indicator or when setting "
+                "event_of_interest='any'. "
+                "Instead this model is evaluated on data with event ids "
                 f"{self.event_ids_.tolist()} and with "
                 f"event_of_interest={self.event_of_interest}."
             )
@@ -213,14 +216,16 @@ def brier_score_survival(
 
     where :math:`\\hat{S}(t | \\mathbf{x})` is the predicted probability of
     surviving up to time point :math:`t` for a feature vector :math:`\\mathbf{x}`,
-    and :math:`1/\\hat{G}(t)` is a inverse probability of censoring weight, estimated by
-    the Kaplan-Meier estimator.
+    and :math:`\\hat{G}(t)` is the probability of remaining uncensored at time
+    :math:`t`, estimated on the training set by the Kaplan-Meier estimator on the
+    negation of the binary any-event indicator.
 
     Parameters
     ----------
     y_train : record-array, dictionnary or dataframe of shape (n_samples, 2)
         The target, consisting in the 'event' and 'duration' columns.
-        This is used to fit the IPCW estimator.
+        This is only used to estimate the IPCW values to adjust for censoring in
+        the evaluation data.
 
     y_test : record-array, dictionnary or dataframe of shape (n_samples, 2)
         The ground truth, consisting in the 'event' and 'duration' columns.
@@ -259,7 +264,7 @@ def integrated_brier_score_survival(
     times,
     event_of_interest="any",
 ):
-    """Compute the Integrated Brier Score.
+    """Compute the Brier score integrated over the observed time range.
 
     .. math::
 
@@ -309,7 +314,7 @@ def brier_score_incidence(
     times,
     event_of_interest="any",
 ):
-    """Compute the Brier Score for the kth cause of failure.
+    """Compute the time dependent Brier score for the kth cause of failure.
 
     .. math::
 
