@@ -3,16 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to hazardous's documentation!
-=====================================
+HΛZΛRDOUS: predictive survival and competing risks analysis in Python
+======================================================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-.. currentmodule:: skrub
+.. currentmodule:: hazardous
 
-
+- License: MIT
+- GitHub repository: https://github.com/soda-inria/hazardous
 
 .. container:: right-align
 
