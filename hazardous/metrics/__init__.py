@@ -1,5 +1,4 @@
-from .brier_score import (
-    BrierScoreComputer,
+from ._brier_score import (
     brier_score_incidence,
     brier_score_survival,
     integrated_brier_score_incidence,
@@ -11,5 +10,4 @@ __all__ = [
     "brier_score_incidence",
     "integrated_brier_score_survival",
     "integrated_brier_score_incidence",
-    "BrierScoreComputer",
 ]

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from lifelines.datasets import load_regression_dataset
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_allclose
 
 from .._ipcw import IPCWEstimator
 
@@ -49,5 +49,4 @@ def test_ipcw(competing_risk):
             1.33020982,
         ]
     )
-
-    assert_array_almost_equal(ipcw_probs, expected_ipcw_probs)
+    assert_allclose(ipcw_probs, expected_ipcw_probs)

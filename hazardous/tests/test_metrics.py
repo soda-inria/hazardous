@@ -8,12 +8,12 @@ from lifelines.datasets import load_regression_dataset
 from numpy.testing import assert_allclose, assert_array_equal
 
 from ..metrics import (
-    BrierScoreComputer,
     brier_score_incidence,
     brier_score_survival,
     integrated_brier_score_incidence,
     integrated_brier_score_survival,
 )
+from ..metrics._brier_score import BrierScoreComputer
 
 X = load_regression_dataset()
 X_train, X_test = X.iloc[:150], X.iloc[150:]

@@ -1,19 +1,10 @@
 API
 ===
 
-This page lists all the functions and classes of hazardous:
+This page lists all the public functions and classes of the `hazardous`
+package:
 
 .. currentmodule:: hazardous
-
-Inverse Probability Censoring Weight
-------------------------------------
-
-.. autosummary::
-    :toctree: generated/
-    :template: class.rst
-    :nosignatures:
-
-    IPCWEstimator
 
 Metrics
 -------
@@ -28,9 +19,13 @@ Metrics
     metrics.integrated_brier_score_survival
     metrics.integrated_brier_score_incidence
 
+
+Inverse Probability Censoring Weight
+------------------------------------
+
 .. autosummary::
     :toctree: generated/
     :template: class.rst
     :nosignatures:
 
-    metrics.BrierScoreComputer
+    IPCWEstimator
