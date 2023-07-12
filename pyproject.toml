@@ -18,6 +18,9 @@ dependencies = [
     # TODO: implement KM and make this a soft dependency for the
     # doc and tests.
     "lifelines",
+    # lifelines.KaplanMeierFitter imports lifelines.datasets which has an
+    # undeclared runtime dependency on setuptools.
+    "setuptools",
 ]
 dynamic = ["version"]
 
@@ -51,7 +54,7 @@ doc = [
 
 [build-system]
 build-backend = "flit_core.buildapi"
-requires = ["flit_core", "setuptools"]  # setuptools is needed to install pkg_resources, used in lifelines
+requires = ["flit_core"]
 
 [tool.black]
 line-length = 88
