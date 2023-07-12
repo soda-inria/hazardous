@@ -8,7 +8,7 @@ from .utils import check_y_survival
 
 
 class IPCWEstimator(BaseEstimator):
-    """Estimate the Inverse Probability Censoring Weight (IPCW).
+    """Estimate the Inverse Probability of Censoring Weight (IPCW).
 
     This class estimates the inverse of the probability of "survival" to
     censoring using the Kaplan-Meier estimator on a binary indicator for
