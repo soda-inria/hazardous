@@ -15,8 +15,8 @@ def test_ipcw(competing_risk):
     )
     if competing_risk:
         rng = np.random.default_rng(0)
-        coef = rng.choice([1, 2], size=y["event"].shape[0])
-        y["event"] *= coef
+        event_id_modifier = rng.choice([1, 2], size=y["event"].shape[0])
+        y["event"] *= event_id_modifier
 
     times = np.arange(
         y["duration"].min(),
@@ -50,3 +50,13 @@ def test_ipcw(competing_risk):
         ]
     )
     assert_allclose(ipcw_probs, expected_ipcw_probs)
+
+    # Remove censoring: the weights should be 1.
+    y_uncensored = y.copy()
+    if competing_risk:
+        y_uncensored["event"] = rng.choice([1, 2], size=y["event"].shape[0])
+    else:
+        y_uncensored["event"] = np.ones_like(y["event"])
+    est = IPCWEstimator().fit(y_uncensored)
+    ipcw_probs = est.predict(times)
+    assert_allclose(ipcw_probs, np.ones_like(ipcw_probs))
