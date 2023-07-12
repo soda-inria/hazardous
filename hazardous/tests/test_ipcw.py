@@ -6,14 +6,14 @@ from numpy.testing import assert_array_almost_equal
 from .._ipcw import IPCWEstimator
 
 
-@pytest.mark.parametrize("competitive_risk", [True, False])
-def test_ipcw(competitive_risk):
+@pytest.mark.parametrize("competing_risk", [True, False])
+def test_ipcw(competing_risk):
     X = load_regression_dataset()
     y = dict(
         event=X["E"],
         duration=X["T"],
     )
-    if competitive_risk:
+    if competing_risk:
         rng = np.random.default_rng(0)
         coef = rng.choice([1, 2], size=y["event"].shape[0])
         y["event"] *= coef
