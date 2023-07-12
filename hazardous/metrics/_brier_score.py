@@ -283,7 +283,7 @@ def integrated_brier_score_survival(
 
     .. math::
 
-        \mathrm{IBS}(t) = \frac{1}{t_{max} - t_{min}} \int^{t_{max}}_{t_{min}}
+        \mathrm{IBS} = \frac{1}{t_{max} - t_{min}} \int^{t_{max}}_{t_{min}}
         \mathrm{BS}(u) du
 
     Parameters
@@ -422,7 +422,7 @@ def integrated_brier_score_incidence(
 
     .. math::
 
-        \mathrm{IBS}_k(t) = \frac{1}{t_{max} - t_{min}} \int^{t_{max}}_{t_{min}}
+        \mathrm{IBS}_k = \frac{1}{t_{max} - t_{min}} \int^{t_{max}}_{t_{min}}
         \mathrm{BS}_k(u) du
 
     Parameters
