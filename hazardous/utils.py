@@ -3,6 +3,20 @@ import pandas as pd
 from sklearn.utils.validation import check_scalar
 
 
+def _dict_to_pd(y):
+    return pd.DataFrame(y)
+
+
+def _dict_to_recarray(y):
+    y_out = np.empty(
+        shape=y["event"].shape[0],
+        dtype=[("event", y["event"].dtype), ("duration", y["duration"].dtype)],
+    )
+    y_out["event"] = y["event"]
+    y_out["duration"] = y["duration"]
+    return y_out
+
+
 def check_y_survival(y):
     """Convert DataFrame and dictionnary to record array."""
     y_keys = ["event", "duration"]

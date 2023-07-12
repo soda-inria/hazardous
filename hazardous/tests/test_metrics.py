@@ -1,7 +1,6 @@
 import re
 
 import numpy as np
-import pandas as pd
 import pytest
 from lifelines import CoxPHFitter
 from lifelines.datasets import load_regression_dataset
@@ -14,6 +13,7 @@ from ..metrics import (
     integrated_brier_score_survival,
 )
 from ..metrics._brier_score import BrierScoreComputer
+from ..utils import _dict_to_pd, _dict_to_recarray
 
 X = load_regression_dataset()
 X_train, X_test = X.iloc[:150], X.iloc[150:]
@@ -156,20 +156,6 @@ def test_brier_score_incidence_wrong_parameters_type_error(event_of_interest):
                 times,
                 event_of_interest,
             )
-
-
-def _dict_to_pd(y):
-    return pd.DataFrame(y)
-
-
-def _dict_to_recarray(y):
-    y_out = np.empty(
-        shape=y["event"].shape[0],
-        dtype=[("event", np.int32), ("duration", np.float64)],
-    )
-    y_out["event"] = y["event"]
-    y_out["duration"] = y["duration"]
-    return y_out
 
 
 @pytest.mark.parametrize("format_func", [_dict_to_pd, _dict_to_recarray])

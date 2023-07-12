@@ -53,7 +53,7 @@ class BrierScoreComputer:
 
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
-        self.ipcw_train = self.ipcw_est.predict(self.duration_train)
+        self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
 
     def brier_score_survival(self, y_true, y_pred, times):
         """Time-dependent Brier score of a survival function estimate.
@@ -148,7 +148,7 @@ class BrierScoreComputer:
             shape=(n_samples, n_time_steps),
             dtype=np.float64,
         )
-        ipcw_y = self.ipcw_est.predict(duration_true)
+        ipcw_y = self.ipcw_est.compute_ipcw_at(duration_true)
         for t_idx, t in enumerate(times):
             y_true_binary, weights = self._ibs_components(
                 event=event_true,
@@ -200,7 +200,7 @@ class BrierScoreComputer:
         #   0 weight and do not contribute to the Brier score computation.
 
         # Estimate the probability of censoring at current time point t.
-        ipcw_t = self.ipcw_est.predict(times)
+        ipcw_t = self.ipcw_est.compute_ipcw_at(times)
         before = times < duration
         weights = np.where(before, ipcw_t, 0)
 

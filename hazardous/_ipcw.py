@@ -75,11 +75,11 @@ class IPCWEstimator(BaseEstimator):
         )
         return self
 
-    def predict(self, times):
-        """Predict inverse censoring weight probability for times.
+    def compute_ipcw_at(self, times):
+        """Estimate inverse censoring weight probability at times.
 
-        Predict the linearly interpolated censoring survival function
-        and return the inverse.
+        Linearly interpolate the censoring survival function and return the
+        inverse values.
 
         Parameters
         ----------
