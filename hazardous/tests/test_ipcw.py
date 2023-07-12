@@ -3,7 +3,7 @@ import pytest
 from lifelines.datasets import load_regression_dataset
 from numpy.testing import assert_array_almost_equal
 
-from .._ipcw import IpcwEstimator
+from .._ipcw import IPCWEstimator
 
 
 @pytest.mark.parametrize("competitive_risk", [True, False])
@@ -23,7 +23,7 @@ def test_ipcw(competitive_risk):
         y["duration"].max() - 1,
     )
 
-    est = IpcwEstimator().fit(y)
+    est = IPCWEstimator().fit(y)
     ipcw_probs = est.predict(times)
 
     expected_ipcw_probs = np.array(

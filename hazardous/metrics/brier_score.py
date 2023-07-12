@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 
-from .._ipcw import IpcwEstimator
+from .._ipcw import IPCWEstimator
 from ..utils import check_event_of_interest, check_y_mean_increasing, check_y_survival
 
 
@@ -38,7 +38,7 @@ class BrierScoreComputer:
 
         # Estimate the censoring distribution from the training set
         # using Kaplan-Meier.
-        self.ipcw_est = IpcwEstimator().fit(
+        self.ipcw_est = IPCWEstimator().fit(
             dict(
                 event=self.any_event_train,
                 duration=self.duration_train,

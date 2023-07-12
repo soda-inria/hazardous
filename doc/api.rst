@@ -13,7 +13,7 @@ Inverse Probability Censoring Weight
     :template: class.rst
     :nosignatures:
 
-    IpcwEstimator
+    IPCWEstimator
 
 Metrics
 -------

@@ -7,7 +7,7 @@ from sklearn.utils.validation import check_is_fitted
 from .utils import check_y_survival
 
 
-class IpcwEstimator(BaseEstimator):
+class IPCWEstimator(BaseEstimator):
     """Estimate the Inverse Probability Censoring Weight (IPCW).
 
     Estimate the inverse of the probability of "survival" to censoring using the
