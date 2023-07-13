@@ -323,7 +323,12 @@ def integrated_brier_score_survival(
         y_pred,
         times,
     )
-    return np.trapz(brier_scores, times) / (times[-1] - times[0])
+    ordering = np.argsort(times)
+    sorted_times = times[ordering]
+    sorted_brier_scores = brier_scores[ordering]
+    return np.trapz(sorted_brier_scores, sorted_times) / (
+        sorted_times[-1] - sorted_times[0]
+    )
 
 
 def brier_score_incidence(
@@ -474,5 +479,9 @@ def integrated_brier_score_incidence(
         times,
         event_of_interest=event_of_interest,
     )
-    # XXX: sort times here!
-    return np.trapz(brier_scores, times) / (times[-1] - times[0])
+    ordering = np.argsort(times)
+    sorted_times = times[ordering]
+    sorted_brier_scores = brier_scores[ordering]
+    return np.trapz(sorted_brier_scores, sorted_times) / (
+        sorted_times[-1] - sorted_times[0]
+    )

@@ -18,12 +18,12 @@ from ..utils import _dict_to_pd, _dict_to_recarray
 X = load_regression_dataset()
 X_train, X_test = X.iloc[:150], X.iloc[150:]
 y_train = dict(
-    event=X_train["E"],
-    duration=X_train["T"],
+    event=X_train["E"].to_numpy(),
+    duration=X_train["T"].to_numpy(),
 )
 y_test = dict(
-    event=X_test["E"],
-    duration=X_test["T"],
+    event=X_test["E"].to_numpy(),
+    duration=X_test["T"].to_numpy(),
 )
 times = np.arange(
     y_test["duration"].min(),
@@ -92,6 +92,8 @@ def test_brier_score_survival_sksurv_consistency():
     assert_array_equal(times, times_)
     assert_allclose(loss, EXPECTED_BS_SURVIVAL_FROM_SKSURV, atol=1e-6)
 
+
+def test_integrated_brier_score_survival_sksurv_consistency():
     ibs = integrated_brier_score_survival(
         y_train,
         y_test,
@@ -99,6 +101,30 @@ def test_brier_score_survival_sksurv_consistency():
         times,
     )
     assert ibs == pytest.approx(EXPECTED_IBS_SURVIVAL_FROM_SKSURV, abs=1e-6)
+
+
+@pytest.mark.parametrize("seed", [0, 1, 2])
+def test_integrated_brier_score_on_shuffled_times(seed):
+    # Check that IBS computation is invariant to the order of the times
+    ibs_ref = integrated_brier_score_survival(
+        y_train,
+        y_test,
+        y_pred_survival,
+        times,
+    )
+
+    rng = np.random.default_rng(seed)
+    perm_indices = rng.permutation(times.shape[0])
+    times_shuffled = times[perm_indices]
+    y_pred_survival_shuffled = y_pred_survival[:, perm_indices]
+
+    ibs_shuffled = integrated_brier_score_survival(
+        y_train,
+        y_test,
+        y_pred_survival_shuffled,
+        times_shuffled,
+    )
+    assert ibs_shuffled == pytest.approx(ibs_ref)
 
 
 @pytest.mark.parametrize("event_of_interest", [1, "any"])
