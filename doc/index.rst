@@ -23,3 +23,4 @@ HΛZΛRDOUS: predictive survival and competing risks analysis in Python
    :hidden:
 
    auto_examples/index
+   api

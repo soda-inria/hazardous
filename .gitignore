@@ -161,3 +161,5 @@ cython_debug/
 #.idea/
 
 .vscode
+
+doc/generated/
