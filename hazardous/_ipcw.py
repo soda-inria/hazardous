@@ -28,17 +28,9 @@ class IPCWEstimator(BaseEstimator):
     increase with time. If no observations are censored, the IPCW values are
     uniformly 1.0.
 
-    Parameters
-    ----------
-    min_censoring_survival_prob: float, default=1e-30
-        Lower bound of the censoring survival probability used to avoid
-        zero-division when taking its inverse to get the IPCW values. As a
-        result, IPCW values are upper bounded by the inverse of this value.
+    Note: this estimator extrapolates with a constant value equal to the last
+    IPCW value beyond the last observed time.
     """
-
-    def __init__(self, min_censoring_survival_prob=1e-30):
-        # XXX: study the effect and maybe set a better default value.
-        self.min_censoring_survival_prob = min_censoring_survival_prob
 
     def fit(self, y):
         """Compute the censoring survival function using Kaplan Meier
@@ -73,6 +65,9 @@ class IPCWEstimator(BaseEstimator):
             bounds_error=False,
             fill_value="extrapolate",
         )
+        self.min_censoring_prob_ = self.censoring_survival_probs_[
+            self.censoring_survival_probs_ > 0
+        ].min()
         return self
 
     def compute_ipcw_at(self, times):
@@ -93,8 +88,6 @@ class IPCWEstimator(BaseEstimator):
         """
         check_is_fitted(self, "censoring_survival_func_")
 
-        censoring_survival_probs = self.censoring_survival_func_(times)
-        censoring_survival_probs = np.clip(
-            censoring_survival_probs, self.min_censoring_survival_prob, 1
-        )
-        return 1 / censoring_survival_probs
+        cs_prob = self.censoring_survival_func_(times)
+        cs_prob = np.clip(cs_prob, self.min_censoring_prob_, 1)
+        return 1 / cs_prob

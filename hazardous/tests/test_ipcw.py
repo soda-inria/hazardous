@@ -33,8 +33,8 @@ def test_ipcw_invariant_properties(seed):
     # The IPCW should be greater than 1 as they are inverse probabilities.
     assert np.all(ipcw_values >= 1.0), ipcw_values
 
-    # The IPCW values should be strictly smaller than 1 / min_censoring_survival_prob.
-    assert np.all(ipcw_values <= 1 / est_competing.min_censoring_survival_prob)
+    # The IPCW values should be finite.
+    assert np.all(np.isfinite(ipcw_values)), ipcw_values
 
     # The IPCW at time 0 should be 1: there cannot be any censoring there.
     assert_allclose(ipcw_values[0], 1.0)
@@ -61,6 +61,38 @@ def test_ipcw_invariant_properties(seed):
     )
     assert_allclose(
         extrapolated_ipcw, np.full_like(extrapolated_ipcw, fill_value=ipcw_values[-1])
+    )
+
+
+@pytest.mark.parametrize("seed", [0, 1, 2])
+def test_ipcw_deterministic_censoring_weights(seed):
+    rng = np.random.default_rng(seed)
+    n_samples = 1000
+    t_max = 10000
+    threshold = t_max // 3
+    durations = rng.integers(1, t_max, size=n_samples)
+    events = np.ones(n_samples, dtype=np.int32)
+    events[durations > threshold] = 0
+    y = dict(
+        event=events,
+        duration=durations,
+    )
+    est = IPCWEstimator().fit(y)
+    before_censoring = np.arange(threshold)
+    ipcw_before_censoring = est.compute_ipcw_at(before_censoring)
+    assert_allclose(ipcw_before_censoring, np.ones_like(ipcw_before_censoring))
+
+    after_censoring = np.linspace(threshold, t_max, num=100)
+    ipcw_after_censoring = est.compute_ipcw_at(after_censoring)
+    assert np.all(np.isfinite(ipcw_after_censoring)), ipcw_after_censoring
+    assert np.all(ipcw_after_censoring[1:] > 1.0), ipcw_after_censoring
+
+    # Beyond the last observed time, the IPCW should be extrapolated with a
+    # constant value equal to the last IPCW value.
+    extrapolated_ipcw = est.compute_ipcw_at(np.linspace(t_max, 10 * t_max, num=5))
+    assert_allclose(
+        extrapolated_ipcw,
+        np.full_like(extrapolated_ipcw, fill_value=ipcw_after_censoring[-1]),
     )
 
 
