@@ -36,17 +36,25 @@ y_pred_survival = y_pred_survival.T.values  # (n_samples, n_times)
 
 # Expected BS survival values computed with scikit-survival:
 #
-# from sksurv.metrics import brier_score as brier_score_survival_sksurv
+# from sksurv.metrics import brier_score as brier_score_sksurv
+# from sksurv.metrics import integrated_brier_score as integrated_brier_score_sksurv
 # from hazardous.utils import _dict_to_recarray
 # from pprint import pprint
 #
-# _, bs_from_sksurv = brier_score_survival_sksurv(
+# _, bs_from_sksurv = brier_score_sksurv(
 #     _dict_to_recarray(y_train, cast_event_to_bool=True),
 #     _dict_to_recarray(y_test, cast_event_to_bool=True),
 #     y_pred_survival,
 #     times,
 # )
 # pprint(bs_from_sksurv.tolist())
+# ibs_from_sksurv = integrated_brier_score_sksurv(
+#     _dict_to_recarray(y_train, cast_event_to_bool=True),
+#     _dict_to_recarray(y_test, cast_event_to_bool=True),
+#     y_pred_survival,
+#     times,
+# )
+# print(ibs_from_sksurv)
 
 EXPECTED_BS_SURVIVAL_FROM_SKSURV = np.array(
     [
@@ -69,6 +77,7 @@ EXPECTED_BS_SURVIVAL_FROM_SKSURV = np.array(
         0.022591326598969338,
     ]
 )
+EXPECTED_IBS_SURVIVAL_FROM_SKSURV = 0.12573162513447791
 
 
 def test_brier_score_survival_sksurv_consistency():
@@ -89,9 +98,7 @@ def test_brier_score_survival_sksurv_consistency():
         y_pred_survival,
         times,
     )
-
-    ibs_expected = 0.1257316251344779
-    assert ibs == pytest.approx(ibs_expected, abs=1e-6)
+    assert ibs == pytest.approx(EXPECTED_IBS_SURVIVAL_FROM_SKSURV, abs=1e-6)
 
 
 @pytest.mark.parametrize("event_of_interest", [1, "any"])
