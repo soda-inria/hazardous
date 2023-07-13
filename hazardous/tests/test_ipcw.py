@@ -152,13 +152,9 @@ def test_ipcw_consistent_with_sksurv(competing_risk):
     # from sksurv.nonparametric import CensoringDistributionEstimator
     # from hazardous.utils import _dict_to_recarray
     # from pprint import pprint
-
+    #
     # cens = CensoringDistributionEstimator()
-    # y_bool_event = {
-    #     "duration": y["duration"],
-    #     "event": (y["event"] != 0).astype(bool),
-    # }
-    # cens.fit(_dict_to_recarray(y_bool_event))
+    # cens.fit(_dict_to_recarray(y, cast_event_to_bool=True))
     # y_test = _dict_to_recarray(
     #     {
     #         "duration": test_times,

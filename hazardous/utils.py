@@ -7,10 +7,14 @@ def _dict_to_pd(y):
     return pd.DataFrame(y)
 
 
-def _dict_to_recarray(y):
+def _dict_to_recarray(y, cast_event_to_bool=False):
+    if cast_event_to_bool:
+        event_dtype = np.bool_
+    else:
+        event_dtype = y["event"].dtype
     y_out = np.empty(
         shape=y["event"].shape[0],
-        dtype=[("event", y["event"].dtype), ("duration", y["duration"].dtype)],
+        dtype=[("event", event_dtype), ("duration", y["duration"].dtype)],
     )
     y_out["event"] = y["event"]
     y_out["duration"] = y["duration"]

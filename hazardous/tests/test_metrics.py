@@ -34,8 +34,44 @@ est = CoxPHFitter().fit(X_train, duration_col="T", event_col="E")
 y_pred_survival = est.predict_survival_function(X_test, times)
 y_pred_survival = y_pred_survival.T.values  # (n_samples, n_times)
 
+# Expected BS survival values computed with scikit-survival:
+#
+# from sksurv.metrics import brier_score as brier_score_survival_sksurv
+# from hazardous.utils import _dict_to_recarray
+# from pprint import pprint
+#
+# _, bs_from_sksurv = brier_score_survival_sksurv(
+#     _dict_to_recarray(y_train, cast_event_to_bool=True),
+#     _dict_to_recarray(y_test, cast_event_to_bool=True),
+#     y_pred_survival,
+#     times,
+# )
+# pprint(bs_from_sksurv.tolist())
 
-def test_brier_score_computer():
+EXPECTED_BS_SURVIVAL_FROM_SKSURV = np.array(
+    [
+        0.019210159012786377,
+        0.08987547845995612,
+        0.11693114655908207,
+        0.1883220229893822,
+        0.2134659930805141,
+        0.24300206373683012,
+        0.242177758373255,
+        0.2198792376648805,
+        0.199871735321175,
+        0.16301317649264274,
+        0.07628880587676132,
+        0.05829175905913857,
+        0.0663998034737539,
+        0.04524901436623458,
+        0.045536886754156194,
+        0.022500377138006216,
+        0.022591326598969338,
+    ]
+)
+
+
+def test_brier_score_survival_sksurv_consistency():
     times_, loss = brier_score_survival(
         y_train,
         y_test,
@@ -45,29 +81,7 @@ def test_brier_score_computer():
 
     # Check that 'times_' hasn't been changed
     assert_array_equal(times, times_)
-
-    loss_expected = np.array(
-        [
-            0.01921016,
-            0.08987548,
-            0.11693115,
-            0.18832202,
-            0.21346599,
-            0.24300206,
-            0.24217776,
-            0.21987924,
-            0.19987174,
-            0.16301318,
-            0.07628881,
-            0.05829176,
-            0.0663998,
-            0.04524901,
-            0.04553689,
-            0.02250038,
-            0.02259133,
-        ]
-    )
-    assert_allclose(loss, loss_expected, atol=1e-6)
+    assert_allclose(loss, EXPECTED_BS_SURVIVAL_FROM_SKSURV, atol=1e-6)
 
     ibs = integrated_brier_score_survival(
         y_train,
@@ -81,7 +95,7 @@ def test_brier_score_computer():
 
 
 @pytest.mark.parametrize("event_of_interest", [1, "any"])
-def test_brier_score_incidence_computer(event_of_interest):
+def test_brier_score_incidence_survival_equivalence(event_of_interest):
     times_, loss = brier_score_survival(
         y_train,
         y_test,
@@ -166,29 +180,7 @@ def test_test_brier_score_survival_inputs_format(format_func):
         y_pred_survival,
         times,
     )
-
-    loss_expected = np.array(
-        [
-            0.01921016,
-            0.08987548,
-            0.11693115,
-            0.18832202,
-            0.21346599,
-            0.24300206,
-            0.24217776,
-            0.21987924,
-            0.19987174,
-            0.16301318,
-            0.07628881,
-            0.05829176,
-            0.0663998,
-            0.04524901,
-            0.04553689,
-            0.02250038,
-            0.02259133,
-        ]
-    )
-    assert_allclose(loss, loss_expected, atol=1e-6)
+    assert_allclose(loss, EXPECTED_BS_SURVIVAL_FROM_SKSURV, atol=1e-6)
 
 
 def test_brier_score_survival_wrong_inputs():
