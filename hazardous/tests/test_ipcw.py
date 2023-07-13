@@ -53,9 +53,9 @@ def test_ipcw_invariant_properties(seed):
     # The IPCW are extrapolated with a constant value equal to the last IPCW
     # value beyond the last observed time.
     #
-    # XXX: not sure if this is the best behavior when using IPCW to unbiase a
-    # metric on a test dataset that has data points beyond the training
-    # dataset.
+    # XXX: not sure if this is the best behavior when using IPCW to debias a
+    # performance metric evaluated on a test dataset that has data points
+    # beyond the maximum time observed on the training dataset.
     extrapolated_ipcw = est_competing.compute_ipcw_at(
         np.linspace(1.1 * t_max, 10 * t_max, num=5)
     )
