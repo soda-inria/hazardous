@@ -5,6 +5,77 @@ from numpy.testing import assert_allclose
 from .._ipcw import IPCWEstimator
 
 
+@pytest.mark.parametrize("seed", range(10))
+def test_ipcw_invariant_properties(seed):
+    rng = np.random.default_rng(seed)
+    n_samples = rng.choice(np.logspace(1, 3, 100).astype(np.int32))
+    t_max = rng.choice(np.logspace(1, 3, 100))
+    n_events = rng.choice([1, 2, 5, 10])
+    y_competing = dict(
+        event=rng.choice(range(n_events + 1), size=n_samples),
+        duration=rng.uniform(1, t_max, size=n_samples),
+    )
+    y_any_event = y_competing.copy()
+    y_any_event["event"][y_competing["event"] >= 1] = 1
+
+    test_times = np.linspace(0, t_max, num=100)
+
+    est_competing = IPCWEstimator().fit(y_competing)
+    ipcw_values = est_competing.compute_ipcw_at(test_times)
+
+    est_any_event = IPCWEstimator().fit(y_any_event)
+    ipcw_values_any_event = est_any_event.compute_ipcw_at(test_times)
+
+    # The IPCW should be the same for any event and competing risk: they
+    # are defined by the censoring distribution only.
+    assert_allclose(ipcw_values, ipcw_values_any_event)
+
+    # The IPCW should be greater than 1 as they are inverse probabilities.
+    assert np.all(ipcw_values >= 1.0), ipcw_values
+
+    # The IPCW values should be strictly smaller than 1 / min_censoring_survival_prob.
+    assert np.all(ipcw_values <= 1 / est_competing.min_censoring_survival_prob)
+
+    # The IPCW at time 0 should be 1: there cannot be any censoring there.
+    assert_allclose(ipcw_values[0], 1.0)
+
+    # The IPCW should be monotonically increasing as the censoring survival
+    # probability is monotonically decreasing.
+    assert np.all(np.diff(ipcw_values) >= 0.0), ipcw_values
+
+    # The IPCW values should be strictly larger than 1 for all times larger
+    # than the first censored observation.
+    first_censored = y_competing["duration"][y_competing["event"] == 0].min()
+    after_first_censored_mask = test_times > first_censored
+    ipcw_after_first_censored = ipcw_values[after_first_censored_mask]
+    assert np.all(ipcw_after_first_censored > 1.0), ipcw_after_first_censored
+
+
+@pytest.mark.parametrize("competing_risk", [True, False])
+@pytest.mark.parametrize("seed", [0, 1, 2])
+def test_ipcw_no_censoring(competing_risk, seed):
+    # IPCW should be 1 when there is no censoring
+    rng = np.random.default_rng(seed)
+    n_samples = 100
+    t_max = 1000
+    durations = rng.integers(1, t_max, size=n_samples)
+    if competing_risk:
+        y_uncensored = dict(
+            event=rng.choice([1, 2], size=n_samples),
+            duration=durations,
+        )
+    else:
+        y_uncensored = dict(
+            event=np.ones(n_samples, dtype=np.int32),
+            duration=durations,
+        )
+
+    est = IPCWEstimator().fit(y_uncensored)
+    test_times = np.arange(t_max)
+    ipcw_values = est.compute_ipcw_at(test_times)
+    assert_allclose(ipcw_values, np.ones_like(ipcw_values))
+
+
 @pytest.mark.parametrize("competing_risk", [True, False])
 def test_ipcw_consistent_with_sksurv(competing_risk):
     # Compare IPCW values with scikit-survival on hardcoded random
@@ -61,28 +132,3 @@ def test_ipcw_consistent_with_sksurv(competing_risk):
         ]
     )
     assert_allclose(ipcw_values, expected_ipcw_values)
-
-
-@pytest.mark.parametrize("competing_risk", [True, False])
-@pytest.mark.parametrize("seed", [0, 1, 2])
-def test_ipcw_no_censoring(competing_risk, seed):
-    # IPCW should be 1 when there is no censoring
-    rng = np.random.default_rng(seed)
-    n_samples = 100
-    t_max = 1000
-    durations = rng.integers(1, t_max, size=n_samples)
-    if competing_risk:
-        y_uncensored = dict(
-            event=rng.choice([1, 2], size=n_samples),
-            duration=durations,
-        )
-    else:
-        y_uncensored = dict(
-            event=np.ones(n_samples, dtype=np.int32),
-            duration=durations,
-        )
-
-    est = IPCWEstimator().fit(y_uncensored)
-    test_times = np.arange(t_max)
-    ipcw_values = est.compute_ipcw_at(test_times)
-    assert_allclose(ipcw_values, np.ones_like(ipcw_values))
