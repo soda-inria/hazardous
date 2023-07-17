@@ -1,28 +1,33 @@
 import warnings
 
 import numpy as np
-from sklearn.utils.validation import check_random_state
 
-from .._ipcw import IpcwEstimator
-from ..utils import check_event_of_interest, check_y_mean_increasing, check_y_survival
+from .._ipcw import IPCWEstimator
+from ..utils import check_event_of_interest, check_y_survival
 
 
 class BrierScoreComputer:
-    """Compute the Brier Score.
+    """Time-dependent Brier score with adjusted for censoring.
 
-    Base class used for computing the Brier Score metric.
+    This class factorizes the computation of the Brier score for single-event
+    or any event survival functions and cause-specific cumulative incidence
+    functions.
+
+    It leverages the Inverse Probability of Censoring Weighting (IPCW) scheme
+    using a Kaplan-Meier of the censoring distribution to weight the terms.
 
     Parameters
     ----------
     y_train : np.array, dictionnary or dataframe
-        The target, consisting in the 'event' and 'duration' columns.
-        This is used to fit the IPCW estimator.
+        The target, consisting in the 'event' and 'duration' columns. This is
+        used to fit the IPCW estimator.
 
     event_of_interest : int or "any", default="any"
-        The event to consider in competitive events setting.
-        "any" indicates that all events except the censoring 0 are
-        considered as a single event.
-        In single event settings, "any" and 1 are equivalent.
+        The event to consider in a competing events setting.
+
+        ``"any"`` indicates that all events except the censoring marker ``0``
+        are considered collapsed together as a single event. In a single event
+        setting, ``"any"`` and ``1`` are equivalent.
 
     """
 
@@ -39,7 +44,7 @@ class BrierScoreComputer:
 
         # Estimate the censoring distribution from the training set
         # using Kaplan-Meier.
-        self.ipcw_est = IpcwEstimator().fit(
+        self.ipcw_est = IPCWEstimator().fit(
             dict(
                 event=self.any_event_train,
                 duration=self.duration_train,
@@ -48,49 +53,58 @@ class BrierScoreComputer:
 
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
-        self.ipcw_train = self.ipcw_est.predict(self.duration_train)
+        self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
 
-    def brier_score(self, y_true, y_pred, times):
-        """Compute the Brier Score.
+    def brier_score_survival(self, y_true, y_pred, times):
+        """Time-dependent Brier score of a survival function estimate.
 
-        For each sample, apply the Brier Score formula, then
-        average each individual Brier Score column-wise.
+        Compute the time-dependent Brier score value for each individual and
+        each time point in `times` and then average over individuals.
+
+        This estimate is adjusted for censoring by leveraging the Inverse
+        Probability of Censoring Weighting (IPCW) scheme.
 
         Parameters
         ----------
-        y_true : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        y_true : record-array, dict or dataframe of shape (n_samples, 2)
             The ground truth, consisting in the 'event' and 'duration' columns.
+            In a survival setting, we expect the event to be a binary
+            indicator: 1 for the event of interest and 0 for censoring.
+            Alternatively, all competing event types should be collapsed by
+            setting event_of_interest="any".
 
         y_pred : array-like of shape (n_samples, n_times)
-            Survival probability estimates predicted at ``times``.
-            In the binary event settings, this is 1 - incidence_probability.
+            Survival probability estimates predicted at ``times``. In the
+            binary event settings, this is 1 - incidence_probability.
 
         times : array-like of shape (n_times)
-            Times to estimate the survival probability and to compute the
-            Brier Score.
+            Times to estimate the survival probability and to compute the Brier
+            Score.
 
         Returns
         -------
-        brier_score : np.ndarray
-            Average value of individual Brier Scores computed for ``times``.
+        brier_score : np.ndarray of shape (n_times)
+            Time-dependent Brier scores averaged over the individuals.
 
         """
         if (self.event_ids_ > 0).sum() > 1 and self.event_of_interest != "any":
             warnings.warn(
-                "Computing the Brier Score only make "
-                "sense when the model is trained with a binary event "
-                "indicator or when setting event_of_interest='any'. "
-                "Instead this model was fit on data with event ids "
+                "Computing the survival Brier score only makes "
+                "sense with a binary event indicator or when setting "
+                "event_of_interest='any'. "
+                "Instead this model is evaluated on data with event ids "
                 f"{self.event_ids_.tolist()} and with "
                 f"event_of_interest={self.event_of_interest}."
             )
         return self.brier_score_incidence(y_true, 1 - y_pred, times)
 
     def brier_score_incidence(self, y_true, y_pred, times):
-        """Compute the Brier Score Incidence for the kth cause of failure.
+        """Brier score for the cause-specific cumulative incidence function.
 
-        For each sample, apply the Brier Score Incidence formula, then
-        average each individual Brier Score column-wise.
+        Compute the Brier score values with IPCW adjustment for censoring for
+        each cumulative incidence estimate for the event of interest and each
+        requested time point and return the time-dependent Brier score averaged
+        over individuals.
 
         Parameters
         ----------
@@ -98,17 +112,20 @@ class BrierScoreComputer:
             The ground truth, consisting in the 'event' and 'duration' columns.
 
         y_pred : array-like of shape (n_samples, n_times)
-            Incidence probability estimates predicted at ``times``.
-            In the binary event settings, this is 1 - survival_probability.
+            Cause-specific cumulative incidence estimates predicted at
+            ``times`` for the event of interest. In the single event type
+            settings, or when event_of_interest == "any", this is 1 -
+            survival_probability.
 
         times : array-like of shape (n_times)
-            Times to estimate the survival probability and to compute the
-            Brier Score.
+            Times to estimate the survival probability and to compute the Brier
+            score.
 
         Returns
         -------
         brier_score_incidence : np.ndarray
-            Average value of individual Brier Scores Incidence computed for ``times``.
+            Average value of the time-dependent Brier scores computed at time
+            locations specified in the ``times`` argument.
         """
         event_true, duration_true = check_y_survival(y_true)
         check_event_of_interest(self.event_of_interest)
@@ -125,15 +142,13 @@ class BrierScoreComputer:
                 f"must be equal to y_pred.shape[1] ({y_pred.shape[1]})."
             )
 
-        check_y_mean_increasing(y_pred, times)
-
         n_samples = event_true.shape[0]
         n_time_steps = times.shape[0]
         brier_scores = np.empty(
             shape=(n_samples, n_time_steps),
             dtype=np.float64,
         )
-        ipcw_y = self.ipcw_est.predict(duration_true)
+        ipcw_y = self.ipcw_est.compute_ipcw_at(duration_true)
         for t_idx, t in enumerate(times):
             y_true_binary, weights = self._ibs_components(
                 event=event_true,
@@ -185,7 +200,7 @@ class BrierScoreComputer:
         #   0 weight and do not contribute to the Brier score computation.
 
         # Estimate the probability of censoring at current time point t.
-        ipcw_t = self.ipcw_est.predict(times)
+        ipcw_t = self.ipcw_est.compute_ipcw_at(times)
         before = times < duration
         weights = np.where(before, ipcw_t, 0)
 
@@ -195,49 +210,54 @@ class BrierScoreComputer:
         return y_binary, weights
 
 
-def brier_score(
+def brier_score_survival(
     y_train,
     y_test,
     y_pred,
     times,
-    event_of_interest="any",
 ):
-    """Compute the Brier Score.
+    r"""Time-dependent Brier score of a survival function estimate.
 
     .. math::
 
-        \\mathrm{BS}(t) = \\frac{1}{n} \\sum_{i=1}^n \\mathbb{I}
-        (y_i \\leq t \\land \\delta_i = 1)
-        \\frac{(0 - \\hat{S}(t | \\mathbf{x}_i))^2}{\\hat{G}(y_i)} +
-        \\mathbb{I}(y_i > t)
-        \\frac{(1 - \\hat{S}(t | \\mathbf{x}_i))^2}{\\hat{G}(t)} ,
+        \mathrm{BS}(t) = \frac{1}{n} \sum_{i=1}^n \mathbb{I}
+        (y_i \leq t \land \delta_i = 1)
+        \frac{(0 - \hat{S}(t | \mathbf{x}_i))^2}{\hat{G}(y_i)} +
+        \mathbb{I}(y_i > t)
+        \frac{(1 - \hat{S}(t | \mathbf{x}_i))^2}{\hat{G}(t)} ,
 
-    where :math:`\\hat{S}(t | \\mathbf{x})` is the predicted probability of
-    surviving up to time point :math:`t` for a feature vector :math:`\\mathbf{x}`,
-    and :math:`1/\\hat{G}(t)` is a inverse probability of censoring weight, estimated by
-    the Kaplan-Meier estimator.
+    where :math:`\hat{S}(t | \mathbf{x})` is the predicted probability of
+    surviving up to time point :math:`t` for a feature vector :math:`\mathbf{x}`,
+    and :math:`\hat{G}(t)` is the probability of remaining uncensored at time
+    :math:`t`, estimated on the training set by the Kaplan-Meier estimator on the
+    negation of the binary any-event indicator.
 
     Parameters
     ----------
     y_train : record-array, dictionnary or dataframe of shape (n_samples, 2)
-        The target, consisting in the 'event' and 'duration' columns.
-        This is used to fit the IPCW estimator.
+        The target, consisting in the 'event' and 'duration' columns. If the
+        'event' column holds more than 1 event types, they are automatically
+        collapsed to a single event type to compute the Brier score of the
+        "any-event" survival function estimate.
+        This is only used to estimate the IPCW values to adjust for censoring in
+        the evaluation data.
 
     y_test : record-array, dictionnary or dataframe of shape (n_samples, 2)
         The ground truth, consisting in the 'event' and 'duration' columns.
+        The same remark applies as for ``y_train`` with respect to the 'event'
+        column.
 
     y_pred : array-like of shape (n_samples, n_times)
         Survival probability estimates predicted at ``times``.
 
     times : array-like of shape (n_times)
         Times at which the survival probability ``y_pred`` has been estimated
-        and for which we compute the Brier Score.
+        and for which we compute the Brier score.
 
-    event_of_interest : int or "any", default="any"
-        The event to consider in competitive events setting.
-        "any" indicates that all events except the censoring 0 are
-        considered as a single event.
-        In single event settings, "any" and 1 are equivalent.
+    See Also
+    --------
+    integrated_brier_score_survival : Time-integrated Brier score of a survival
+        function estimate.
 
     Returns
     -------
@@ -248,59 +268,67 @@ def brier_score(
     """
     computer = BrierScoreComputer(
         y_train,
-        event_of_interest=event_of_interest,
+        event_of_interest="any",
     )
-    return times, computer.brier_score(y_test, y_pred, times)
+    return times, computer.brier_score_survival(y_test, y_pred, times)
 
 
-def integrated_brier_score(
+def integrated_brier_score_survival(
     y_train,
     y_test,
     y_pred,
     times,
-    event_of_interest="any",
 ):
-    """Compute the Integrated Brier Score.
+    r"""Compute the Brier score integrated over the observed time range.
 
     .. math::
 
-        \\mathrm{IBS}(t) = \\frac{1}{t_{max} - t_{min}} \\int^{t_{max}}_{t_{min}}
-        \\mathrm{BS}(u) du
+        \mathrm{IBS} = \frac{1}{t_{max} - t_{min}} \int^{t_{max}}_{t_{min}}
+        \mathrm{BS}(u) du
 
     Parameters
     ----------
     y_train : record-array, dictionnary or dataframe of shape (n_samples, 2)
-        The target, consisting in the ``"event"`` and ``"duration"`` columns.
-        This is used to fit the IPCW estimator.
+        The target, consisting in the 'event' and 'duration' columns. If the
+        'event' column holds more than 1 event types, they are automatically
+        collapsed to a single event type to compute the Brier score of the
+        "any-event" survival function estimate.
+        This is only used to estimate the IPCW values to adjust for censoring in
+        the evaluation data.
 
     y_test : record-array, dictionnary or dataframe of shape (n_samples, 2)
-        The ground truth, consisting in the ``"event"`` and ``"duration"`` columns.
+        The ground truth, consisting in the 'event' and 'duration' columns.
+        The same remark applies as for ``y_train`` with respect to the 'event'
+        column.
 
     y_pred : array-like of shape (n_samples, n_times)
         Survival probability estimates predicted at ``times``.
 
     times : array-like of shape (n_times)
         Times at which the survival probabilities ``y_pred`` has been estimated
-        and for which we compute the Brier Score.
+        and for which we compute the Brier score.
 
-    event_of_interest : int or "any", default="any"
-        The event to consider in competitive events setting.
-        ``"any"`` indicates that all events except the censoring ``0`` are
-        considered as a single event.
-        In single event settings, ``"any"`` and ``1`` are equivalent.
+    See Also
+    --------
+    brier_score_survival : Time-dependent Brier score of a survival function
+        estimate.
 
     Returns
     -------
     ibs : float
     """
-    times, brier_scores = brier_score(
+    times, brier_scores = brier_score_survival(
         y_train,
         y_test,
         y_pred,
         times,
-        event_of_interest=event_of_interest,
     )
-    return np.trapz(brier_scores, times) / (times[-1] - times[0])
+    ordering = np.argsort(times)
+    sorted_times = times[ordering]
+    sorted_brier_scores = brier_scores[ordering]
+    return np.trapz(sorted_brier_scores, sorted_times) / (
+        sorted_times[-1] - sorted_times[0]
+    )
 
 
 def brier_score_incidence(
@@ -310,25 +338,24 @@ def brier_score_incidence(
     times,
     event_of_interest="any",
 ):
-    """Compute the Brier Score for the kth cause of failure.
+    r"""Time-dependent Brier score for the kth cause of event.
 
     .. math::
 
-        \\mathrm{BS}_k(t) = \\frac{1}{n} \\sum_{i=1}^n \\hat{\\omega}_i(t)
-        (\\mathbb{I}(t_i \\leq t, \\delta_i = k) - \\hat{F}_k(t|\\mathbf{x}_i))^2
+        \mathrm{BS}_k(t) = \frac{1}{n} \sum_{i=1}^n \hat{\omega}_i(t)
+        (\mathbb{I}(t_i \leq t, \delta_i = k) - \hat{F}_k(t|\mathbf{x}_i))^2
 
-    where :math:`\\hat{F}_k(t | \\mathbf{x}_i)` is the predicted probability of
-    incidence of the kth event up to time point :math:`t`
-    for a feature vector :math:`\\mathbf{x}_i`,
-    and
+    where :math:`\hat{F}_k(t | \mathbf{x}_i)` is the estimate of the cumulative
+    incidence for the kth event up to time point :math:`t` for a feature vector
+    :math:`\mathbf{x}_i`, and
 
     .. math::
 
-        \\hat{\\omega}_i(t)=\\mathbb{I}(t_i \\leq t, \\delta_i \\neq 0)/\\hat{G}(t_i)
-        + \mathbb{I}(t_i > t)/\\hat{G}(t)
+        \hat{\omega}_i(t)=\mathbb{I}(t_i \leq t, \delta_i \neq 0)/\hat{G}(t_i)
+        + \mathbb{I}(t_i > t)/\hat{G}(t)
 
-    are weigths based on the Kaplan-Meier estimate of the censoring
-    distribution :math:`\\hat{G}(t)`.
+    are IPCW weigths based on the Kaplan-Meier estimate of the censoring
+    distribution :math:`\hat{G}(t)`.
 
     Parameters
     ----------
@@ -338,6 +365,8 @@ def brier_score_incidence(
 
     y_test : record-array, dictionnary or dataframe of shape (n_samples, 2)
         The ground truth, consisting in the 'event' and 'duration' columns.
+        In the "event" column, `0` indicates censoring, and any other values
+        indicate competing event types.
 
     y_pred : array-like of shape (n_samples, n_times)
         Incidence probability estimates predicted at ``times``.
@@ -345,13 +374,16 @@ def brier_score_incidence(
 
     times : array-like of shape (n_times)
         Times at which the survival probability ``y_pred`` has been estimated
-        and for which we compute the Brier Score.
+        and for which we compute the Brier score.
 
     event_of_interest : int or "any", default="any"
-        The event to consider in competitive events setting.
-        "any" indicates that all events except the censoring 0 are
-        considered as a single event.
-        In single event settings, "any" and 1 are equivalent.
+        The event to consider in a competing events setting. When an integer,
+        this should be one of the non-zero values in the "event" column of
+        ``y_train`` and ``y_test``.
+
+        ``"any"`` indicates that all events except the censoring marker ``0``
+        are considered collapsed together as a single event. In a single event
+        setting, ``"any"`` and ``1`` are equivalent.
 
     Returns
     -------
@@ -359,6 +391,11 @@ def brier_score_incidence(
         No-op, this is the same as the input.
 
     brier_score : np.ndarray of shape (n_times)
+
+    See Also
+    --------
+    integrated_brier_score_incidence : Time-integrated Brier score for the kth
+        cause of event.
 
     References
     ----------
@@ -386,21 +423,23 @@ def integrated_brier_score_incidence(
     times,
     event_of_interest="any",
 ):
-    """Compute the Integrated Brier Score Incidence for the kth cause of failure.
+    r"""Time-integrated Brier score of a cause-specific cumulative incidence estimate.
 
     .. math::
 
-        \\mathrm{IBS}_k(t) = \\frac{1}{t_{max} - t_{min}} \\int^{t_{max}}_{t_{min}}
-        \\mathrm{BS}_k(u) du
+        \mathrm{IBS}_k = \frac{1}{t_{max} - t_{min}} \int^{t_{max}}_{t_{min}}
+        \mathrm{BS}_k(u) du
 
     Parameters
     ----------
     y_train : record-array, dictionnary or dataframe of shape (n_samples, 2)
-        The target, consisting in the ``"event"`` and ``"duration"`` columns.
+        The target, consisting in the 'event' and 'duration' columns.
         This is used to fit the IPCW estimator.
 
     y_test : record-array, dictionnary or dataframe of shape (n_samples, 2)
-        The ground truth, consisting in the ``"event"`` and ``"duration"`` columns.
+        The ground truth, consisting in the 'event' and 'duration' columns.
+        In the "event" column, `0` indicates censoring, and any other values
+        indicate competing event types.
 
     y_pred : array-like of shape (n_samples, n_times)
         Incidence probability estimates predicted at ``times``.
@@ -408,17 +447,24 @@ def integrated_brier_score_incidence(
 
     times : array-like of shape (n_times)
         Times at which the survival probabilities ``y_pred`` has been estimated
-        and for which we compute the Brier Score.
+        and for which we compute the Brier score.
 
     event_of_interest : int or "any", default="any"
-        The event to consider in competitive events setting.
-        ``"any"`` indicates that all events except the censoring ``0`` are
-        considered as a single event.
-        In single event settings, ``"any"`` and ``1`` are equivalent.
+        The event to consider in a competing events setting. When an integer,
+        this should be one of the non-zero values in the "event" column of
+        ``y_train`` and ``y_test``.
+
+        ``"any"`` indicates that all events except the censoring marker ``0``
+        are considered collapsed together as a single event. In a single event
+        setting, ``"any"`` and ``1`` are equivalent.
 
     Returns
     -------
     ibs : float
+
+    See Also
+    --------
+    brier_score_incidence : Time-dependent Brier score for the kth cause of event.
 
     References
     ----------
@@ -433,39 +479,9 @@ def integrated_brier_score_incidence(
         times,
         event_of_interest=event_of_interest,
     )
-    return np.trapz(brier_scores, times) / (times[-1] - times[0])
-
-
-class BrierScoreSampler(BrierScoreComputer):
-    """Sample random times uniformly to compute the IPCW.
-
-    Parameters
-    ----------
-    random_state : int, RandomState instance or None, default=None
-        Controls the randomness of the uniform time sampler
-    """
-
-    def __init__(self, y_train, event_of_interest="any", random_state=None):
-        self.rng = check_random_state(random_state)
-        super().__init__(y_train, event_of_interest)
-
-    def draw(self):
-        # Sample time horizons uniformly on the observed time range:
-        duration = self.duration_train
-        min_times = duration.min()
-        max_times = duration.max()
-        times = self.rng.uniform(min_times, max_times, duration.shape[0])
-
-        if self.event_of_interest == "any":
-            # Collapse all event types together.
-            event = self.any_event_train
-        else:
-            event = self.event_train
-
-        y_binary, sample_weights = self._ibs_components(
-            event,
-            duration,
-            times,
-            ipcw_y=self.ipcw_train,
-        )
-        return times.reshape(-1, 1), y_binary, sample_weights
+    ordering = np.argsort(times)
+    sorted_times = times[ordering]
+    sorted_brier_scores = brier_scores[ordering]
+    return np.trapz(sorted_brier_scores, sorted_times) / (
+        sorted_times[-1] - sorted_times[0]
+    )

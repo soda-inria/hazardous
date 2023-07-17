@@ -1,7 +1,8 @@
 API
 ===
 
-This page lists all the functions and classes of hazardous:
+This page lists all the public functions and classes of the `hazardous`
+package:
 
 .. currentmodule:: hazardous
 
@@ -15,7 +16,7 @@ Estimators
     :nosignatures:
 
     GradientBoostingIncidence
-    IpcwEstimator
+
 
 Metrics
 -------
@@ -25,15 +26,18 @@ Metrics
     :template: function.rst
     :nosignatures:
 
-    metrics.brier_score
+    metrics.brier_score_survival
     metrics.brier_score_incidence
-    metrics.integrated_brier_score
+    metrics.integrated_brier_score_survival
     metrics.integrated_brier_score_incidence
+
+
+Inverse Probability Censoring Weight
+------------------------------------
 
 .. autosummary::
     :toctree: generated/
     :template: class.rst
     :nosignatures:
 
-    metrics.BrierScoreComputer
-    metrics.BrierScoreSampler
+    IPCWEstimator
