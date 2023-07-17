@@ -12,7 +12,7 @@ from ..metrics import (
     integrated_brier_score_incidence,
     integrated_brier_score_survival,
 )
-from ..metrics._brier_score import BrierScoreComputer
+from ..metrics._brier_score import ClassificationScoreComputer
 from ..utils import _dict_to_pd, _dict_to_recarray
 
 X = load_regression_dataset()
@@ -168,7 +168,7 @@ def test_brier_score_warnings_on_competive_event():
 
     msg = "Computing the survival Brier score only makes sense"
     with pytest.warns(match=msg):
-        BrierScoreComputer(
+        ClassificationScoreComputer(
             y_train,
             event_of_interest=2,
         ).brier_score_survival(

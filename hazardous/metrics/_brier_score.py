@@ -6,12 +6,12 @@ from .._ipcw import IPCWEstimator
 from ..utils import check_event_of_interest, check_y_survival
 
 
-class BrierScoreComputer:
-    """Time-dependent Brier score with adjusted for censoring.
+class ClassificationScoreComputer:
+    """Censoring adjusted, time-dependent scoring rules.
 
-    This class factorizes the computation of the Brier score for single-event
-    or any event survival functions and cause-specific cumulative incidence
-    functions.
+    This class factorizes the computation of scoring rules such as the
+    time-dependent Brier score for single-event or any event survival functions
+    and cause-specific cumulative incidence functions.
 
     It leverages the Inverse Probability of Censoring Weighting (IPCW) scheme
     using a Kaplan-Meier of the censoring distribution to weight the terms.
@@ -150,18 +150,20 @@ class BrierScoreComputer:
         )
         ipcw_y = self.ipcw_est.compute_ipcw_at(duration_true)
         for t_idx, t in enumerate(times):
-            y_true_binary, weights = self._ibs_components(
+            y_true_binary, weights = self._weighted_binary_targets(
                 event=event_true,
                 duration=duration_true,
                 times=np.full(shape=n_samples, fill_value=t),
                 ipcw_y=ipcw_y,
             )
+            # XXX: refactor and rename this function to make it possible to
+            # also compute the time-dependent binary cross-entropy loss.
             squared_error = (y_true_binary - y_pred[:, t_idx]) ** 2
             brier_scores[:, t_idx] = weights * squared_error
 
         return brier_scores.mean(axis=0)
 
-    def _ibs_components(self, event, duration, times, ipcw_y):
+    def _weighted_binary_targets(self, event, duration, times, ipcw_y):
         if self.event_of_interest == "any":
             # y should already be provided as binary indicator
             k = 1
@@ -266,7 +268,7 @@ def brier_score_survival(
 
     brier_score : np.ndarray of shape (n_times)
     """
-    computer = BrierScoreComputer(
+    computer = ClassificationScoreComputer(
         y_train,
         event_of_interest="any",
     )
@@ -409,7 +411,7 @@ def brier_score_incidence(
     # but we have no way to check that.
     # In this sense, 'y_pred[:, t_idx]' is incorrect when 'times'
     # is not the time used during the prediction.
-    computer = BrierScoreComputer(
+    computer = ClassificationScoreComputer(
         y_train,
         event_of_interest=event_of_interest,
     )

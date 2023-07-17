@@ -9,17 +9,23 @@ from sklearn.ensemble import (
 from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
-from .metrics._brier_score import BrierScoreComputer
+from .metrics._brier_score import ClassificationScoreComputer
 from .utils import check_y_survival
 
 
-class BrierScoreSampler(BrierScoreComputer):
-    """Weighted binary target to minimize the censoring-adjusted Brier score.
+class WeightedBinaryTargetSampler(ClassificationScoreComputer):
+    """Weighted binary targets for censoring-adjusted incidence estimation.
 
-    Compute the terms of the Brier score with IPCW weights for uniformly
-    sampled time horizons.
+    Cast a cumulative incidence estimation problem with censored event times as
+    a binary classification problem with weighted targets.
 
-    This mean to be minimized by cumulative incidence function estimators.
+    This class samples time-horizons uniformly, and for each event (censored or
+    not) and each time horizon, computes for each of the the IPCW weights and
+    the expected binary targets. By optimizing the stochastic average of a
+    proper-scoring rule such as the time-dependent Brier score or binary
+    cross-entropy, we obtain an estimator of the cumulative incidence function
+    that minimizes the time-integrated Brier Score (IBS) or time-integrated
+    Negative Log Likelihood (INLL).
 
     Parameters
     ----------
@@ -44,7 +50,7 @@ class BrierScoreSampler(BrierScoreComputer):
         else:
             event = self.event_train
 
-        y_binary, sample_weights = self._ibs_components(
+        y_binary, sample_weights = self._weighted_binary_targets(
             event,
             duration,
             times,
@@ -173,7 +179,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         else:
             self.time_grid_ = times
 
-        brier_score_sampler = BrierScoreSampler(
+        brier_score_sampler = WeightedBinaryTargetSampler(
             y,
             event_of_interest=self.event_of_interest,
             random_state=self.random_state,
