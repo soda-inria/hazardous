@@ -60,16 +60,20 @@ class WeightedBinaryTargetSampler(ClassificationScoreComputer):
 
 
 class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
-    """Gradient Boosting Decision Tree estimator for cause-specific
-    Cumulative Incidence Function (CIF).
+    """Cause-specific Cumulative Incidence Function (CIF) with GBDT.
 
     This internally relies on the histogram-based gradient boosting classifier
     or regressor implementation of scikit-learn.
 
-    Estimate a cause-specific CIF by minimizing the Brier Score for the kth
-    cause of failure from _[1] for randomly sampled reference time horizons
-    concatenated as extra inputs to the underlying HGB binary classification
-    model.
+    Estimate a cause-specific CIF by iteratively minimizing a stochastic time
+    integrated proper scoring rule (Brier score or binary cross-entropy) for
+    the kth cause of failure from _[1].
+
+    Under the hood, this class uses randomly sampled reference time horizons
+    concatenated as an extra input column to the underlying HGB binary
+    classification model. At boosting iteration, a new tree is trained on a
+    copy of the original feature matrix X augmented with a new indepdent sample
+    of time horizons.
 
     One can obtain the survival probabilities for any event by summing all
     cause-specific CIF curves and computing 1 - "sum of CIF curves".
@@ -82,9 +86,9 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         represents censoring and cannot be used as a valid event of interest.
 
         "any" means that all events are collapsed together and the resulting
-        model can be used for any event survival analysis: the any
-        event survival function can be estimated as the complement of the
-        any event cumulative incidence function.
+        model can be used for any event survival analysis: the any event
+        survival function can be estimated as the complement of the any event
+        cumulative incidence function.
 
         In single event settings, "any" and 1 are equivalent.
 
@@ -93,11 +97,12 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         comparable results.
 
         - 'ibs' : integrated brier score. Use a `HistGradientBoostedRegressor`
-          with the 'squared_error' loss. As we have no guarantee that the regression
-          yields a survival function belonging to [0, 1], we clip the probabilities
-          to this range.
-        - 'inll' : integrated negative log likelihood. Use a
-          `HistGradientBoostedClassifier` with 'log_loss'.
+          with the 'squared_error' loss. As we have no guarantee that the
+          regression yields a survival function belonging to [0, 1], we clip
+          the probabilities to this range.
+        - 'inll' : integrated negative log likelihood (also known as integrated
+          binary cross-entropy). Use a `HistGradientBoostedClassifier` with
+          'log_loss'.
 
     time_horizon : float or int, default=None
         A specific time horizon `t_horizon` to treat the model as a
@@ -108,12 +113,28 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         When specified, the `predict_proba` method returns an estimate of
         `E[T_k < t_horizon|X]` for each provided realisation of `X`.
 
-    TODO: complete the docstring.
+    monotonic_incidence : str or False, default=False
+        Whether to constrain the CIF to be monotonic with respect to time.
+        If left to `False`, the CIF is not constrained to be monotonic and
+        can randomly oscillate around the true CIF.
+
+        If set to 'at_training_time', the CIF is constrained to be monotonically
+        increasing at training time.
+
+        TODO: implement 'at_prediction_time' option with isotonic regression.
+
+        Note: constraining the CIF to be monotonic can lead to a biased estimate
+        of the CIF: the CIF is typically overestimated for the longest time
+        horizons.
+
+    The remaining hyper-parameters match those of the underlying
+    `HistGradientBoostedClassifier` or `HistGradientBoostedRegressor` models.
 
     References
     ----------
 
-    [1] M. Kretowska, "Tree-based models for survival data with competing risks",
+    [1] M. Kretowska, "Tree-based models for survival data with competing
+    risks",
         Computer Methods and Programs in Biomedicine 159 (2018) 185-198.
     """
 
@@ -123,8 +144,8 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         self,
         event_of_interest="any",
         objective="ibs",
+        monotonic_incidence=False,
         n_iter=10,
-        n_repetitions_per_iter=5,
         learning_rate=0.1,
         max_depth=None,
         max_leaf_nodes=31,
@@ -136,10 +157,8 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
     ):
         self.event_of_interest = event_of_interest
         self.objective = objective
+        self.monotonic_incidence = monotonic_incidence
         self.n_iter = n_iter
-        self.n_repetitions_per_iter = (
-            n_repetitions_per_iter  # TODO? data augmenting for early iterations
-        )
         self.learning_rate = learning_rate
         self.max_depth = max_depth
         self.max_leaf_nodes = max_leaf_nodes
@@ -159,8 +178,14 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         # before the features of X and we constrain the prediction function
         # (that estimates the CIF) to monotically increase with the time
         # horizon feature.
-        monotonic_cst = np.zeros(X.shape[1] + 1)
-        monotonic_cst[0] = 1
+        if self.monotonic_incidence == "at_training_time":
+            monotonic_cst = np.zeros(X.shape[1] + 1)
+            monotonic_cst[0] = 1
+        elif self.monotonic_incidence is not False:
+            raise ValueError(
+                f"Invalid value for monotonic_incidence: {self.monotonic_incidence}."
+                " Expected either 'at_training_time' or False."
+            )
 
         self.estimator_ = self._build_base_estimator(monotonic_cst)
 
