@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from ._ipcw import IpcwEstimator
-from .gradient_boosting_incidence import GradientBoostingIncidence
+from ._gradient_boosting_incidence import GradientBoostingIncidence
 from ._ipcw import IPCWEstimator
 
 with open(Path(__file__).parent / "VERSION.txt") as _fh:
