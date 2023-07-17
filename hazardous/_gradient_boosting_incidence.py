@@ -186,6 +186,8 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
                 f"Invalid value for monotonic_incidence: {self.monotonic_incidence}."
                 " Expected either 'at_training_time' or False."
             )
+        else:
+            monotonic_cst = None
 
         self.estimator_ = self._build_base_estimator(monotonic_cst)
 
