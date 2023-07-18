@@ -33,16 +33,37 @@ class WeightedBinaryTargetSampler(ClassificationScoreComputer):
         Controls the randomness of the uniform time sampler
     """
 
-    def __init__(self, y_train, event_of_interest="any", random_state=None):
+    def __init__(
+        self,
+        y_train,
+        event_of_interest="any",
+        hard_zero_fraction=0.1,
+        random_state=None,
+    ):
         self.rng = check_random_state(random_state)
+        self.hard_zero_fraction = hard_zero_fraction
         super().__init__(y_train, event_of_interest)
 
     def draw(self):
         # Sample time horizons uniformly on the observed time range:
         duration = self.duration_train
-        min_times = duration.min()
-        max_times = duration.max()
-        times = self.rng.uniform(min_times, max_times, duration.shape[0])
+        n_samples = duration.shape[0]
+
+        # Sample from t_min=0 event if never observed in the training set
+        # because we want to make sure that the model learns to predict a 0
+        # incidence at t=0.
+        t_min = 0.0
+        t_max = duration.max()
+        times = self.rng.uniform(t_min, t_max, n_samples)
+
+        # Add some some hard zeros to make sure that the model learns to
+        # predict 0 incidence at t=0.
+        #
+        # XXX: study what kind of bias does hit introduces, w.r.t. the
+        # time-integrated Brier score objective.
+        n_hard_zeros = max(int(self.hard_zero_fraction * n_samples), 1)
+        hard_zero_indices = self.rng.choice(n_samples, n_hard_zeros, replace=False)
+        times[hard_zero_indices] = 0.0
 
         if self.event_of_interest == "any":
             # Collapse all event types together.
@@ -50,13 +71,13 @@ class WeightedBinaryTargetSampler(ClassificationScoreComputer):
         else:
             event = self.event_train
 
-        y_binary, sample_weights = self._weighted_binary_targets(
+        y_binary, sample_weight = self._weighted_binary_targets(
             event,
             duration,
             times,
-            ipcw_y=self.ipcw_train,
+            ipcw_y_duration=self.ipcw_train,
         )
-        return times.reshape(-1, 1), y_binary, sample_weights
+        return times.reshape(-1, 1), y_binary, sample_weight
 
 
 class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
@@ -138,8 +159,6 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         Computer Methods and Programs in Biomedicine 159 (2018) 185-198.
     """
 
-    name = "GradientBoostingIncidence"
-
     def __init__(
         self,
         event_of_interest="any",
@@ -216,15 +235,15 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         if self.show_progressbar:
             iterator = tqdm(iterator)
 
-        for idx_iter in iterator:
+        for _ in iterator:
             (
                 sampled_times,
                 y_binary,
                 sample_weight,
             ) = brier_score_sampler.draw()
-            Xt = np.hstack([sampled_times, X])
+            X_with_time = np.hstack([sampled_times, X])
             self.estimator_.max_iter += 1
-            self.estimator_.fit(Xt, y_binary, sample_weight=sample_weight)
+            self.estimator_.fit(X_with_time, y_binary, sample_weight=sample_weight)
 
             # XXX: implement verbose logging with a version of IBS that
             # can handle competing risks.
@@ -275,29 +294,31 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         return np.hstack([1 - cif, cif])
 
     def predict_cumulative_incidence(self, X, times=None):
-        all_y_cif = []
-
         if times is None:
             times = self.time_grid_
 
         if self.show_progressbar:
             times = tqdm(times)
 
+        predictions_at_all_times = []
         for t in times:
             t = np.full((X.shape[0], 1), fill_value=t)
-            X_with_t = np.hstack([t, X])
+            X_with_time = np.hstack([t, X])
             if self.objective == "ibs":
-                y_cif = self.estimator_.predict(X_with_t)
+                predictions_at_t = self.estimator_.predict(X_with_time)
             else:
-                y_cif = self.estimator_.predict_proba(X_with_t)[:, 1]
-            all_y_cif.append(y_cif)
+                predictions_at_t = self.estimator_.predict_proba(X_with_time)[:, 1]
+            predictions_at_all_times.append(predictions_at_t)
 
-        cif = np.vstack(all_y_cif).T
+        predicted_curves = np.vstack(predictions_at_all_times).T
 
         if self.objective == "ibs":
-            cif = np.clip(cif, 0, 1)
+            # HistGradientBoostingRegressor does not guarantee that the
+            # predictions are in [0, 1] (no identity link function when using
+            # the squared_error loss).
+            predicted_curves = np.clip(predicted_curves, 0, 1)
 
-        return cif
+        return predicted_curves
 
     def predict_survival_function(self, X, times=None):
         """Compute the event specific survival function.

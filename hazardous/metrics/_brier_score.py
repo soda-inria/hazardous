@@ -151,10 +151,10 @@ class ClassificationScoreComputer:
         ipcw_y = self.ipcw_est.compute_ipcw_at(duration_true)
         for t_idx, t in enumerate(times):
             y_true_binary, weights = self._weighted_binary_targets(
-                event=event_true,
-                duration=duration_true,
+                y_event=event_true,
+                y_duration=duration_true,
                 times=np.full(shape=n_samples, fill_value=t),
-                ipcw_y=ipcw_y,
+                ipcw_y_duration=ipcw_y,
             )
             # XXX: refactor and rename this function to make it possible to
             # also compute the time-dependent binary cross-entropy loss.
@@ -163,7 +163,7 @@ class ClassificationScoreComputer:
 
         return brier_scores.mean(axis=0)
 
-    def _weighted_binary_targets(self, event, duration, times, ipcw_y):
+    def _weighted_binary_targets(self, y_event, y_duration, times, ipcw_y_duration):
         if self.event_of_interest == "any":
             # y should already be provided as binary indicator
             k = 1
@@ -184,8 +184,8 @@ class ClassificationScoreComputer:
         #   Otherwise, they are discarded by setting their weight to 0 in the
         #   following.
 
-        y_binary = np.zeros(event.shape[0], dtype=np.int32)
-        y_binary[(event == k) & (duration <= times)] = 1
+        y_binary = np.zeros(y_event.shape[0], dtype=np.int32)
+        y_binary[(y_event == k) & (y_duration <= times)] = 1
 
         # Compute the weights for each term contributing to the Brier score
         # at the specified time horizons.
@@ -202,12 +202,12 @@ class ClassificationScoreComputer:
         #   0 weight and do not contribute to the Brier score computation.
 
         # Estimate the probability of censoring at current time point t.
-        ipcw_t = self.ipcw_est.compute_ipcw_at(times)
-        before = times < duration
-        weights = np.where(before, ipcw_t, 0)
+        ipcw_times = self.ipcw_est.compute_ipcw_at(times)
+        before = times < y_duration
+        weights = np.where(before, ipcw_times, 0)
 
-        after_any_observed_event = (event > 0) & (duration <= times)
-        weights = np.where(after_any_observed_event, ipcw_y, weights)
+        after_any_observed_event = (y_event > 0) & (y_duration <= times)
+        weights = np.where(after_any_observed_event, ipcw_y_duration, weights)
 
         return y_binary, weights
 
