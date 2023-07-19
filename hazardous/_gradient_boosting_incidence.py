@@ -394,3 +394,51 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
             raise ValueError(
                 f"Parameter 'loss' must be either 'ibs' or 'inll', got {self.loss}."
             )
+
+    def score(self, X, y):
+        """Return the negative time-integrated Brier score (IBS) or INLL.
+
+        This returns the negative of a proper scoring rule, so that the higher
+        the value, the better the model to be consistent with the scoring
+        convention of scikit-learn to make it possible to use this class with
+        scikit-learn model selection utilities such as GridSearchCV and
+        RandomizedSearchCV.
+
+        The `loss` parameter passed to the constructor determines whether the
+        negative IBS or negative INLL is returned.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The input samples.
+        y : dict with keys "event" and "duration"
+            The target values. "event" is a boolean array of shape (n_samples,)
+            indicating whether the event was observed or not. "duration" is a
+            float array of shape (n_samples,) indicating the time of the event
+            or the time of censoring.
+
+        Returns
+        -------
+        score : float
+            The time-integrated Brier score (IBS) or INLL.
+        """
+        predicted_curves = self.predict_cumulative_incidence(X)
+        if self.score_sampler_.event_of_interest != self.event_of_interest:
+            raise ValueError(
+                "The event_of_interest parameter passed to the score method "
+                f"({self.event_of_interest}) does not match the one used at "
+                f"training time ({self.score_sampler_.event_of_interest})."
+            )
+
+        if self.loss == "ibs":
+            return -self.score_sampler_.integrated_brier_score(
+                y,
+                predicted_curves,
+                time_grid=self.time_grid_,
+            )
+        elif self.loss == "inll":
+            raise NotImplementedError("implement me!")
+        else:
+            raise ValueError(
+                f"Parameter 'loss' must be either 'ibs' or 'inll', got {self.loss}."
+            )

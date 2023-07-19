@@ -163,6 +163,29 @@ class IncidenceScoreComputer:
 
         return brier_scores.mean(axis=0)
 
+    def integrated_brier_score_survival(self, y_true, y_pred, times):
+        brier_scores = self.brier_score_survival(
+            y_true,
+            y_pred,
+            times,
+        )
+        return self._time_integrated(brier_scores, times)
+
+    def integrated_brier_score_incidence(self, y_true, y_pred, times):
+        brier_scores = self.brier_score_incidence(
+            y_true,
+            y_pred,
+            times,
+        )
+        return self._time_integrated(brier_scores, times)
+
+    def _time_integrated(self, scores, times):
+        ordering = np.argsort(times)
+        sorted_times = times[ordering]
+        sorted_scores = scores[ordering]
+        time_span = sorted_times[-1] - sorted_times[0]
+        return np.trapz(sorted_scores, sorted_times) / time_span
+
     def _weighted_binary_targets(self, y_event, y_duration, times, ipcw_y_duration):
         if self.event_of_interest == "any":
             # y should already be provided as binary indicator
@@ -263,16 +286,13 @@ def brier_score_survival(
 
     Returns
     -------
-    times : np.ndarray of shape (n_times)
-        No-op, this is the same as the input.
-
     brier_score : np.ndarray of shape (n_times)
     """
     computer = IncidenceScoreComputer(
         y_train,
         event_of_interest="any",
     )
-    return times, computer.brier_score_survival(y_test, y_pred, times)
+    return computer.brier_score_survival(y_test, y_pred, times)
 
 
 def integrated_brier_score_survival(
@@ -319,18 +339,11 @@ def integrated_brier_score_survival(
     -------
     ibs : float
     """
-    times, brier_scores = brier_score_survival(
+    computer = IncidenceScoreComputer(
         y_train,
-        y_test,
-        y_pred,
-        times,
+        event_of_interest="any",
     )
-    ordering = np.argsort(times)
-    sorted_times = times[ordering]
-    sorted_brier_scores = brier_scores[ordering]
-    return np.trapz(sorted_brier_scores, sorted_times) / (
-        sorted_times[-1] - sorted_times[0]
-    )
+    return computer.integrated_brier_score_survival(y_test, y_pred, times)
 
 
 def brier_score_incidence(
@@ -389,9 +402,6 @@ def brier_score_incidence(
 
     Returns
     -------
-    times : np.ndarray of shape (n_times)
-        No-op, this is the same as the input.
-
     brier_score : np.ndarray of shape (n_times)
 
     See Also
@@ -415,7 +425,7 @@ def brier_score_incidence(
         y_train,
         event_of_interest=event_of_interest,
     )
-    return times, computer.brier_score_incidence(y_test, y_pred, times)
+    return computer.brier_score_incidence(y_test, y_pred, times)
 
 
 def integrated_brier_score_incidence(
@@ -474,16 +484,8 @@ def integrated_brier_score_incidence(
     [1] M. Kretowska, "Tree-based models for survival data with competing risks",
         Computer Methods and Programs in Biomedicine 159 (2018) 185-198.
     """
-    times, brier_scores = brier_score_incidence(
+    computer = IncidenceScoreComputer(
         y_train,
-        y_test,
-        y_pred,
-        times,
         event_of_interest=event_of_interest,
     )
-    ordering = np.argsort(times)
-    sorted_times = times[ordering]
-    sorted_brier_scores = brier_scores[ordering]
-    return np.trapz(sorted_brier_scores, sorted_times) / (
-        sorted_times[-1] - sorted_times[0]
-    )
+    return computer.integrated_brier_score_incidence(y_test, y_pred, times)
