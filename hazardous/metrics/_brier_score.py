@@ -6,7 +6,7 @@ from .._ipcw import IPCWEstimator
 from ..utils import check_event_of_interest, check_y_survival
 
 
-class ClassificationScoreComputer:
+class IncidenceScoreComputer:
     """Censoring adjusted, time-dependent scoring rules.
 
     This class factorizes the computation of scoring rules such as the
@@ -268,7 +268,7 @@ def brier_score_survival(
 
     brier_score : np.ndarray of shape (n_times)
     """
-    computer = ClassificationScoreComputer(
+    computer = IncidenceScoreComputer(
         y_train,
         event_of_interest="any",
     )
@@ -411,7 +411,7 @@ def brier_score_incidence(
     # but we have no way to check that.
     # In this sense, 'y_pred[:, t_idx]' is incorrect when 'times'
     # is not the time used during the prediction.
-    computer = ClassificationScoreComputer(
+    computer = IncidenceScoreComputer(
         y_train,
         event_of_interest=event_of_interest,
     )

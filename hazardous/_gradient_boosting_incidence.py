@@ -9,11 +9,11 @@ from sklearn.ensemble import (
 from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
-from .metrics._brier_score import ClassificationScoreComputer
+from .metrics._brier_score import IncidenceScoreComputer
 from .utils import check_y_survival
 
 
-class WeightedBinaryTargetSampler(ClassificationScoreComputer):
+class WeightedBinaryTargetSampler(IncidenceScoreComputer):
     """Weighted binary targets for censoring-adjusted incidence estimation.
 
     Cast a cumulative incidence estimation problem with censored event times as
@@ -37,7 +37,7 @@ class WeightedBinaryTargetSampler(ClassificationScoreComputer):
         self,
         y_train,
         event_of_interest="any",
-        hard_zero_fraction=0.1,
+        hard_zero_fraction=0.01,
         random_state=None,
     ):
         self.rng = check_random_state(random_state)
@@ -59,7 +59,8 @@ class WeightedBinaryTargetSampler(ClassificationScoreComputer):
         # Add some some hard zeros to make sure that the model learns to
         # predict 0 incidence at t=0.
         #
-        # XXX: study what kind of bias does hit introduces, w.r.t. the
+        # TODO: theoretically or empirically study what kind of bias
+        # oversampling exact zeros introduces, w.r.t. the stochastically
         # time-integrated Brier score objective.
         n_hard_zeros = max(int(self.hard_zero_fraction * n_samples), 1)
         hard_zero_indices = self.rng.choice(n_samples, n_hard_zeros, replace=False)
@@ -113,7 +114,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
 
         In single event settings, "any" and 1 are equivalent.
 
-    objective : {'ibs', 'inll'}, default='ibs'
+    loss : {'ibs', 'inll'}, default='ibs'
         The objective of the model. In practise, both objective yields
         comparable results.
 
@@ -160,23 +161,26 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
     """
 
     def __init__(
+        # TODO: run a grid search on a few datasets to find good defaults.
         self,
         event_of_interest="any",
-        objective="ibs",
+        loss="ibs",
         monotonic_incidence=False,
-        n_iter=10,
-        learning_rate=0.1,
+        hard_zero_fraction=0.1,
+        n_iter=100,
+        learning_rate=0.05,
         max_depth=None,
         max_leaf_nodes=31,
         min_samples_leaf=50,
         show_progressbar=True,
-        n_time_grid_steps=1000,
+        n_time_grid_steps=100,
         time_horizon=None,
         random_state=None,
     ):
         self.event_of_interest = event_of_interest
-        self.objective = objective
+        self.loss = loss
         self.monotonic_incidence = monotonic_incidence
+        self.hard_zero_fraction = hard_zero_fraction
         self.n_iter = n_iter
         self.learning_rate = learning_rate
         self.max_depth = max_depth
@@ -210,7 +214,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
 
         self.estimator_ = self._build_base_estimator(monotonic_cst)
 
-        # Compute the time grid used at prediction time.
+        # Compute the default time grid used at prediction time.
         any_event_mask = event > 0
         observed_times = duration[any_event_mask]
 
@@ -223,11 +227,15 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
                 self.time_grid_ = observed_times.copy()
                 self.time_grid_.sort()
         else:
-            self.time_grid_ = times
+            # XXX: do we really want to allow to pass this at training time if
+            # we already allow to pass it at prediction time?
+            self.time_grid_ = times.copy()
+            self.time_grid_.sort()
 
-        brier_score_sampler = WeightedBinaryTargetSampler(
+        self.target_sampler_ = WeightedBinaryTargetSampler(
             y,
             event_of_interest=self.event_of_interest,
+            hard_zero_fraction=self.hard_zero_fraction,
             random_state=self.random_state,
         )
 
@@ -240,7 +248,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
                 sampled_times,
                 y_binary,
                 sample_weight,
-            ) = brier_score_sampler.draw()
+            ) = self.target_sampler_.draw()
             X_with_time = np.hstack([sampled_times, X])
             self.estimator_.max_iter += 1
             self.estimator_.fit(X_with_time, y_binary, sample_weight=sample_weight)
@@ -304,7 +312,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         for t in times:
             t = np.full((X.shape[0], 1), fill_value=t)
             X_with_time = np.hstack([t, X])
-            if self.objective == "ibs":
+            if self.loss == "ibs":
                 predictions_at_t = self.estimator_.predict(X_with_time)
             else:
                 predictions_at_t = self.estimator_.predict_proba(X_with_time)[:, 1]
@@ -312,7 +320,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
 
         predicted_curves = np.vstack(predictions_at_all_times).T
 
-        if self.objective == "ibs":
+        if self.loss == "ibs":
             # HistGradientBoostingRegressor does not guarantee that the
             # predictions are in [0, 1] (no identity link function when using
             # the squared_error loss).
@@ -338,7 +346,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         return 1 - self.predict_cumulative_incidence(X, times=times)
 
     def predict_quantile(self, X, quantile=0.5, times=None):
-        """Estimate the conditional median (or other quantile) time to event
+        """Estimate the conditional median (or other quantile) time to event.
 
         Note: this can return np.inf values when the estimated CIF does not
         reach the `quantile` value at the maximum time horizon observed on
@@ -360,7 +368,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         return results
 
     def _build_base_estimator(self, monotonic_cst):
-        if self.objective == "ibs":
+        if self.loss == "ibs":
             return HistGradientBoostingRegressor(
                 loss="squared_error",
                 max_iter=1,
@@ -371,7 +379,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
                 max_leaf_nodes=self.max_leaf_nodes,
                 min_samples_leaf=self.min_samples_leaf,
             )
-        elif self.objective == "inll":
+        elif self.loss == "inll":
             return HistGradientBoostingClassifier(
                 loss="log_loss",
                 max_iter=1,
@@ -384,6 +392,5 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
             )
         else:
             raise ValueError(
-                "Parameter 'objective' must be either 'ibs' or 'inll', "
-                f"got {self.objective}."
+                f"Parameter 'loss' must be either 'ibs' or 'inll', got {self.loss}."
             )

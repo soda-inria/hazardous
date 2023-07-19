@@ -127,7 +127,11 @@ def plot_cumulative_incidence_functions(distributions):
     any_event_hazards = all_hazards.sum(axis=0)
     any_event_survival = np.exp(-(any_event_hazards.cumsum(axis=-1) * dt))
 
-    plt.suptitle("Cause-specific cumulative incidence functions")
+    censoring_fraction = (y_censored["event"] == 0).mean()
+    plt.suptitle(
+        "Cause-specific cumulative incidence functions"
+        f" ({censoring_fraction:.2%} censoring)"
+    )
     ajf = AalenJohansenFitter(calculate_variance=True, seed=0)
     for event_id, (ax, hazards_i) in enumerate(zip(axes, all_hazards), 1):
         theoretical_cif = (hazards_i * any_event_survival).cumsum(axis=-1) * dt
@@ -143,10 +147,11 @@ def plot_cumulative_incidence_functions(distributions):
         ajf.plot(label="Aalen Johansen", ax=ax)
 
         gb_incidence = GradientBoostingIncidence(
-            learning_rate=0.01,
+            learning_rate=0.03,
             n_iter=300,
-            max_leaf_nodes=10,
-            objective="ibs",
+            max_leaf_nodes=8,
+            hard_zero_fraction=0.1,
+            loss="ibs",
             event_of_interest=event_id,
             show_progressbar=False,
             random_state=0,
