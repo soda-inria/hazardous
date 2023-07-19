@@ -155,9 +155,9 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
     References
     ----------
 
-    [1] M. Kretowska, "Tree-based models for survival data with competing
-    risks",
-        Computer Methods and Programs in Biomedicine 159 (2018) 185-198.
+    .. [1] M. Kretowska, Tree-based models for survival data with competing
+           risks, Computer Methods and Programs in Biomedicine 159 (2018)
+           185-198.
     """
 
     def __init__(
