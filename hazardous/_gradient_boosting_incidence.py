@@ -233,7 +233,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
             self.time_grid_ = times.copy()
             self.time_grid_.sort()
 
-        self.target_sampler_ = WeightedBinaryTargetSampler(
+        self.weighted_targets_ = WeightedBinaryTargetSampler(
             y,
             event_of_interest=self.event_of_interest,
             hard_zero_fraction=self.hard_zero_fraction,
@@ -249,7 +249,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
                 sampled_times,
                 y_binary,
                 sample_weight,
-            ) = self.target_sampler_.draw()
+            ) = self.weighted_targets_.draw()
             X_with_time = np.hstack([sampled_times, X])
             self.estimator_.max_iter += 1
             self.estimator_.fit(X_with_time, y_binary, sample_weight=sample_weight)
@@ -424,18 +424,18 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
             The time-integrated Brier score (IBS) or INLL.
         """
         predicted_curves = self.predict_cumulative_incidence(X)
-        if self.score_sampler_.event_of_interest != self.event_of_interest:
+        if self.weighted_targets_.event_of_interest != self.event_of_interest:
             raise ValueError(
                 "The event_of_interest parameter passed to the score method "
                 f"({self.event_of_interest}) does not match the one used at "
-                f"training time ({self.score_sampler_.event_of_interest})."
+                f"training time ({self.weighted_targets_.event_of_interest})."
             )
 
         if self.loss == "ibs":
-            return -self.score_sampler_.integrated_brier_score(
+            return -self.weighted_targets_.integrated_brier_score_incidence(
                 y,
                 predicted_curves,
-                time_grid=self.time_grid_,
+                times=self.time_grid_,
             )
         elif self.loss == "inll":
             raise NotImplementedError("implement me!")
