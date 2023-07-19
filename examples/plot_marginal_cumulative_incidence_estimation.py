@@ -63,11 +63,11 @@ y_uncensored["event"].value_counts().sort_index()
 
 # %%
 #
-# Add some uniform censoring with a large upper bound to dilute the
+# Add some uniform censoring with a large-enough upper bound to dilute the
 # censoring. Lowering the upper bound will increase the censoring rate.
 censoring_times = rng.uniform(
     low=0.0,
-    high=1.5 * t_max,
+    high=1.2 * t_max,
     size=n_samples,
 )
 y_censored = pd.DataFrame(
@@ -144,7 +144,7 @@ def plot_cumulative_incidence_functions(distributions):
         ax.legend(loc="lower right")
 
         ajf.fit(y_censored["duration"], y_censored["event"], event_of_interest=event_id)
-        ajf.plot(label="Aalen Johansen", ax=ax)
+        ajf.plot(label="Aalen-Johansen", ax=ax)
 
         gb_incidence = GradientBoostingIncidence(
             learning_rate=0.03,
