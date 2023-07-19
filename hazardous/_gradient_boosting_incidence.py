@@ -147,7 +147,8 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
 
         Note: constraining the CIF to be monotonic can lead to a biased estimate
         of the CIF: the CIF is typically overestimated for the longest time
-        horizons.
+        horizons, especially for large number of boosting iterations and deep
+        trees.
 
     The remaining hyper-parameters match those of the underlying
     `HistGradientBoostedClassifier` or `HistGradientBoostedRegressor` models.
