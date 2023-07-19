@@ -30,7 +30,12 @@ from hazardous import GradientBoostingIncidence
 from lifelines import AalenJohansenFitter
 
 rng = np.random.default_rng(0)
-n_samples = 5_000
+n_samples = 2_000
+
+# Non-informative covariate because scikit-learn estimators expect at least
+# one feature.
+X_dummy = np.zeros(shape=(n_samples, 1), dtype=np.float32)
+
 base_scale = 1_000.0  # some arbitrary time unit
 t_max = 3.0 * base_scale
 
@@ -80,6 +85,30 @@ y_censored = pd.DataFrame(
 )
 y_censored["event"].value_counts().sort_index()
 
+# %%
+# from sklearn.model_selection import RandomizedSearchCV
+
+# param_distributions = dict(
+#     learning_rate=[0.005, 0.01, 0.03, 0.05, 0.1],
+#     n_iter=[100],  #  [50, 100, 300, 500],
+#     max_leaf_nodes=[2, 3, 4, 5, 6, 8],
+#     hard_zero_fraction=[0.0, 0.1, 0.2, 0.3, 0.5],
+# )
+# gb_incidence = GradientBoostingIncidence(
+#     event_of_interest=3,  # the most challenging event
+#     show_progressbar=False,
+#     random_state=0,
+# )
+# search_cv = RandomizedSearchCV(
+#     gb_incidence,
+#     param_distributions=param_distributions,
+#     n_iter=30,
+#     verbose=10,
+#     random_state=0,
+#     n_jobs=4,
+# )
+# search_cv.fit(X_dummy, y_censored)
+# search_cv.best_params_
 
 # %%
 #
@@ -106,10 +135,6 @@ def weibull_hazard(t, shape=1.0, scale=1.0, **ignored_kwargs):
 
 def plot_cumulative_incidence_functions(distributions):
     _, axes = plt.subplots(figsize=(12, 4), ncols=len(distributions), sharey=True)
-
-    # Non-informative covariate because scikit-learn estimators expect at least
-    # one feature.
-    X_dummy = np.zeros(shape=(n_samples, 1), dtype=np.float32)
 
     # Compute the estimate of the CIFs on a coarse grid.
     coarse_timegrid = np.linspace(0, t_max, num=100)
@@ -148,9 +173,9 @@ def plot_cumulative_incidence_functions(distributions):
 
         gb_incidence = GradientBoostingIncidence(
             learning_rate=0.03,
-            n_iter=300,
-            max_leaf_nodes=8,
-            hard_zero_fraction=0.1,
+            n_iter=100,
+            max_leaf_nodes=4,
+            hard_zero_fraction=0.3,
             loss="ibs",
             event_of_interest=event_id,
             show_progressbar=False,
@@ -170,4 +195,5 @@ def plot_cumulative_incidence_functions(distributions):
 
 
 plot_cumulative_incidence_functions(distributions)
+
 # %%
