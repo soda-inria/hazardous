@@ -30,6 +30,7 @@ def test_latest_from_conda_forge(session):
         "pandas",
         "scikit-learn",
         "lifelines",
+        "tqdm",
     ]:
         session.conda_install(package_name, channel="conda-forge")
     session.install(".")

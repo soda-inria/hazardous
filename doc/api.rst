@@ -6,6 +6,18 @@ package:
 
 .. currentmodule:: hazardous
 
+
+Estimators
+----------
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+    :nosignatures:
+
+    GradientBoostingIncidence
+
+
 Metrics
 -------
 

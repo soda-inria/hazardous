@@ -15,6 +15,7 @@ classifiers = [
 dependencies = [
     "numpy",
     "scikit-learn",
+    "tqdm",
     # TODO: implement KM and make this a soft dependency for the
     # doc and tests.
     "lifelines",

@@ -1,3 +1,5 @@
+from numbers import Integral
+
 import numpy as np
 import pandas as pd
 from sklearn.utils.validation import check_scalar
@@ -48,7 +50,7 @@ def check_y_survival(y):
 
 def check_event_of_interest(k):
     """`event_of_interest` must be the string 'any' or a positive integer."""
-    check_scalar(k, "event_of_interest", target_type=(str, int))
+    check_scalar(k, "event_of_interest", target_type=(str, Integral))
     not_str_any = isinstance(k, str) and k != "any"
     not_positive = isinstance(k, int) and k < 1
     if not_str_any or not_positive:

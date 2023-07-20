@@ -6,12 +6,12 @@ from .._ipcw import IPCWEstimator
 from ..utils import check_event_of_interest, check_y_survival
 
 
-class BrierScoreComputer:
-    """Time-dependent Brier score with adjusted for censoring.
+class IncidenceScoreComputer:
+    """Censoring adjusted, time-dependent scoring rules.
 
-    This class factorizes the computation of the Brier score for single-event
-    or any event survival functions and cause-specific cumulative incidence
-    functions.
+    This class factorizes the computation of scoring rules such as the
+    time-dependent Brier score for single-event or any event survival functions
+    and cause-specific cumulative incidence functions.
 
     It leverages the Inverse Probability of Censoring Weighting (IPCW) scheme
     using a Kaplan-Meier of the censoring distribution to weight the terms.
@@ -150,18 +150,43 @@ class BrierScoreComputer:
         )
         ipcw_y = self.ipcw_est.compute_ipcw_at(duration_true)
         for t_idx, t in enumerate(times):
-            y_true_binary, weights = self._ibs_components(
-                event=event_true,
-                duration=duration_true,
+            y_true_binary, weights = self._weighted_binary_targets(
+                y_event=event_true,
+                y_duration=duration_true,
                 times=np.full(shape=n_samples, fill_value=t),
-                ipcw_y=ipcw_y,
+                ipcw_y_duration=ipcw_y,
             )
+            # XXX: refactor and rename this function to make it possible to
+            # also compute the time-dependent binary cross-entropy loss.
             squared_error = (y_true_binary - y_pred[:, t_idx]) ** 2
             brier_scores[:, t_idx] = weights * squared_error
 
         return brier_scores.mean(axis=0)
 
-    def _ibs_components(self, event, duration, times, ipcw_y):
+    def integrated_brier_score_survival(self, y_true, y_pred, times):
+        brier_scores = self.brier_score_survival(
+            y_true,
+            y_pred,
+            times,
+        )
+        return self._time_integrated(brier_scores, times)
+
+    def integrated_brier_score_incidence(self, y_true, y_pred, times):
+        brier_scores = self.brier_score_incidence(
+            y_true,
+            y_pred,
+            times,
+        )
+        return self._time_integrated(brier_scores, times)
+
+    def _time_integrated(self, scores, times):
+        ordering = np.argsort(times)
+        sorted_times = times[ordering]
+        sorted_scores = scores[ordering]
+        time_span = sorted_times[-1] - sorted_times[0]
+        return np.trapz(sorted_scores, sorted_times) / time_span
+
+    def _weighted_binary_targets(self, y_event, y_duration, times, ipcw_y_duration):
         if self.event_of_interest == "any":
             # y should already be provided as binary indicator
             k = 1
@@ -182,8 +207,8 @@ class BrierScoreComputer:
         #   Otherwise, they are discarded by setting their weight to 0 in the
         #   following.
 
-        y_binary = np.zeros(event.shape[0], dtype=np.int32)
-        y_binary[(event == k) & (duration <= times)] = 1
+        y_binary = np.zeros(y_event.shape[0], dtype=np.int32)
+        y_binary[(y_event == k) & (y_duration <= times)] = 1
 
         # Compute the weights for each term contributing to the Brier score
         # at the specified time horizons.
@@ -200,12 +225,12 @@ class BrierScoreComputer:
         #   0 weight and do not contribute to the Brier score computation.
 
         # Estimate the probability of censoring at current time point t.
-        ipcw_t = self.ipcw_est.compute_ipcw_at(times)
-        before = times < duration
-        weights = np.where(before, ipcw_t, 0)
+        ipcw_times = self.ipcw_est.compute_ipcw_at(times)
+        before = times < y_duration
+        weights = np.where(before, ipcw_times, 0)
 
-        after_any_observed_event = (event > 0) & (duration <= times)
-        weights = np.where(after_any_observed_event, ipcw_y, weights)
+        after_any_observed_event = (y_event > 0) & (y_duration <= times)
+        weights = np.where(after_any_observed_event, ipcw_y_duration, weights)
 
         return y_binary, weights
 
@@ -261,16 +286,13 @@ def brier_score_survival(
 
     Returns
     -------
-    times : np.ndarray of shape (n_times)
-        No-op, this is the same as the input.
-
     brier_score : np.ndarray of shape (n_times)
     """
-    computer = BrierScoreComputer(
+    computer = IncidenceScoreComputer(
         y_train,
         event_of_interest="any",
     )
-    return times, computer.brier_score_survival(y_test, y_pred, times)
+    return computer.brier_score_survival(y_test, y_pred, times)
 
 
 def integrated_brier_score_survival(
@@ -317,18 +339,11 @@ def integrated_brier_score_survival(
     -------
     ibs : float
     """
-    times, brier_scores = brier_score_survival(
+    computer = IncidenceScoreComputer(
         y_train,
-        y_test,
-        y_pred,
-        times,
+        event_of_interest="any",
     )
-    ordering = np.argsort(times)
-    sorted_times = times[ordering]
-    sorted_brier_scores = brier_scores[ordering]
-    return np.trapz(sorted_brier_scores, sorted_times) / (
-        sorted_times[-1] - sorted_times[0]
-    )
+    return computer.integrated_brier_score_survival(y_test, y_pred, times)
 
 
 def brier_score_incidence(
@@ -387,9 +402,6 @@ def brier_score_incidence(
 
     Returns
     -------
-    times : np.ndarray of shape (n_times)
-        No-op, this is the same as the input.
-
     brier_score : np.ndarray of shape (n_times)
 
     See Also
@@ -409,11 +421,11 @@ def brier_score_incidence(
     # but we have no way to check that.
     # In this sense, 'y_pred[:, t_idx]' is incorrect when 'times'
     # is not the time used during the prediction.
-    computer = BrierScoreComputer(
+    computer = IncidenceScoreComputer(
         y_train,
         event_of_interest=event_of_interest,
     )
-    return times, computer.brier_score_incidence(y_test, y_pred, times)
+    return computer.brier_score_incidence(y_test, y_pred, times)
 
 
 def integrated_brier_score_incidence(
@@ -472,16 +484,8 @@ def integrated_brier_score_incidence(
     [1] M. Kretowska, "Tree-based models for survival data with competing risks",
         Computer Methods and Programs in Biomedicine 159 (2018) 185-198.
     """
-    times, brier_scores = brier_score_incidence(
+    computer = IncidenceScoreComputer(
         y_train,
-        y_test,
-        y_pred,
-        times,
         event_of_interest=event_of_interest,
     )
-    ordering = np.argsort(times)
-    sorted_times = times[ordering]
-    sorted_brier_scores = brier_scores[ordering]
-    return np.trapz(sorted_brier_scores, sorted_times) / (
-        sorted_times[-1] - sorted_times[0]
-    )
+    return computer.integrated_brier_score_incidence(y_test, y_pred, times)

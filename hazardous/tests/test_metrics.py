@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from lifelines import CoxPHFitter
 from lifelines.datasets import load_regression_dataset
-from numpy.testing import assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose
 
 from ..metrics import (
     brier_score_incidence,
@@ -12,7 +12,7 @@ from ..metrics import (
     integrated_brier_score_incidence,
     integrated_brier_score_survival,
 )
-from ..metrics._brier_score import BrierScoreComputer
+from ..metrics._brier_score import IncidenceScoreComputer
 from ..utils import _dict_to_pd, _dict_to_recarray
 
 X = load_regression_dataset()
@@ -81,15 +81,12 @@ EXPECTED_IBS_SURVIVAL_FROM_SKSURV = 0.12573162513447791
 
 
 def test_brier_score_survival_sksurv_consistency():
-    times_, loss = brier_score_survival(
+    loss = brier_score_survival(
         y_train,
         y_test,
         y_pred_survival,
         times,
     )
-
-    # Check that 'times_' hasn't been changed
-    assert_array_equal(times, times_)
     assert_allclose(loss, EXPECTED_BS_SURVIVAL_FROM_SKSURV, atol=1e-6)
 
 
@@ -129,22 +126,20 @@ def test_integrated_brier_score_on_shuffled_times(seed):
 
 @pytest.mark.parametrize("event_of_interest", [1, "any"])
 def test_brier_score_incidence_survival_equivalence(event_of_interest):
-    times_, loss = brier_score_survival(
+    loss_survival = brier_score_survival(
         y_train,
         y_test,
         y_pred_survival,
         times,
     )
-    times_incidence_, loss_incidence = brier_score_incidence(
+    loss_incidence = brier_score_incidence(
         y_train,
         y_test,
         1 - y_pred_survival,
         times,
         event_of_interest,
     )
-
-    assert_allclose(times_, times_incidence_)
-    assert_allclose(loss, loss_incidence)
+    assert_allclose(loss_survival, loss_incidence)
 
     ibs_survival = integrated_brier_score_survival(
         y_train,
@@ -168,7 +163,7 @@ def test_brier_score_warnings_on_competive_event():
 
     msg = "Computing the survival Brier score only makes sense"
     with pytest.warns(match=msg):
-        BrierScoreComputer(
+        IncidenceScoreComputer(
             y_train,
             event_of_interest=2,
         ).brier_score_survival(
@@ -207,7 +202,7 @@ def test_brier_score_incidence_wrong_parameters_type_error(event_of_interest):
 
 @pytest.mark.parametrize("format_func", [_dict_to_pd, _dict_to_recarray])
 def test_test_brier_score_survival_inputs_format(format_func):
-    _, loss = brier_score_survival(
+    loss = brier_score_survival(
         format_func(y_train),
         format_func(y_test),
         y_pred_survival,
