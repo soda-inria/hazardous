@@ -58,7 +58,6 @@ def test_monotonic_gradient_boosting_incidence(seed):
     assert ibs_gb_incidence == pytest.approx(ibs_gb_surv)
 
 
-# Change the following manually to check seed insensitivity:
 @pytest.mark.parametrize("seed", SEED_RANGE)
 def test_gradient_boosting_any_event_survival(seed):
     X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
@@ -105,7 +104,6 @@ def test_gradient_boosting_any_event_survival(seed):
     assert_allclose(survival_pred, 1 - cif_pred)
 
 
-# Change the following manually to check seed insensitivity:
 @pytest.mark.parametrize("seed", SEED_RANGE)
 def test_gradient_boosting_incidence_parameter_tuning(seed):
     # Minimal parameter grid with one poor and one good value for each
