@@ -19,6 +19,16 @@ Metrics
     metrics.integrated_brier_score_survival
     metrics.integrated_brier_score_incidence
 
+Datasets
+--------
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+    :nosignatures:
+
+    data.make_synthetic_competing_weibull
+
 
 Inverse Probability Censoring Weight
 ------------------------------------
