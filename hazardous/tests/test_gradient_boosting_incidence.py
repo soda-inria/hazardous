@@ -112,7 +112,7 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     # parameter to tune.
     param_grid = {
         "n_iter": [1, 10],
-        "max_leaf_nodes": [2, 5],
+        "max_leaf_nodes": [2, 10],
         "hard_zero_fraction": [0.2, 1.0],
     }
     X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
@@ -126,13 +126,13 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     grid_search.fit(X_train, y_train)
     assert grid_search.best_params_ == {
         "n_iter": 10,
-        "max_leaf_nodes": 5,
+        "max_leaf_nodes": 10,
         "hard_zero_fraction": 0.2,
     }
 
     # Check that both the internal cross-validated IBS and the IBS on the test
     # set are good (lower IBS is better, hence higher negative IBS is better).
-    max_expected_ibs = 0.18  # found emprically with different seed
+    max_expected_ibs = 0.17  # found emprically with different seed
     assert grid_search.best_score_ > -max_expected_ibs
     grid_search.best_estimator_.score(X_test, y_test) > -max_expected_ibs
 
@@ -141,4 +141,4 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     worst_ibs = -cv_results.iloc[0]["mean_test_score"]
     best_ibs = -cv_results.iloc[-1]["mean_test_score"]
     assert best_ibs == pytest.approx(-grid_search.best_score_)
-    assert worst_ibs > 1.3 * best_ibs
+    assert worst_ibs > 1.4 * best_ibs
