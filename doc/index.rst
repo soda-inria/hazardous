@@ -14,6 +14,7 @@ HΛZΛRDOUS: predictive survival and competing risks analysis in Python
 
 - License: MIT
 - GitHub repository: https://github.com/soda-inria/hazardous
+- Status: under development, API is subject to change without notice.
 
 .. container:: right-align
 
