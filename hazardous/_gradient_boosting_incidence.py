@@ -168,6 +168,8 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         loss="ibs",
         monotonic_incidence=False,
         hard_zero_fraction=0.1,
+        # TODO: implement convergence criterion and use max_iter instead of
+        # n_iter.
         n_iter=100,
         learning_rate=0.05,
         max_depth=None,
