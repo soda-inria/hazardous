@@ -32,6 +32,7 @@ def test_latest_from_conda_forge(session):
         "lifelines",
     ]:
         session.conda_install(package_name, channel="conda-forge")
+    session.install(".")
     _common_test_steps(session)
 
 
