@@ -6,7 +6,7 @@ def _common_test_steps(session):
     if session.posargs:
         session.run("pytest", *session.posargs)
     else:
-        session.run("pytest", "-v", "--cov")
+        session.run("pytest", "-v", "--cov", "--pyargs", "hazardous")
 
 
 # TODO: add 3.12 as soon as numpy and scikit-learn upload 3.12 wheels
@@ -33,6 +33,7 @@ def test_latest_from_conda_forge(session):
         "tqdm",
     ]:
         session.conda_install(package_name, channel="conda-forge")
+    session.install(".")
     _common_test_steps(session)
 
 
