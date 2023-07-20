@@ -136,7 +136,7 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     assert grid_search.best_score_ > -max_expected_ibs
     grid_search.best_estimator_.score(X_test, y_test) > -max_expected_ibs
 
-    # Check that all the other parameter values lead to poor IBS.
+    # Check that some other parameter values lead to much poorer IBS.
     cv_results = pd.DataFrame(grid_search.cv_results_).sort_values("mean_test_score")
     worst_ibs = -cv_results.iloc[0]["mean_test_score"]
     best_ibs = -cv_results.iloc[-1]["mean_test_score"]
