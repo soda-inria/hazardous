@@ -94,7 +94,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
     Under the hood, this class uses randomly sampled reference time horizons
     concatenated as an extra input column to the underlying HGB binary
     classification model. At boosting iteration, a new tree is trained on a
-    copy of the original feature matrix X augmented with a new indepdent sample
+    copy of the original feature matrix X augmented with a new independent sample
     of time horizons.
 
     One can obtain the survival probabilities for any event by summing all
