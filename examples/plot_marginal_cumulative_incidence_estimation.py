@@ -82,8 +82,8 @@ y_uncensored["event"].value_counts().sort_index()
 # before time t, given that the subject has not experienced any other event
 # before time t.
 #
-# The following function computes the [hazard function of a Weibull
-# distribution](https://en.wikipedia.org/wiki/Weibull_distribution):
+# The following function computes the hazard function of a `Weibull
+# distribution <https://en.wikipedia.org/wiki/Weibull_distribution>`_:
 
 
 def weibull_hazard(t, shape=1.0, scale=1.0, **ignored_kwargs):
