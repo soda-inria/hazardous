@@ -62,7 +62,8 @@ class TargetPreprocessor(TransformerMixin, BaseEstimator):
         durations = y["duration"]
         events = y["event"]
 
-        # Apply right censoring when
+        # Apply right censoring when the duration is higher
+        # than the last interval.
         max_cut = self.cuts_.max()
         censor = durations > max_cut
         durations[censor] = max_cut
