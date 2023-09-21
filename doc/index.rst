@@ -40,3 +40,4 @@ of this library at this time.
 
    api
    auto_examples/index
+   downloading_seer

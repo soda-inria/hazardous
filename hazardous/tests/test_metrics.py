@@ -18,7 +18,7 @@ from ..metrics import (
     integrated_brier_score_survival,
 )
 from ..metrics._brier_score import IncidenceScoreComputer
-from ..utils import _dict_to_pd, _dict_to_recarray
+from ..utils import _dict_to_recarray
 
 X = load_regression_dataset()
 X_train, X_test = X.iloc[:150], X.iloc[150:]
@@ -205,7 +205,7 @@ def test_brier_score_incidence_wrong_parameters_type_error(event_of_interest):
             )
 
 
-@pytest.mark.parametrize("format_func", [_dict_to_pd, _dict_to_recarray])
+@pytest.mark.parametrize("format_func", [pd.DataFrame, _dict_to_recarray])
 def test_test_brier_score_survival_inputs_format(format_func):
     loss = brier_score_survival(
         format_func(y_train),

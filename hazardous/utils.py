@@ -5,10 +5,6 @@ import pandas as pd
 from sklearn.utils.validation import check_scalar
 
 
-def _dict_to_pd(y):
-    return pd.DataFrame(y)
-
-
 def _dict_to_recarray(y, cast_event_to_bool=False):
     if cast_event_to_bool:
         event_dtype = np.bool_
@@ -33,10 +29,10 @@ def check_y_survival(y):
         or isinstance(y, dict)
         and sorted(y, reverse=True) == y_keys
     ):
-        event, duration = np.ravel(y["event"]), np.ravel(y["duration"])
+        return np.ravel(y["event"]), np.ravel(y["duration"])
 
     elif isinstance(y, pd.DataFrame) and sorted(y.columns, reverse=True) == y_keys:
-        event, duration = y["event"].values, y["duration"].values
+        return y["event"].values, y["duration"].values
 
     else:
         raise ValueError(
@@ -44,8 +40,6 @@ def check_y_survival(y):
             "whose dtypes, keys or columns are 'event' and 'duration'. "
             f"Got:\n{repr(y)}"
         )
-
-    return event, duration
 
 
 def check_event_of_interest(k):
