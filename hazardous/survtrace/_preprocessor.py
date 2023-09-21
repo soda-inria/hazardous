@@ -26,9 +26,7 @@ class FeaturePreprocessor(TransformerMixin, BaseEstimator):
         transformers = self.col_transformer_.transformers_
         categories = transformers[0][1].categories_
         vocab_size = [0, *[len(categs) for categs in categories[:-1]]]
-        vocab_size = np.cumsum(vocab_size)
-
-        self.vocab_size_ = vocab_size
+        self.vocab_size_ = np.cumsum(vocab_size)
 
         return self
 
