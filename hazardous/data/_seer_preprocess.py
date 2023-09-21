@@ -147,10 +147,8 @@ def preprocess_features(df):
 
 
 def preprocess_events(df):
-    df = df.loc[df["Survival months"] != "Unknown"]
     df = df.rename(columns={"Survival months": "duration"})
 
-    # if heart or alive, event = 0
     target_encoded = {
         "Breast": 1,
         "Diseases of Heart": 2,
