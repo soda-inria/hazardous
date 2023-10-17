@@ -61,7 +61,7 @@ COLS_MAPPING = {
 }
 
 
-def preprocess_X_y(input_path, rename=True):
+def load_seer(input_path, rename=True):
     if rename:
         df = pd.read_csv(input_path, sep="\t", header=None)
         df = add_column_names(df)
