@@ -13,26 +13,26 @@ class SurvFeatureEncoder(TransformerMixin, BaseEstimator):
 
     Parameters
     ----------
-    categ_cols : iterable of str, default=None
+    categorical_features : iterable of str, default=None
         The categorical column names of the input.
         If set to None, use dtypes to infer.
 
-    num_cols : iterable of str, default=None
+    numerical_features : iterable of str, default=None
         The numerical column names of the input.
         If set to None, use dtypes to infer.
 
     Attributes
     ----------
-    categ_cols_ : iterable of str
+    categorical_features_ : iterable of str
         The categorical column names of the input.
 
-    num_cols_ : iterable of str
+    numerical_features_ : iterable of str
         The numerical column names of the input.
 
     col_transformer_ : :class:`~sklearn.compose.ColumnTransformer`
         Applies transformers to columns of an array or pandas DataFrame.
 
-    vocab_size_ : ndarray of shape (n_categ_cols,)
+    vocab_size_ : ndarray of shape (n_categorical_features,)
         The cumulative sum of the cardinality of each categorical columns.
         Used to tokenize the categories across all columns using a shared
         vocabulary.
@@ -53,19 +53,26 @@ class SurvFeatureEncoder(TransformerMixin, BaseEstimator):
 
     """
 
-    def __init__(self, categ_cols=None, num_cols=None):
-        self.categ_cols = categ_cols
-        self.num_cols = num_cols
+    def __init__(self, categorical_features=None, numerical_features=None):
+        self.categorical_features = categorical_features
+        self.numerical_features = numerical_features
 
     def fit(self, X, y=None):
-        self._check_num_categ_cols(X)
+        X = self._check_num_categorical_features(X)
 
         self.col_transformer_ = make_column_transformer(
-            (OrdinalEncoder(), self.categ_cols_),
-            (StandardScaler(), self.num_cols_),
+            (
+                OrdinalEncoder(
+                    handle_unknown="use_encoded_value",
+                    unknown_value=-1,  # We use -1+1=0 as unknown token <UNK>.
+                ),
+                self.categorical_features_,
+            ),
+            (StandardScaler(), self.numerical_features_),
             remainder="drop",
             verbose_feature_names_out=False,
         )
+        self.col_transformer_.set_output(transform="pandas")
         self.col_transformer_.fit(X)
 
         # Encode categorical values from different columns separately
@@ -73,32 +80,56 @@ class SurvFeatureEncoder(TransformerMixin, BaseEstimator):
         # than "blue" in column 2.
         transformers = self.col_transformer_.transformers_
         categories = transformers[0][1].categories_
-        vocab_size = [0, *[len(categs) for categs in categories[:-1]]]
-        self.vocab_size_ = np.cumsum(vocab_size)
+        vocab_size = [1, *[len(categs) for categs in categories[:-1]]]
+        self.cumulated_vocab_size_ = np.cumsum(vocab_size)
+        self.vocab_size_ = sum([len(categs) for categs in categories])
 
         return self
 
     def transform(self, X, y=None):
         X_t = self.col_transformer_.transform(X)
         out_feature_names = self.col_transformer_.get_feature_names_out()
-        categ_indices = np.isin(out_feature_names, self.categ_cols_).nonzero()[0]
-        X_t[:, categ_indices] += self.vocab_size_
+        categ_indices = np.isin(
+            out_feature_names, self.categorical_features_
+        ).nonzero()[0]
+        X_t.iloc[:, categ_indices] += self.cumulated_vocab_size_
 
         return X_t
 
-    def _check_num_categ_cols(self, X):
-        if not isinstance(X, pd.DataFrame):
-            raise TypeError(f"X must be a Pandas dataframe. Got {X=!r}.")
+    def _check_num_categorical_features(self, X):
+        X = X.copy()  # needed since we make inplace changes to the dataframe.
 
-        if self.num_cols is None:
-            self.num_cols_ = X.select_dtypes("number").columns
+        if self.numerical_features is None:
+            int_columns = X.select_dtypes("int").columns
+            if int_columns.shape[0] > 0:
+                raise ValueError(
+                    "Integer dtypes are ambiguous for numerical "
+                    f"columns {int_columns!r}.\n"
+                    "Please convert them to float dtypes or set "
+                    "'numerical_features'."
+                )
+            self.numerical_features_ = X.select_dtypes("float").columns.tolist()
         else:
-            self.num_cols_ = np.atleast_1d(self.num_cols)
+            self.numerical_features_ = np.atleast_1d(self.numerical_features).tolist()
+        X[self.numerical_features_] = X[self.numerical_features_].astype("float")
 
-        if self.categ_cols is None:
-            self.categ_cols_ = X.select_dtypes(["object", "string", "category"]).columns
+        if self.categorical_features is None:
+            object_columns = X.select_dtypes("bool", "object", "string").columns
+            if object_columns.shape[0] > 0:
+                raise ValueError(
+                    "Object, boolean and string dtypes are ambiguous for categorical "
+                    f"columns {object_columns!r}.\n"
+                    "Please convert them to category dtypes or set "
+                    "'categorical_features'."
+                )
+            self.categorical_features_ = X.select_dtypes(["category"]).columns.tolist()
         else:
-            self.categ_cols_ = np.atleast_1d(self.categ_cols)
+            self.categorical_features_ = np.atleast_1d(
+                self.categorical_features
+            ).tolist()
+        X[self.categorical_features_] = X[self.categorical_features_].astype("category")
+
+        return X
 
 
 class SurvTargetEncoder(TransformerMixin, BaseEstimator):

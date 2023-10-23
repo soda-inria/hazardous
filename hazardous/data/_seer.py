@@ -4,7 +4,7 @@ See: https://github.com/RyanWangZf/SurvTRACE/blob/main/data/process_seer.py
 """
 import pandas as pd
 
-CAT_COLS = [
+CATEGORICAL_FEATURES = [
     "Sex",
     "Year of diagnosis",
     "Race recode (W, B, AI, API)",
@@ -21,14 +21,14 @@ CAT_COLS = [
     "Median household income inflation adj to 2019",
 ]
 
-NUM_COLS = [
+NUMERICAL_FEATURES = [
     "Regional nodes examined (1988+)",
     "CS tumor size (2004-2015)",
     "Total number of benign/borderline tumors for patient",
     "Total number of in situ/malignant tumors for patient",
 ]
 
-COLS_MAPPING = {
+COLUMNS_MAPPING = {
     0: "Patient ID",
     1: "Sex",
     2: "Year of diagnosis",
@@ -86,7 +86,7 @@ def load_seer(input_path, rename=True):
 
 def add_column_names(df):
     """Name the columns of the SEER dataset, when missing from the extraction."""
-    df.rename(COLS_MAPPING, axis=1, inplace=True)
+    df.rename(COLUMNS_MAPPING, axis=1, inplace=True)
     return df
 
 
