@@ -22,7 +22,7 @@ from ._losses import NLLPCHazardLoss
 from ._utils import pad_col
 
 
-# Skorch hack 1: this will be properly set parameters at runtime using callbacks.
+# Skorch hack 1: this will properly set parameters at runtime using callbacks.
 # See: https://stackoverflow.com/a/60170023
 class ShapeSetter(Callback):
     def on_train_begin(self, net, X=None, y=None):
