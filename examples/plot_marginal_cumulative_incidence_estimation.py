@@ -29,8 +29,10 @@ and attempting to enforce monotonicity at training time typically introduces
 severe over-estimation bias for large time horizons.
 """
 # %%
+from time import perf_counter
 import numpy as np
 from scipy.stats import weibull_min
+from sklearn.base import clone
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -38,19 +40,18 @@ from hazardous import GradientBoostingIncidence
 from lifelines import AalenJohansenFitter
 
 rng = np.random.default_rng(0)
-n_samples = 2_000
+n_samples = 3_000
 
 # Non-informative covariate because scikit-learn estimators expect at least
 # one feature.
 X_dummy = np.zeros(shape=(n_samples, 1), dtype=np.float32)
 
 base_scale = 1_000.0  # some arbitrary time unit
-t_max = 3.0 * base_scale
 
 distributions = [
     {"event_id": 1, "scale": 10 * base_scale, "shape": 0.5},
     {"event_id": 2, "scale": 3 * base_scale, "shape": 1},
-    {"event_id": 3, "scale": 2 * base_scale, "shape": 5},
+    {"event_id": 3, "scale": 3 * base_scale, "shape": 5},
 ]
 event_times = np.concatenate(
     [
@@ -73,6 +74,7 @@ y_uncensored = pd.DataFrame(
     )
 )
 y_uncensored["event"].value_counts().sort_index()
+t_max = y_uncensored["duration"].max()
 
 # %%
 #
@@ -103,7 +105,8 @@ def weibull_hazard(t, shape=1.0, scale=1.0, **ignored_kwargs):
 # them as reference to check that the estimators are unbiased by the censoring.
 # Here are the two estimators of interest:
 
-aj = AalenJohansenFitter(calculate_variance=True, seed=0)
+calculate_variance = n_samples <= 5_000
+aj = AalenJohansenFitter(calculate_variance=calculate_variance, seed=0)
 
 gb_incidence = GradientBoostingIncidence(
     learning_rate=0.03,
@@ -135,7 +138,7 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
     # fine-grained time grid. Note that integration errors can accumulate quite
     # quickly if the time grid is resolution too coarse, especially for the
     # Weibull distribution with shape < 1.
-    fine_time_grid = np.linspace(0, t_max, num=100_000)
+    fine_time_grid = np.linspace(0, t_max, num=1_000_000)
     dt = np.diff(fine_time_grid)[0]
     all_hazards = np.stack(
         [weibull_hazard(fine_time_grid, **dist) for dist in distributions],
@@ -161,11 +164,17 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
         ax.legend(loc="lower right")
 
         if gb_incidence is not None:
+            tic = perf_counter()
             gb_incidence.set_params(event_of_interest=event_id)
             gb_incidence.fit(X_dummy, y)
+            duration = perf_counter() - tic
+            print(f"GB Incidence for event {event_id} fit in {duration:.3f} s")
+            tic = perf_counter()
             cif_pred = gb_incidence.predict_cumulative_incidence(
                 X_dummy[0:1], coarse_timegrid
             )[0]
+            duration = perf_counter() - tic
+            print(f"GB Incidence for event {event_id} prediction in {duration:.3f} s")
             ax.plot(
                 coarse_timegrid,
                 cif_pred,
@@ -175,7 +184,10 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
             ax.set(title=f"Event {event_id}")
 
         if aj is not None:
+            tic = perf_counter()
             aj.fit(y["duration"], y["event"], event_of_interest=event_id)
+            duration = perf_counter() - tic
+            print(f"Aalen-Johansen for event {event_id} fit in {duration:.3f} s")
             aj.plot(label="Aalen-Johansen", ax=ax)
 
 
@@ -192,8 +204,8 @@ plot_cumulative_incidence_functions(
 # parameters to control the amount of censoring: lowering the location bound
 # increases the amount of censoring.
 censoring_times = rng.lognormal(
-    mean=0.01 * t_max,
-    sigma=t_max,
+    mean=5,
+    sigma=3,
     size=n_samples,
 )
 y_censored = pd.DataFrame(
@@ -226,8 +238,21 @@ plot_cumulative_incidence_functions(
 # time, however, in practice this often causes a sever over-estimation bias for
 # the large time horizons:
 
-gb_incidence.set_params(monotonic_incidence="at_training_time")
+# %%
+#
+# Finally let's try again to fit the GB Incidence models using a monotonicity
+# constraint:
+
+monotonic_gb_incidence = clone(gb_incidence).set_params(
+    monotonic_incidence="at_training_time"
+)
 plot_cumulative_incidence_functions(
-    distributions, gb_incidence=gb_incidence, y=y_censored
+    distributions, gb_incidence=monotonic_gb_incidence, y=y_censored
 )
 # %%
+#
+# The resulting incidence curves are indeed monotonic. However, for smaller
+# training set sizes of the training set, the resulting models can be
+# significantly biased, in particular in regions where the CIFs is getting
+# flatter. This effect diminishes with larger training set sizes (lower
+# epistemic uncertainty).
