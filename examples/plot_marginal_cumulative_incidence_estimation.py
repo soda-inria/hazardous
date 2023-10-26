@@ -252,7 +252,7 @@ plot_cumulative_incidence_functions(
 # %%
 #
 # The resulting incidence curves are indeed monotonic. However, for smaller
-# training set sizes of the training set, the resulting models can be
-# significantly biased, in particular in regions where the CIFs is getting
-# flatter. This effect diminishes with larger training set sizes (lower
-# epistemic uncertainty).
+# training set sizes, the resulting models can be significantly biased, in
+# particular large time horizons, where the CIFs are getting flatter. This
+# effect diminishes with larger training set sizes (lower epistemic
+# uncertainty).
