@@ -189,8 +189,8 @@ class IncidenceScoreComputer:
         else:
             k = self.event_of_interest
 
-        # Specify the binary classification target for each record in y and
-        # a reference time horizon:
+        # Specify the binary classification target for each record in y and a
+        # reference time horizon:
         #
         # - 1 when event of interest was observed before the reference time
         #   horizon,
@@ -198,7 +198,8 @@ class IncidenceScoreComputer:
         # - 0 otherwise: any other event happening at any time, censored record
         #   or event of interest happening after the reference time horizon.
         #
-        #   Note: censored events only contribute (as negative target) when
+        #   Note: censored events and optionally competing events (other thant
+        #   the event of interest) only contribute (as negative target) when
         #   their duration is larger than the reference target horizon.
         #   Otherwise, they are discarded by setting their weight to 0 in the
         #   following.
@@ -206,6 +207,8 @@ class IncidenceScoreComputer:
         y_binary = np.zeros(y_event.shape[0], dtype=np.int32)
         y_binary[(y_event == k) & (y_duration <= times)] = 1
 
+        # TODO: update the following comments to match the code.
+        #
         # Compute the weights for each term contributing to the Brier score
         # at the specified time horizons.
         #
@@ -222,8 +225,7 @@ class IncidenceScoreComputer:
 
         # Estimate the probability of censoring at current time point t.
         ipcw_times = self.ipcw_est.compute_ipcw_at(times)
-        before = times < y_duration
-        weights = np.where(before, ipcw_times, 0)
+        weights = np.where(y_duration > times, ipcw_times, 0)
         weights = np.where(y_binary, ipcw_y_duration, weights)
 
         return y_binary, weights
