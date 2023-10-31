@@ -224,9 +224,7 @@ class IncidenceScoreComputer:
         ipcw_times = self.ipcw_est.compute_ipcw_at(times)
         before = times < y_duration
         weights = np.where(before, ipcw_times, 0)
-
-        after_any_observed_event = (y_event > 0) & (y_duration <= times)
-        weights = np.where(after_any_observed_event, ipcw_y_duration, weights)
+        weights = np.where(y_binary, ipcw_y_duration, weights)
 
         return y_binary, weights
 
