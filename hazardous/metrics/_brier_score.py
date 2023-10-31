@@ -44,12 +44,7 @@ class IncidenceScoreComputer:
 
         # Estimate the censoring distribution from the training set
         # using Kaplan-Meier.
-        self.ipcw_est = IPCWEstimator().fit(
-            dict(
-                event=self.any_event_train,
-                duration=self.duration_train,
-            )
-        )
+        self.ipcw_est = IPCWEstimator(event_of_interest=event_of_interest).fit(y_train)
 
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
@@ -101,6 +96,7 @@ class IncidenceScoreComputer:
     def brier_score_incidence(self, y_true, y_pred, times):
         """Brier score for the cause-specific cumulative incidence function.
 
+        TODO: UPDATE
         Compute the Brier score values with IPCW adjustment for censoring for
         each cumulative incidence estimate for the event of interest and each
         requested time point and return the time-dependent Brier score averaged
@@ -355,6 +351,7 @@ def brier_score_incidence(
 ):
     r"""Time-dependent Brier score for the kth cause of event.
 
+    TODO: UPDATE
     .. math::
 
         \mathrm{BS}_k(t) = \frac{1}{n} \sum_{i=1}^n \hat{\omega}_i(t)

@@ -20,34 +20,50 @@ def test_ipcw_invariant_properties(seed):
 
     test_times = np.linspace(0, t_max, num=100)
 
-    est_competing = IPCWEstimator().fit(y_competing)
-    ipcw_values = est_competing.compute_ipcw_at(test_times)
+    est_ipcw_survival_on_competing_data = IPCWEstimator(event_of_interest="any").fit(
+        y_competing
+    )
+    ipcw_survival_on_competing_data = (
+        est_ipcw_survival_on_competing_data.compute_ipcw_at(test_times)
+    )
 
-    est_any_event = IPCWEstimator().fit(y_any_event)
-    ipcw_values_any_event = est_any_event.compute_ipcw_at(test_times)
+    est_ipcw_competing_on_any_event_data = IPCWEstimator(event_of_interest="any").fit(
+        y_any_event
+    )
+    ipcw_competing_on_any_event_data = (
+        est_ipcw_competing_on_any_event_data.compute_ipcw_at(test_times)
+    )
 
     # The IPCW should be the same for any event and competing risk: they
     # are defined by the censoring distribution only.
-    assert_allclose(ipcw_values, ipcw_values_any_event)
+    assert_allclose(ipcw_survival_on_competing_data, ipcw_competing_on_any_event_data)
 
     # The IPCW should be greater than 1 as they are inverse probabilities.
-    assert np.all(ipcw_values >= 1.0), ipcw_values
+    assert np.all(
+        ipcw_survival_on_competing_data >= 1.0
+    ), ipcw_survival_on_competing_data
 
     # The IPCW values should be finite.
-    assert np.all(np.isfinite(ipcw_values)), ipcw_values
+    assert np.all(
+        np.isfinite(ipcw_survival_on_competing_data)
+    ), ipcw_survival_on_competing_data
 
     # The IPCW at time 0 should be 1: there cannot be any censoring there.
-    assert_allclose(ipcw_values[0], 1.0)
+    assert_allclose(ipcw_survival_on_competing_data[0], 1.0)
 
     # The IPCW should be monotonically increasing as the censoring survival
     # probability is monotonically decreasing.
-    assert np.all(np.diff(ipcw_values) >= 0.0), ipcw_values
+    assert np.all(
+        np.diff(ipcw_survival_on_competing_data) >= 0.0
+    ), ipcw_survival_on_competing_data
 
     # The IPCW values should be strictly larger than 1 for all times larger
     # than the first censored observation.
     first_censored = y_competing["duration"][y_competing["event"] == 0].min()
     after_first_censored_mask = test_times > first_censored
-    ipcw_after_first_censored = ipcw_values[after_first_censored_mask]
+    ipcw_after_first_censored = ipcw_survival_on_competing_data[
+        after_first_censored_mask
+    ]
     assert np.all(ipcw_after_first_censored > 1.0), ipcw_after_first_censored
 
     # The IPCW are extrapolated with a constant value equal to the last IPCW
@@ -56,11 +72,12 @@ def test_ipcw_invariant_properties(seed):
     # XXX: not sure if this is the best behavior when using IPCW to debias a
     # performance metric evaluated on a test dataset that has data points
     # beyond the maximum time observed on the training dataset.
-    extrapolated_ipcw = est_competing.compute_ipcw_at(
+    extrapolated_ipcw = est_ipcw_survival_on_competing_data.compute_ipcw_at(
         np.linspace(1.1 * t_max, 10 * t_max, num=5)
     )
     assert_allclose(
-        extrapolated_ipcw, np.full_like(extrapolated_ipcw, fill_value=ipcw_values[-1])
+        extrapolated_ipcw,
+        np.full_like(extrapolated_ipcw, fill_value=ipcw_survival_on_competing_data[-1]),
     )
 
 
@@ -115,10 +132,22 @@ def test_ipcw_no_censoring(competing_risk, seed):
             duration=durations,
         )
 
-    est = IPCWEstimator().fit(y_uncensored)
+    est = IPCWEstimator(event_of_interest="any").fit(y_uncensored)
     test_times = np.arange(t_max)
     ipcw_values = est.compute_ipcw_at(test_times)
     assert_allclose(ipcw_values, np.ones_like(ipcw_values))
+
+    if competing_risk:
+        for event_of_interest in [1, 2]:
+            est = IPCWEstimator(event_of_interest=event_of_interest).fit(y_uncensored)
+            test_times = np.arange(t_max)
+            ipcw_values = est.compute_ipcw_at(test_times)
+            assert ipcw_values[-1] > 1
+    else:
+        est = IPCWEstimator(event_of_interest=1).fit(y_uncensored)
+        test_times = np.arange(t_max)
+        ipcw_values = est.compute_ipcw_at(test_times)
+        assert_allclose(ipcw_values, np.ones_like(ipcw_values))
 
 
 @pytest.mark.parametrize("competing_risk", [True, False])
@@ -144,7 +173,7 @@ def test_ipcw_consistent_with_sksurv(competing_risk):
     max_observed_duration = y["duration"][y["event"] != 0].max()
     test_times = np.linspace(0, max_observed_duration, num=5)
 
-    est = IPCWEstimator().fit(y)
+    est = IPCWEstimator(event_of_interest="any").fit(y)
     ipcw_values = est.compute_ipcw_at(test_times)
 
     # Expected values computed with scikit-survival:

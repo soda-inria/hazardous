@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
+from sklearn import clone
 from sklearn.model_selection import GridSearchCV, train_test_split
 
 from hazardous import GradientBoostingIncidence
@@ -14,7 +15,7 @@ from hazardous.metrics import (
 )
 
 # Change the following manually to check seed insensitivity:
-SEED_RANGE = range(1)
+SEED_RANGE = range(2)
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
@@ -120,8 +121,14 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     est = GradientBoostingIncidence(
         event_of_interest=3, show_progressbar=False, random_state=seed
     )
+    bad_est = clone(est)
+    bad_est.set_params(n_iter=1, max_leaf_nodes=2, hard_zero_fraction=0.8)
+    bad_est.fit(X_train, y_train)
+    bad_score = bad_est.score(X_test, y_test)
+
     grid_search = GridSearchCV(est, param_grid, cv=2, n_jobs=2)
     grid_search.fit(X_train, y_train)
+
     assert grid_search.best_params_ == {
         "n_iter": 10,
         "max_leaf_nodes": 10,
@@ -130,9 +137,8 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
 
     # Check that both the internal cross-validated IBS and the IBS on the test
     # set are good (lower IBS is better, hence higher negative IBS is better).
-    max_expected_ibs = 0.17  # found emprically with different seed
-    assert grid_search.best_score_ > -max_expected_ibs
-    grid_search.best_estimator_.score(X_test, y_test) > -max_expected_ibs
+    assert grid_search.best_score_ > bad_score
+    grid_search.best_estimator_.score(X_test, y_test) > bad_score
 
     # Check that some other parameter values lead to much poorer IBS.
     cv_results = pd.DataFrame(grid_search.cv_results_).sort_values("mean_test_score")

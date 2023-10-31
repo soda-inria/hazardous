@@ -4,7 +4,7 @@ from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 
-from .utils import check_y_survival
+from .utils import check_event_of_interest, check_y_survival
 
 
 class IPCWEstimator(BaseEstimator):
@@ -30,7 +30,17 @@ class IPCWEstimator(BaseEstimator):
 
     Note: this estimator extrapolates with a constant value equal to the last
     IPCW value beyond the last observed time.
+
+    Parameters
+    ----------
+    event_of_interest : int or any
+        If integer, this estimator estimates the aggregate survival function to
+        either censoring or any other competing event.
+        If "any", this estimator estimates to censoring.
     """
+
+    def __init__(self, event_of_interest="any"):
+        self.event_of_interest = event_of_interest
 
     def fit(self, y):
         """Compute the censoring survival function using Kaplan Meier
@@ -49,7 +59,11 @@ class IPCWEstimator(BaseEstimator):
         event, duration = check_y_survival(y)
 
         km = KaplanMeierFitter()
-        censoring = event == 0
+        check_event_of_interest(self.event_of_interest)
+        if self.event_of_interest == "any":
+            censoring = event == 0
+        else:
+            censoring = event != self.event_of_interest
         km.fit(
             durations=duration,
             event_observed=censoring,
