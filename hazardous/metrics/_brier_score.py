@@ -198,35 +198,20 @@ class IncidenceScoreComputer:
         # - 0 otherwise: any other event happening at any time, censored record
         #   or event of interest happening after the reference time horizon.
         #
-        #   Note: censored events and optionally competing events (other thant
+        #   Note: censored events and optionally competing events (other than
         #   the event of interest) only contribute (as negative target) when
         #   their duration is larger than the reference target horizon.
         #   Otherwise, they are discarded by setting their weight to 0 in the
         #   following.
 
-        y_binary = np.zeros(y_event.shape[0], dtype=np.int32)
-        y_binary[(y_event == k) & (y_duration <= times)] = 1
+        event_observed_before_horizon = (y_event == k) & (y_duration <= times)
+        y_binary = event_observed_before_horizon.astype(np.int32)
 
-        # TODO: update the following comments to match the code.
-        #
-        # Compute the weights for each term contributing to the Brier score
-        # at the specified time horizons.
-        #
-        # - error of a prediction for a time horizon before the occurence of an
-        #   event (either censored or uncensored) is weighted by the inverse
-        #   probability of censoring at that time horizon.
-        #
-        # - error of a prediction for a time horizon after the any observed event
-        #   is weighted by inverse censoring probability at the actual time
-        #   of the observed event.
-        #
-        # - "error" of a prediction for a time horizon after a censored event has
-        #   0 weight and do not contribute to the Brier score computation.
-
-        # Estimate the probability of censoring at current time point t.
         ipcw_times = self.ipcw_est.compute_ipcw_at(times)
-        weights = np.where(y_duration > times, ipcw_times, 0)
-        weights = np.where(y_binary, ipcw_y_duration, weights)
+        any_event_or_censoring_after_horizon = y_duration > times
+
+        weights = np.where(any_event_or_censoring_after_horizon, ipcw_times, 0)
+        weights = np.where(event_observed_before_horizon, ipcw_y_duration, weights)
 
         return y_binary, weights
 
