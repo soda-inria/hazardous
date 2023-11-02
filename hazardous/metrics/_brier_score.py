@@ -206,9 +206,7 @@ class IncidenceScoreComputer:
         #   their duration is larger than the reference target horizon.
         #   Otherwise, they are discarded by setting their weight to 0 in the
         #   following.
-
-        y_binary = np.zeros(y_event.shape[0], dtype=np.int32)
-        y_binary[(y_event == k) & (y_duration <= times)] = 1
+        y_binary = ((y_event == k) & (y_duration <= times)).astype(np.int32)
 
         # Compute the weights for each term contributing to the Brier score
         # at the specified time horizons.
