@@ -164,9 +164,10 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
             "Integrated theoretical cumulative incidence curve for event"
             f" {event_id} in {perf_counter() - tic:.3f} s"
         )
+        downsampling_rate = fine_time_grid.size // coarse_timegrid.size
         ax.plot(
-            fine_time_grid,
-            theoretical_cif,
+            fine_time_grid[::downsampling_rate],
+            theoretical_cif[::downsampling_rate],
             linestyle="dashed",
             label="Theoretical incidence",
         ),
@@ -212,13 +213,14 @@ plot_cumulative_incidence_functions(
 # CIFs estimated on censored data
 # -------------------------------
 #
-# Add some independent censoring with some arbitrary location and scale
-# parameters to control the amount of censoring: lowering the location bound
-# increases the amount of censoring.
-censoring_times = rng.lognormal(
-    mean=5,
-    sigma=3,
+# Add some independent censoring with some arbitrary parameters to control the
+# amount of censoring: lowering the expected value bound increases the amount
+# of censoring.
+censoring_times = weibull_min.rvs(
+    1.0,
+    scale=1.5 * base_scale,
     size=n_samples,
+    random_state=rng,
 )
 y_censored = pd.DataFrame(
     dict(
