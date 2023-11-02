@@ -138,7 +138,8 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
     # fine-grained time grid. Note that integration errors can accumulate quite
     # quickly if the time grid is resolution too coarse, especially for the
     # Weibull distribution with shape < 1.
-    fine_time_grid = np.linspace(0, t_max, num=1_000_000)
+    tic = perf_counter()
+    fine_time_grid = np.linspace(0, t_max, num=10_000_000)
     dt = np.diff(fine_time_grid)[0]
     all_hazards = np.stack(
         [weibull_hazard(fine_time_grid, **dist) for dist in distributions],
@@ -146,6 +147,10 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
     )
     any_event_hazards = all_hazards.sum(axis=0)
     any_event_survival = np.exp(-(any_event_hazards.cumsum(axis=-1) * dt))
+    print(
+        "Integrated theoretical any event survival curve in"
+        f" {perf_counter() - tic:.3f} s"
+    )
 
     censoring_fraction = (y["event"] == 0).mean()
     plt.suptitle(
@@ -155,13 +160,16 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
 
     for event_id, (ax, hazards_i) in enumerate(zip(axes, all_hazards), 1):
         theoretical_cif = (hazards_i * any_event_survival).cumsum(axis=-1) * dt
+        print(
+            "Integrated theoretical cumulative incidence curve for event"
+            f" {event_id} in {perf_counter() - tic:.3f} s"
+        )
         ax.plot(
             fine_time_grid,
             theoretical_cif,
             linestyle="dashed",
             label="Theoretical incidence",
         ),
-        ax.legend(loc="lower right")
 
         if gb_incidence is not None:
             tic = perf_counter()
@@ -180,7 +188,6 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
                 cif_pred,
                 label="GradientBoostingIncidence",
             )
-            ax.legend(loc="lower right")
             ax.set(title=f"Event {event_id}")
 
         if aj is not None:
@@ -189,6 +196,11 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
             duration = perf_counter() - tic
             print(f"Aalen-Johansen for event {event_id} fit in {duration:.3f} s")
             aj.plot(label="Aalen-Johansen", ax=ax)
+
+        if event_id == 1:
+            ax.legend(loc="lower right")
+        else:
+            ax.legend().remove()
 
 
 plot_cumulative_incidence_functions(
