@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from lifelines import AalenJohansenFitter, KaplanMeierFitter
 from scipy.interpolate import interp1d
@@ -82,18 +84,27 @@ class IPCWEstimator(BaseEstimator):
                 #
                 # TODO: the AJ estimators recompute the censoring survival
                 # using KM internally: we could avoid redundant computation by
-                # reimplmenting the AJ estimators directly instead of relying
+                # reimplementing the AJ estimators directly instead of relying
                 # on lifelines.
                 ajf = AalenJohansenFitter(calculate_variance=False, seed=0)
-                ajf.fit(
-                    durations=duration,
-                    event_observed=event,
-                    event_of_interest=event_id,
-                )
+                with warnings.catch_warnings():
+                    # Ignore the warning about tied times.
+                    warnings.simplefilter("ignore", Warning)
+                    ajf.fit(
+                        durations=duration,
+                        event_observed=event,
+                        event_of_interest=event_id,
+                    )
                 cif_df = ajf.cumulative_density_
-                assert (self.unique_times_ == cif_df.index.values).all()
                 competing_cif = cif_df[f"CIF_{event_id}"].values
-                self.censoring_survival_probs_ *= 1 - competing_cif
+                cif_func = interp1d(
+                    cif_df.index,
+                    competing_cif,
+                    kind="previous",
+                    bounds_error=False,
+                    fill_value="extrapolate",
+                )
+                self.censoring_survival_probs_ *= 1 - cif_func(self.unique_times_)
 
         self.censoring_survival_func_ = interp1d(
             self.unique_times_,
