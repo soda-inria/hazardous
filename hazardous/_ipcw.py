@@ -1,5 +1,5 @@
 import numpy as np
-from lifelines import KaplanMeierFitter
+from lifelines import AalenJohansenFitter, KaplanMeierFitter
 from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
@@ -57,21 +57,44 @@ class IPCWEstimator(BaseEstimator):
             Fitted estimator.
         """
         event, duration = check_y_survival(y)
-
-        km = KaplanMeierFitter()
         check_event_of_interest(self.event_of_interest)
-        if self.event_of_interest == "any":
-            censoring = event == 0
-        else:
-            censoring = event != self.event_of_interest
-        km.fit(
-            durations=duration,
-            event_observed=censoring,
-        )
 
-        df = km.survival_function_
-        self.unique_times_ = df.index
-        self.censoring_survival_probs_ = df.values[:, 0]
+        km_censoring = KaplanMeierFitter()
+        km_censoring.fit(
+            durations=duration,
+            event_observed=event == 0,
+        )
+        censoring_survival_df = km_censoring.survival_function_
+        self.unique_times_ = censoring_survival_df.index
+        self.censoring_survival_probs_ = censoring_survival_df.values[:, 0]
+
+        if self.event_of_interest != "any":
+            # Adjust for competing events by multiplying by the event specific
+            # "survival" functions (complement of cumulated density functions)
+            # for each competing event.
+            competing_event_ids = np.unique(event[event != 0])
+            competing_event_ids = competing_event_ids[
+                competing_event_ids != self.event_of_interest
+            ]
+            for event_id in competing_event_ids:
+                # TODO: unhardcode the jitter seed for tied times handling by
+                # passing a random state argument to IPWEstimator.
+                #
+                # TODO: the AJ estimators recompute the censoring survival
+                # using KM internally: we could avoid redundant computation by
+                # reimplmenting the AJ estimators directly instead of relying
+                # on lifelines.
+                ajf = AalenJohansenFitter(calculate_variance=False, seed=0)
+                ajf.fit(
+                    durations=duration,
+                    event_observed=event,
+                    event_of_interest=event_id,
+                )
+                cif_df = ajf.cumulative_density_
+                assert (self.unique_times_ == cif_df.index.values).all()
+                competing_cif = cif_df[f"CIF_{event_id}"].values
+                self.censoring_survival_probs_ *= 1 - competing_cif
+
         self.censoring_survival_func_ = interp1d(
             self.unique_times_,
             self.censoring_survival_probs_,
