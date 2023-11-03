@@ -4,7 +4,7 @@ from functools import lru_cache
 import numpy as np
 import pandas as pd
 import pytest
-from lifelines import CoxPHFitter, KaplanMeierFitter
+from lifelines import AalenJohansenFitter, CoxPHFitter, KaplanMeierFitter
 from lifelines.datasets import load_regression_dataset
 from numpy.testing import assert_allclose
 from scipy.interpolate import interp1d
@@ -311,7 +311,7 @@ def _integrate_weibull_incidence_curves(distribution_params, t_max):
     to get the CIFs instead of just considering the parametric defintion of the
     cumulative density functions (CDFs) of the Weibull distribution.
     """
-    fine_time_grid = np.linspace(0, 1.2 * t_max, num=1_000_000)
+    fine_time_grid = np.linspace(0, 1.1 * t_max, num=1_000_000)
     dt = np.diff(fine_time_grid)[0]
     all_hazards = np.stack(
         [_weibull_hazard(fine_time_grid, **params) for params in distribution_params],
@@ -319,7 +319,8 @@ def _integrate_weibull_incidence_curves(distribution_params, t_max):
     )
     assert all_hazards.shape == (len(distribution_params), fine_time_grid.size)
     any_event_hazards = all_hazards.sum(axis=0)
-    any_event_survival = np.exp(-(any_event_hazards.cumsum(axis=-1) * dt))
+    any_event_survival = np.exp(-(any_event_hazards[1:].cumsum(axis=-1) * dt))
+    any_event_survival = np.concatenate([[1.0], any_event_survival])
     cifs = np.stack(
         [
             ((hazards_i[1:] * any_event_survival[:-1]).cumsum(axis=-1) * dt)
@@ -336,7 +337,7 @@ def _integrate_weibull_incidence_curves(distribution_params, t_max):
     )
     # Downscale the survival and CIFs to make the interpolation faster and more
     # memory efficient.
-    downscale_factor = fine_time_grid.size // 1000
+    downscale_factor = fine_time_grid.size // 10_000
     return (
         interp1d(
             fine_time_grid[::downscale_factor].copy(),
@@ -386,17 +387,18 @@ def _sample_test_data(
     assert event_counts.max() >= event_counts.min() * 1.5  # imbalanced events
 
     t_max = data.query("event > 0")["duration"].max()
+    event_ids = [d["event_id"] for d in distributions if d["event_id"] > 0]
     true_survival, true_cifs = _integrate_weibull_incidence_curves(
         [d["params"] for d in distributions if d["event_id"] > 0], t_max
     )
-    return data, true_survival, true_cifs, t_max
+    return data, true_survival, dict(zip(event_ids, true_cifs)), t_max
 
 
 @pytest.mark.parametrize("censored", [True, False])
-@pytest.mark.parametrize("seed", range(3))
+@pytest.mark.parametrize("seed", range(2))
 def test_brier_score_optimality_survival(censored, seed):
     # Check that IPCW brier_score_survival behaves as a censor-agnostic proper
-    # scoring rule.
+    # scoring rule for surival probability estimation.
     n_samples = 2_000
     y, true_survival_func, _, t_max = _sample_test_data(
         n_samples=n_samples, censored=censored, random_state=seed
@@ -406,8 +408,8 @@ def test_brier_score_optimality_survival(censored, seed):
     # survival analysis by ignoring the event_id types.
     y["event"] = (y["event"] > 0).astype(np.int32)
 
-    # Compute the theoretical survival probability at a given time horizon.
-    relative_time_horizons = np.asarray([0.1, 0.2, 0.5, 0.8])
+    # Compute the theoretical survival probability at given time horizons.
+    relative_time_horizons = np.linspace(0, 1, num=11)
     time_horizons = relative_time_horizons * t_max
     true_survival_at_horizons = true_survival_func(time_horizons)
 
@@ -430,11 +432,14 @@ def test_brier_score_optimality_survival(censored, seed):
         fill_value="extrapolate",
     )
     km_estimates = km_survival_func(time_horizons)
-    assert_allclose(km_estimates, true_survival_at_horizons, atol=0.05)
+
+    # Decreasing atol would require increasing n_samples but would make the
+    # rest of the test slower.
+    assert_allclose(km_estimates, true_survival_at_horizons, atol=0.03)
 
     # Compare the Brier score computed on the sampled events for the true
-    # survival probrability at the given time horizon with the Brier scores
-    # computed on a grid of survival probabilities.
+    # survival probability at the given time horizons with the Brier scores
+    # computed on a grid of candidate survival probability estimates.
     expected_best_bs_values = brier_score_survival(
         y,
         y,
@@ -442,7 +447,7 @@ def test_brier_score_optimality_survival(censored, seed):
         times=time_horizons,
     )
 
-    survival_prob_grid = np.linspace(0, 1, num=11)
+    survival_prob_grid = np.linspace(0, 1, num=21)
     grid_bs_values = np.stack(
         [
             brier_score_survival(
@@ -470,16 +475,96 @@ def test_brier_score_optimality_survival(censored, seed):
             expected_best_bs_value <= best_bs_value.min() + tol
         ), relative_time_horizon
 
-    # Check that the Brier score makes is discriminative enough to identify
-    # the survival probability by minimizing it.
+    # Check that the Brier score is discriminative enough to identify the true
+    # survival probability by minimization.
     bs_min_estimates = survival_prob_grid[grid_bs_values.argmin(axis=0)]
-    assert_allclose(bs_min_estimates, true_survival_at_horizons, atol=0.1)
+    assert_allclose(bs_min_estimates, true_survival_at_horizons, atol=0.05)
 
 
 @pytest.mark.parametrize("event_of_interest", [1, 2, 3])
 @pytest.mark.parametrize("censored", [True, False])
 @pytest.mark.parametrize("seed", range(2))
 def test_brier_score_optimality_competing_risks(event_of_interest, censored, seed):
-    # TODO: adapt test_brier_score_optimality_survival to the competing risks
-    # setting.
-    pass
+    # Check that IPCW brier_score_incidence behaves as a censor-agnostic proper
+    # scoring rule for competing risks incidence probability estimation.
+    n_samples = 8_000
+    y, _, true_ci_funcs, t_max = _sample_test_data(
+        n_samples=n_samples, censored=censored, random_state=seed
+    )
+
+    # Compute the theoretical cumulative incidence at given time horizons.
+    relative_time_horizons = np.linspace(0, 1, num=11)
+    time_horizons = relative_time_horizons * t_max
+    true_incidence_at_horizons = true_ci_funcs[event_of_interest](time_horizons)
+
+    # Check that our theoretical cumulative incidence estimate is compatible
+    # with the Aalean-Johansen estimate. This only works for a large enough
+    # value for n_samples.
+    aj = AalenJohansenFitter(calculate_variance=False)
+    aj.fit(
+        durations=y["duration"],
+        event_observed=y["event"],
+        event_of_interest=event_of_interest,
+    )
+    aj_ci_df = aj.cumulative_density_
+    aj_times = aj_ci_df.index
+    aj_cumulative_incidence = aj_ci_df.values[:, 0]
+    aj_ci_func = interp1d(
+        aj_times,
+        aj_cumulative_incidence,
+        kind="previous",
+        bounds_error=False,
+        fill_value="extrapolate",
+    )
+    aj_incidence = aj_ci_func(time_horizons)
+
+    # Decreasing atol requires increasing n_samples but would make the rest of
+    # the test slower. Furthermore, we would expect the usual 1/sqrt(n_samples)
+    # statistical convergence rate which is not very favorable.
+    assert_allclose(aj_incidence, true_incidence_at_horizons, atol=0.03)
+
+    # Compare the Brier score computed on the sampled events for the true
+    # incidences at the given time horizons with the Brier scores computed on a
+    # grid of candidate incidence values.
+    expected_best_bs_values = brier_score_incidence(
+        y,
+        y,
+        np.stack([true_incidence_at_horizons] * n_samples, axis=0),
+        event_of_interest=event_of_interest,
+        times=time_horizons,
+    )
+
+    incidence_grid = np.linspace(0, 1, num=21)
+    grid_bs_values = np.stack(
+        [
+            brier_score_incidence(
+                y,
+                y,
+                np.full(shape=(n_samples, time_horizons.size), fill_value=y_pred),
+                event_of_interest=event_of_interest,
+                times=time_horizons,
+            )
+            for y_pred in incidence_grid
+        ],
+        axis=0,
+    )
+    assert grid_bs_values.shape == (
+        incidence_grid.size,
+        relative_time_horizons.size,
+    )
+    # The true incidence should be the best one:
+    best_bs_values = grid_bs_values.min(axis=0)
+    assert best_bs_values.shape == time_horizons.shape
+    assert expected_best_bs_values.shape == time_horizons.shape
+    tol = 0.01
+    for expected_best_bs_value, best_bs_value, relative_time_horizon in zip(
+        expected_best_bs_values, best_bs_values, relative_time_horizons
+    ):
+        assert (
+            expected_best_bs_value <= best_bs_value.min() + tol
+        ), relative_time_horizon
+
+    # Check that the Brier score is discriminative enough to identify the true
+    # incidence by minimization.
+    bs_min_estimates = incidence_grid[grid_bs_values.argmin(axis=0)]
+    assert_allclose(bs_min_estimates, true_incidence_at_horizons, atol=0.05)
