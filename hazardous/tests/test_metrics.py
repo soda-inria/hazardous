@@ -302,13 +302,15 @@ def _sample_marginal_competing_weibull_data(
 def _integrate_weibull_incidence_curves(distribution_params, t_max):
     """Numerically integrate the Weibull hazard functions to get the CIFs.
 
-    The numerical integration is performed using a fine time grid and the
+    The numerical integration is performed using a very fine time grid and
+    then down-sampled to a coarser time grid to build the returned time
+    interpolators.
 
-    Note: in a competing risks setting, the cause-specific hazard functions are
+    Note: in a competing risks setting, the cause-specific incidence functions are
     coupled: they do not only depend on the distribution parameters that
     determine the cause-specific hazards but also on the aggregate survival to
     all competing events. This is why we need to integrate the hazard functions
-    to get the CIFs instead of just considering the parametric defintion of the
+    to get the CIFs instead of just considering the parametric definition of the
     cumulative density functions (CDFs) of the Weibull distribution.
     """
     fine_time_grid = np.linspace(0, 1.1 * t_max, num=1_000_000)
