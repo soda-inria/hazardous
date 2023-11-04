@@ -2,7 +2,7 @@ name: Preview doc in PRs
 
 on:
   workflow_run:
-    workflows: ["push_doc"]
+    workflows: ["Build documentation"]
     types:
       - completed
 
@@ -17,7 +17,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           status: pending
           sha: ${{ github.event.workflow_run.head_sha }}
-          context: 'Doc preview'
+          context: 'Doc preview (waiting for build)'
 
       - uses: dawidd6/action-download-artifact@v2
         with:
