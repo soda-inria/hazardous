@@ -24,7 +24,7 @@ jobs:
           github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: push_doc.yml
           run_id: ${{ github.event.workflow_run.id }}
-          name: push_doc
+          name: doc-preview
 
       - name: Get pull request number
         id: pull-request-number
@@ -38,9 +38,12 @@ jobs:
           node-version: '16'
       - run: npm install --global netlify-cli@6
       - name: Deploy to Netlify
+        # The github secrets hold a Personal Access Token (PAT) managed by
+        # ogrisel on Netlify. I should allow to programmatically upload doc
+        # previews under the hazardous-doc.netlify.app domain.
         env:
+          NETLIFY_SITE_ID: hazardous-doc
           NETLIFY_AUTH_TOKEN: ${{secrets.NETLIFY_AUTH_TOKEN}}
-          NETLIFY_SITE_ID: ${{secrets.NETLIFY_SITE_ID}}
         run: |
           echo "Deploying PR ${{steps.pull-request-number.outputs.result}} to Netlify"
           netlify deploy --dir=build --alias=pull-request-${{steps.pull-request-number.outputs.result}}

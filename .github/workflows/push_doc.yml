@@ -1,4 +1,4 @@
-name: Publish documentation
+name: Build documentation
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         uses: actions/upload-artifact@v3
         with:
-          name: jupyter-book
+          name: doc-preview
           path: |
             ./build
             pull_request_number
