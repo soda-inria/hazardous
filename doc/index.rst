@@ -22,9 +22,10 @@ This package will also offer neural network based estimators by leveraging
 
 - License: MIT
 - GitHub repository: https://github.com/soda-inria/hazardous
+- Changelog: https://github.com/soda-inria/hazardous/CHANGES.rst
 - Status: under development, API is subject to change without notice.
 
-
+.. currentmodule:: hazardous
 
 .. toctree::
    :maxdepth: 2
@@ -32,10 +33,3 @@ This package will also offer neural network based estimators by leveraging
 
    api
    auto_examples/index
-
-.. currentmodule:: hazardous
-
-.. container:: right-align
-
-   `Recent changes <CHANGES.html>`_
-
