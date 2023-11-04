@@ -3,10 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-HΛZΛRDOUS: predictive survival and competing risks analysis in Python
-======================================================================
+HΛZΛRDOUS
+=========
 
-The purpose of this repository is to provide a Python implementation of
+*Predictive survival and competing risks analysis in Python*
+
+The objective of this library is to provide a Python implementation of
 time-to-event prediction models in the presence of right-censored data.
 
 The estimators of this library build on top of `scikit-learn
@@ -20,9 +22,14 @@ This package will also offer neural network based estimators by leveraging
 `PyTorch <https://pytorch.org>`_ and `skorch
 <https://skorch.readthedocs.io/>`_.
 
+This library puts a focus on predictive accuracy rather than on inference.
+Quantifying the statistical association or causal effect of covariates with/on
+the cumulated event incidence or instantaneous hazard rate is not in the scope
+of this library at this time.
+
 - License: MIT
 - GitHub repository: https://github.com/soda-inria/hazardous
-- Changelog: https://github.com/soda-inria/hazardous/CHANGES.rst
+- Changelog: https://github.com/soda-inria/hazardous/blob/main/CHANGES.rst
 - Status: under development, API is subject to change without notice.
 
 .. currentmodule:: hazardous
