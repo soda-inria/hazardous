@@ -17,7 +17,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           status: pending
           sha: ${{ github.event.workflow_run.head_sha }}
-          context: 'Doc preview (waiting for build)'
+          context: 'Doc preview'
 
       - uses: dawidd6/action-download-artifact@v2
         with:
