@@ -41,8 +41,11 @@ jobs:
         # The github secrets hold a Personal Access Token (PAT) managed by
         # ogrisel on Netlify. I should allow to programmatically upload doc
         # previews under the hazardous-doc.netlify.app domain.
+        #
+        # The netlify site id can be inspected from the CLI using:
+        #   netlify sites:list
         env:
-          NETLIFY_SITE_ID: hazardous-doc
+          NETLIFY_SITE_ID: ${{secrets.NETLIFY_SITE_ID}}
           NETLIFY_AUTH_TOKEN: ${{secrets.NETLIFY_AUTH_TOKEN}}
         run: |
           echo "Deploying PR ${{steps.pull-request-number.outputs.result}} to Netlify"
