@@ -6,22 +6,36 @@
 HΛZΛRDOUS: predictive survival and competing risks analysis in Python
 ======================================================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+The purpose of this repository is to provide a Python implementation of
+time-to-event prediction models in the presence of right-censored data.
 
-.. currentmodule:: hazardous
+The estimators of this library build on top of `scikit-learn
+<https://scikit-learn.org>`_ components and extend the scikit-learn API to
+offer dedicated prediction methods for survival and competing risks analysis.
+
+They should be interoperable with scikit-learn tools such as pipelines, column
+transformers, cross-validation, hyper-parameter seach tools, etc.
+
+This package will also offer neural network based estimators by leveraging
+`PyTorch <https://pytorch.org>`_ and `skorch
+<https://skorch.readthedocs.io/>`_.
 
 - License: MIT
 - GitHub repository: https://github.com/soda-inria/hazardous
 - Status: under development, API is subject to change without notice.
 
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   api
+   auto_examples/index
+
+.. currentmodule:: hazardous
+
 .. container:: right-align
 
    `Recent changes <CHANGES.html>`_
 
-.. toctree::
-   :hidden:
-
-   auto_examples/index
-   api
