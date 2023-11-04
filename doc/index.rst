@@ -9,7 +9,7 @@ HΛZΛRDOUS
 *Predictive survival and competing risks analysis in Python*
 
 The objective of this library is to provide a Python implementation of
-time-to-event prediction models in the presence of right-censored data.
+**time-to-event prediction models** in the presence of right-censored data.
 
 The estimators of this library build on top of `scikit-learn
 <https://scikit-learn.org>`_ components and extend the scikit-learn API to
