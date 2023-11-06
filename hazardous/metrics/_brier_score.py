@@ -389,13 +389,13 @@ def brier_score_incidence(
         \mathrm{BS}_k(t) = \frac{1}{n} \sum_{i=1}^n \hat{\omega}_i(t)
         (\mathbb{I}(t_i \leq t, \delta_i = k) - \hat{F}_k(t|\mathbf{x}_i))^2
 
-    where :math:`\hat{F}_k(t | \mathbf{x}_i)` is the estimate of the
+    where :math:`\hat{F}_k(t | \mathbf{x}_i)` is an estimate of the
     (uncensored) cumulative incidence for the kth event up to time point
     :math:`t` for a feature vector :math:`\mathbf{x}_i` [4]:
 
     .. math::
 
-            \hat{F}_k(t | \mathbf{x}_i) = P(T_i \leq t, E_i = k | \mathbf{x}_i)
+            \hat{F}_k(t | \mathbf{x}_i) \approx P(T_i \leq t, E_i = k | \mathbf{x}_i)
 
     and :math:`\hat{\omega}_i(t)` are IPCW weigths based on the Kaplan-Meier
     estimate of the censoring distribution :math:`\hat{G}(t)`:
