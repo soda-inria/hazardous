@@ -128,12 +128,12 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
 
     time_horizon : float or int, default=None
         A specific time horizon `t_horizon` to treat the model as a
-        probabilistic classifier to estimate `E[T < t_horizon, E = k|X]` where
-        `T` is a random variable representing the (uncensored) event and `E`
+        probabilistic classifier to estimate ``𝔼[T < t_horizon, E = k|X]`` where
+        ``T`` is a random variable representing the (uncensored) event and ``E``
         a random categorical variable representing the (uncensored) event type.
 
-        When specified, the `predict_proba` method returns an estimate of
-        `E[T < t_horizon, E = k|X]` for each provided realisation of `X`.
+        When specified, the ``predict_proba`` method returns an estimate of
+        ``𝔼[T < t_horizon, E = k|X]`` for each provided realization of ``X``.
 
     monotonic_incidence : str or False, default=False
         Whether to constrain the CIF to be monotonic with respect to time.
