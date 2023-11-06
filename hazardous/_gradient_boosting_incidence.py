@@ -129,8 +129,8 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
     time_horizon : float or int, default=None
         A specific time horizon `t_horizon` to treat the model as a
         probabilistic classifier to estimate `E[T < t_horizon, E = k|X]` where
-        `T` is a random variable representing the (uncensored) event and E a
-        random categorical variable representing the (uncensored) event type.
+        `T` is a random variable representing the (uncensored) event and `E`
+        a random categorical variable representing the (uncensored) event type.
 
         When specified, the `predict_proba` method returns an estimate of
         `E[T < t_horizon, E = k|X]` for each provided realisation of `X`.
