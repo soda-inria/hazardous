@@ -223,8 +223,10 @@ class IncidenceScoreComputer:
         #   they happen either before or after the reference time horizon.
         #
         # This IPCW scheme for survival analysis (binary events) is described
-        # in [1] and is extended to multiple competing events in [2].
-        y_binary = ((y_event == k) & (y_duration <= times)).astype(np.int32)
+        # in [Graf1999] and is extended to multiple competing events in
+        # [Kretowska2018].
+        event_k_before_horizon = (y_event == k) & (y_duration <= times)
+        y_binary = event_k_before_horizon.astype(np.int32)
 
         ipcw_times = self.ipcw_est.compute_ipcw_at(times)
         any_event_or_censoring_after_horizon = y_duration > times
@@ -260,7 +262,7 @@ def brier_score_survival(
 
     Note that this assumes independence between censoring and the covariates.
     When this assumption is violated, the IPCW weights are biased and the Brier
-    score is not a proper scoring rule anymore. See [3] for a study of this
+    score is not a proper scoring rule anymore. See [Gerds2006]_ for a study of this
     bias.
 
     Parameters
@@ -296,12 +298,13 @@ def brier_score_survival(
 
     References
     ----------
-    [1] Assessment and comparison of prognostic classification schemes for
-        survival data, E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher (1999)
+    .. [Graf1999] E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher, "Assessment
+       and comparison of prognostic classification schemes for survival data",
+       1999
 
-    [3] Consistent Estimation of the Expected Brier Score in General Survival
-        Models with Right-Censored Event Times, T. Gerds and M. Schumacher
-        (2006)
+    .. [Gerds2006] T. Gerds and M. Schumacher, "Consistent Estimation of the
+       Expected Brier Score in General Survival Models with Right-Censored
+       Event Times", 2006
     """
     computer = IncidenceScoreComputer(
         y_train,
@@ -325,8 +328,8 @@ def integrated_brier_score_survival(
 
     Note that this assumes independence between censoring and the covariates.
     When this assumption is violated, the IPCW weights are biased and the Brier
-    score is not a proper scoring rule anymore. See [3] for a study of this
-    bias.
+    score is not a proper scoring rule anymore. See [Gerds2006]_ for a study of
+    this bias.
 
     Parameters
     ----------
@@ -361,12 +364,13 @@ def integrated_brier_score_survival(
 
     References
     ----------
-    [1] Assessment and comparison of prognostic classification schemes for
-        survival data, E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher (1999)
+    .. [Graf1999] E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher, "Assessment
+       and comparison of prognostic classification schemes for survival data",
+       1999
 
-    [3] Consistent Estimation of the Expected Brier Score in General Survival
-        Models with Right-Censored Event Times, T. Gerds and M. Schumacher
-        (2006)
+    .. [Gerds2006] T. Gerds and M. Schumacher, "Consistent Estimation of the
+       Expected Brier Score in General Survival Models with Right-Censored
+       Event Times", 2006
     """
     computer = IncidenceScoreComputer(
         y_train,
@@ -495,13 +499,13 @@ def integrated_brier_score_incidence(
         \mathrm{IBS}_k = \frac{1}{t_{max} - t_{min}} \int^{t_{max}}_{t_{min}}
         \mathrm{BS}_k(u) du
 
-    This scheme was introduced in [1] for survival analysis and extended to
-    competing events in [2].
+    This scheme was introduced in [Graf1999]_ for survival analysis and
+    extended to competing events in [Kretowska2018]_.
 
     Note that this assumes independence between censoring and the covariates.
     When this assumption is violated, the IPCW weights are biased and the Brier
-    score is not a proper scoring rule anymore. See [3] for a study of this
-    bias.
+    score is not a proper scoring rule anymore. See [Gerds2006]_ for a study of
+    this bias.
 
     Parameters
     ----------
@@ -541,15 +545,16 @@ def integrated_brier_score_incidence(
 
     References
     ----------
+    .. [Graf1999] E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher, "Assessment
+       and comparison of prognostic classification schemes for survival data",
+       1999
 
-    [1] Assessment and comparison of prognostic classification schemes for
-        survival data, E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher (1999)
+    .. [Kretowska2018] M. Kretowska, "Tree-based models for survival data with
+       competing risks", 2018
 
-    [2] Tree-based models for survival data with competing risks, M. Kretowska (2018)
-
-    [3] Consistent Estimation of the Expected Brier Score in General Survival
-        Models with Right-Censored Event Times, T. Gerds and M. Schumacher
-        (2006)
+    .. [Gerds2006] T. Gerds and M. Schumacher, "Consistent Estimation of the
+       Expected Brier Score in General Survival Models with Right-Censored
+       Event Times", 2006
     """
     computer = IncidenceScoreComputer(
         y_train,
