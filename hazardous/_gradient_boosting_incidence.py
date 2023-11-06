@@ -89,7 +89,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
 
     Estimate a cause-specific CIF by iteratively minimizing a stochastic time
     integrated proper scoring rule (Brier score or binary cross-entropy) for
-    the kth cause of failure from [Kretowska2018]_.
+    the kth cause of failure as defined in equation 14 in [Kretowska2018]_.
 
     Under the hood, this class uses randomly sampled reference time horizons
     concatenated as an extra input column to the underlying HGB binary
