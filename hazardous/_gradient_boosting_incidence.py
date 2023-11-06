@@ -89,7 +89,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
 
     Estimate a cause-specific CIF by iteratively minimizing a stochastic time
     integrated proper scoring rule (Brier score or binary cross-entropy) for
-    the kth cause of failure from _[1].
+    the kth cause of failure from [Kretowska2018]_.
 
     Under the hood, this class uses randomly sampled reference time horizons
     concatenated as an extra input column to the underlying HGB binary
@@ -156,9 +156,20 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
     References
     ----------
 
-    .. [1] M. Kretowska, Tree-based models for survival data with competing
-           risks, Computer Methods and Programs in Biomedicine 159 (2018)
-           185-198.
+    .. [Graf1999] E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher, "Assessment
+       and comparison of prognostic classification schemes for survival data",
+       1999
+
+    .. [Kretowska2018] M. Kretowska, "Tree-based models for survival data with
+       competing risks", 2018
+
+    .. [Gerds2006] T. Gerds and M. Schumacher, "Consistent Estimation of the
+       Expected Brier Score in General Survival Models with Right-Censored
+       Event Times", 2006
+
+    .. [Edwards2016] J. Edwards, L. Hester, M. Gokhale, C. Lesko,
+       "Methodologic Issues When Estimating Risks in Pharmacoepidemiology.",
+       2016, doi:10.1007/s40471-016-0089-1
     """
 
     def __init__(
