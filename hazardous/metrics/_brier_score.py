@@ -411,7 +411,7 @@ def brier_score_incidence(
 
     Note that this assumes independence between censoring and the covariates.
     When this assumption is violated, the IPCW weights are biased and the Brier
-    score is not a proper scoring rule anymore. See [Gerds2006]` for a study of
+    score is not a proper scoring rule anymore. See [Gerds2006]_ for a study of
     this bias.
 
     Parameters
@@ -464,9 +464,9 @@ def brier_score_incidence(
        Expected Brier Score in General Survival Models with Right-Censored
        Event Times", 2006
 
-    .. [Edwards2016] :doi:`J. Edwards, L. Hester, M. Gokhale, C. Lesko,
+    .. [Edwards2016] J. Edwards, L. Hester, M. Gokhale, C. Lesko,
        "Methodologic Issues When Estimating Risks in Pharmacoepidemiology.",
-       2016 <10.1007/s40471-016-0089-1>`
+       2016, doi:10.1007/s40471-016-0089-1
     """
     # XXX: make times an optional kwarg to be compatible with
     # sksurv.metrics.brier_score?
