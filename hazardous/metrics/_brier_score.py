@@ -389,20 +389,24 @@ def brier_score_incidence(
         \mathrm{BS}_k(t) = \frac{1}{n} \sum_{i=1}^n \hat{\omega}_i(t)
         (\mathbb{I}(t_i \leq t, \delta_i = k) - \hat{F}_k(t|\mathbf{x}_i))^2
 
-    where :math:`\hat{F}_k(t | \mathbf{x}_i)` is the estimate of the cumulative
-    incidence for the kth event up to time point :math:`t` for a feature vector
-    :math:`\mathbf{x}_i`, and
+    where :math:`\hat{F}_k(t | \mathbf{x}_i)` is the estimate of the
+    (uncensored) cumulative incidence for the kth event up to time point
+    :math:`t` for a feature vector :math:`\mathbf{x}_i` [4]:
 
     .. math::
 
-        \hat{\omega}_i(t)=\mathbb{I}(t_i \leq t, \delta_i \neq 0)/\hat{G}(t_i)
-        + \mathbb{I}(t_i > t)/\hat{G}(t)
+            \hat{F}_k(t | \mathbf{x}_i) = P(T_i \leq t, E_i = k | \mathbf{x}_i)
 
-    are IPCW weigths based on the Kaplan-Meier estimate of the censoring
-    distribution :math:`\hat{G}(t)`.
+    and :math:`\hat{\omega}_i(t)` are IPCW weigths based on the Kaplan-Meier
+    estimate of the censoring distribution :math:`\hat{G}(t)`:
 
-    This scheme was introduced in [1] for survival analysis and extended to
-    competing events in [2].
+    .. math::
+
+        \hat{\omega}_i(t)=\frac{\mathbb{I}(t_i \leq t, \delta_i \neq 0)}{\hat{G}(t_i)}
+        + \frac{\mathbb{I}(t_i > t)}{\hat{G}(t)}
+
+    This scheme was introduced in [1] in the context of survival analysis and
+    extended to competing events in [2].
 
     Note that this assumes independence between censoring and the covariates.
     When this assumption is violated, the IPCW weights are biased and the Brier
@@ -451,11 +455,16 @@ def brier_score_incidence(
     [1] Assessment and comparison of prognostic classification schemes for
         survival data, E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher (1999)
 
-    [2] Tree-based models for survival data with competing risks, M. Kretowska (2018)
+    [2] Tree-based models for survival data with competing risks, M. Kretowska
+        (2018)
 
     [3] Consistent Estimation of the Expected Brier Score in General Survival
         Models with Right-Censored Event Times, T. Gerds and M. Schumacher
         (2006)
+
+    [4] Methodologic Issues When Estimating Risks in Pharmacoepidemiology.
+        J. Edwards, L. Hester, M. Gokhale, C. Lesko (2016)
+        doi: 10.1007/s40471-016-0089-1
     """
     # XXX: make times an optional kwarg to be compatible with
     # sksurv.metrics.brier_score?
