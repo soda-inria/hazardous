@@ -136,6 +136,16 @@ class IncidenceScoreComputer:
             else:
                 event_true = event_true > 0
 
+        if y_pred.ndim != 2:
+            raise ValueError(
+                "'y_pred' must be a 2D array with shape (n_samples, n_times), got"
+                f" shape {y_pred.shape}."
+            )
+        if y_pred.shape[0] != event_true.shape[0]:
+            raise ValueError(
+                "'y_true' and 'y_pred' must have the same number of samples, "
+                f"got {event_true.shape[0]} and {y_pred.shape[0]} respectively."
+            )
         if y_pred.shape[1] != times.shape[0]:
             raise ValueError(
                 f"'times' length ({times.shape[0]}) "
@@ -193,44 +203,37 @@ class IncidenceScoreComputer:
         else:
             k = self.event_of_interest
 
-        # Specify the binary classification target for each record in y and
-        # a reference time horizon:
+        # Specify the binary classification target for each record in y and a
+        # reference time horizon:
         #
         # - 1 when event of interest was observed before the reference time
         #   horizon,
         #
-        # - 0 otherwise: any other event happening at any time, censored record
-        #   or event of interest happening after the reference time horizon.
+        # - 0 otherwise: any competing event happening at any time, censored
+        #   record or event of interest happening after the reference time
+        #   horizon.
         #
         #   Note: censored events only contribute (as negative target) when
         #   their duration is larger than the reference target horizon.
         #   Otherwise, they are discarded by setting their weight to 0 in the
         #   following.
-
-        y_binary = np.zeros(y_event.shape[0], dtype=np.int32)
-        y_binary[(y_event == k) & (y_duration <= times)] = 1
-
-        # Compute the weights for each term contributing to the Brier score
-        # at the specified time horizons.
         #
-        # - error of a prediction for a time horizon before the occurence of an
-        #   event (either censored or uncensored) is weighted by the inverse
-        #   probability of censoring at that time horizon.
+        #   Contrary to censored records, competing events always contribute as
+        #   negative targets. There weight is always non-zero but differ if
+        #   they happen either before or after the reference time horizon.
         #
-        # - error of a prediction for a time horizon after the any observed event
-        #   is weighted by inverse censoring probability at the actual time
-        #   of the observed event.
-        #
-        # - "error" of a prediction for a time horizon after a censored event has
-        #   0 weight and do not contribute to the Brier score computation.
+        # This IPCW scheme for survival analysis (binary events) is described
+        # in [Graf1999] and is extended to multiple competing events in
+        # [Kretowska2018].
+        event_k_before_horizon = (y_event == k) & (y_duration <= times)
+        y_binary = event_k_before_horizon.astype(np.int32)
 
-        # Estimate the probability of censoring at current time point t.
         ipcw_times = self.ipcw_est.compute_ipcw_at(times)
-        before = times < y_duration
-        weights = np.where(before, ipcw_times, 0)
+        any_event_or_censoring_after_horizon = y_duration > times
+        weights = np.where(any_event_or_censoring_after_horizon, ipcw_times, 0)
 
-        after_any_observed_event = (y_event > 0) & (y_duration <= times)
-        weights = np.where(after_any_observed_event, ipcw_y_duration, weights)
+        any_observed_event_before_horizon = (y_event > 0) & (y_duration <= times)
+        weights = np.where(any_observed_event_before_horizon, ipcw_y_duration, weights)
 
         return y_binary, weights
 
@@ -256,6 +259,11 @@ def brier_score_survival(
     and :math:`\hat{G}(t)` is the probability of remaining uncensored at time
     :math:`t`, estimated on the training set by the Kaplan-Meier estimator on the
     negation of the binary any-event indicator.
+
+    Note that this assumes independence between censoring and the covariates.
+    When this assumption is violated, the IPCW weights are biased and the Brier
+    score is not a proper scoring rule anymore. See [Gerds2006]_ for a study of this
+    bias.
 
     Parameters
     ----------
@@ -287,6 +295,16 @@ def brier_score_survival(
     Returns
     -------
     brier_score : np.ndarray of shape (n_times)
+
+    References
+    ----------
+    .. [Graf1999] E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher, "Assessment
+       and comparison of prognostic classification schemes for survival data",
+       1999
+
+    .. [Gerds2006] T. Gerds and M. Schumacher, "Consistent Estimation of the
+       Expected Brier Score in General Survival Models with Right-Censored
+       Event Times", 2006
     """
     computer = IncidenceScoreComputer(
         y_train,
@@ -307,6 +325,11 @@ def integrated_brier_score_survival(
 
         \mathrm{IBS} = \frac{1}{t_{max} - t_{min}} \int^{t_{max}}_{t_{min}}
         \mathrm{BS}(u) du
+
+    Note that this assumes independence between censoring and the covariates.
+    When this assumption is violated, the IPCW weights are biased and the Brier
+    score is not a proper scoring rule anymore. See [Gerds2006]_ for a study of
+    this bias.
 
     Parameters
     ----------
@@ -338,6 +361,16 @@ def integrated_brier_score_survival(
     Returns
     -------
     ibs : float
+
+    References
+    ----------
+    .. [Graf1999] E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher, "Assessment
+       and comparison of prognostic classification schemes for survival data",
+       1999
+
+    .. [Gerds2006] T. Gerds and M. Schumacher, "Consistent Estimation of the
+       Expected Brier Score in General Survival Models with Right-Censored
+       Event Times", 2006
     """
     computer = IncidenceScoreComputer(
         y_train,
@@ -360,32 +393,45 @@ def brier_score_incidence(
         \mathrm{BS}_k(t) = \frac{1}{n} \sum_{i=1}^n \hat{\omega}_i(t)
         (\mathbb{I}(t_i \leq t, \delta_i = k) - \hat{F}_k(t|\mathbf{x}_i))^2
 
-    where :math:`\hat{F}_k(t | \mathbf{x}_i)` is the estimate of the cumulative
-    incidence for the kth event up to time point :math:`t` for a feature vector
-    :math:`\mathbf{x}_i`, and
+    where :math:`\hat{F}_k(t | \mathbf{x}_i)` is an estimate of the
+    (uncensored) cumulative incidence for the kth event up to time point
+    :math:`t` for a feature vector :math:`\mathbf{x}_i` [Edwards2016]_:
 
     .. math::
 
-        \hat{\omega}_i(t)=\mathbb{I}(t_i \leq t, \delta_i \neq 0)/\hat{G}(t_i)
-        + \mathbb{I}(t_i > t)/\hat{G}(t)
+            \hat{F}_k(t | \mathbf{x}_i) \approx P(T_i \leq t, E_i = k |
+            \mathbf{x}_i)
 
-    are IPCW weigths based on the Kaplan-Meier estimate of the censoring
-    distribution :math:`\hat{G}(t)`.
+    and :math:`\hat{\omega}_i(t)` are IPCW weigths based on the Kaplan-Meier
+    estimate of the censoring distribution :math:`\hat{G}(t)`:
+
+    .. math::
+
+        \hat{\omega}_i(t)=\frac{\mathbb{I}(t_i \leq t, \delta_i \neq
+        0)}{\hat{G}(t_i)} + \frac{\mathbb{I}(t_i > t)}{\hat{G}(t)}
+
+    This scheme was introduced in [Graf1999]_ in the context of survival
+    analysis and extended to competing events in [Kretowska2018]_.
+
+    Note that this assumes independence between censoring and the covariates.
+    When this assumption is violated, the IPCW weights are biased and the Brier
+    score is not a proper scoring rule anymore. See [Gerds2006]_ for a study of
+    this bias.
 
     Parameters
     ----------
     y_train : record-array, dictionnary or dataframe of shape (n_samples, 2)
-        The target, consisting in the 'event' and 'duration' columns.
-        This is used to fit the IPCW estimator.
+        The target, consisting in the 'event' and 'duration' columns. This is
+        used to fit the IPCW estimator.
 
     y_test : record-array, dictionnary or dataframe of shape (n_samples, 2)
-        The ground truth, consisting in the 'event' and 'duration' columns.
-        In the "event" column, `0` indicates censoring, and any other values
+        The ground truth, consisting in the 'event' and 'duration' columns. In
+        the "event" column, `0` indicates censoring, and any other values
         indicate competing event types.
 
     y_pred : array-like of shape (n_samples, n_times)
-        Incidence probability estimates predicted at ``times``.
-        In the binary event settings, this is 1 - survival_probability.
+        Incidence probability estimates predicted at ``times``. In the binary
+        event settings, this is 1 - survival_probability.
 
     times : array-like of shape (n_times)
         Times at which the survival probability ``y_pred`` has been estimated
@@ -411,9 +457,20 @@ def brier_score_incidence(
 
     References
     ----------
+    .. [Graf1999] E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher, "Assessment
+       and comparison of prognostic classification schemes for survival data",
+       1999
 
-    [1] M. Kretowska, "Tree-based models for survival data with competing risks",
-        Computer Methods and Programs in Biomedicine 159 (2018) 185-198.
+    .. [Kretowska2018] M. Kretowska, "Tree-based models for survival data with
+       competing risks", 2018
+
+    .. [Gerds2006] T. Gerds and M. Schumacher, "Consistent Estimation of the
+       Expected Brier Score in General Survival Models with Right-Censored
+       Event Times", 2006
+
+    .. [Edwards2016] J. Edwards, L. Hester, M. Gokhale, C. Lesko,
+       "Methodologic Issues When Estimating Risks in Pharmacoepidemiology.",
+       2016, doi:10.1007/s40471-016-0089-1
     """
     # XXX: make times an optional kwarg to be compatible with
     # sksurv.metrics.brier_score?
@@ -441,6 +498,14 @@ def integrated_brier_score_incidence(
 
         \mathrm{IBS}_k = \frac{1}{t_{max} - t_{min}} \int^{t_{max}}_{t_{min}}
         \mathrm{BS}_k(u) du
+
+    This scheme was introduced in [Graf1999]_ for survival analysis and
+    extended to competing events in [Kretowska2018]_.
+
+    Note that this assumes independence between censoring and the covariates.
+    When this assumption is violated, the IPCW weights are biased and the Brier
+    score is not a proper scoring rule anymore. See [Gerds2006]_ for a study of
+    this bias.
 
     Parameters
     ----------
@@ -480,9 +545,16 @@ def integrated_brier_score_incidence(
 
     References
     ----------
+    .. [Graf1999] E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher, "Assessment
+       and comparison of prognostic classification schemes for survival data",
+       1999
 
-    [1] M. Kretowska, "Tree-based models for survival data with competing risks",
-        Computer Methods and Programs in Biomedicine 159 (2018) 185-198.
+    .. [Kretowska2018] M. Kretowska, "Tree-based models for survival data with
+       competing risks", 2018
+
+    .. [Gerds2006] T. Gerds and M. Schumacher, "Consistent Estimation of the
+       Expected Brier Score in General Survival Models with Right-Censored
+       Event Times", 2006
     """
     computer = IncidenceScoreComputer(
         y_train,
