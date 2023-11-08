@@ -82,7 +82,7 @@ class WeightedBinaryTargetSampler(IncidenceScoreComputer):
 
 
 class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
-    """Cause-specific Cumulative Incidence Function (CIF) with GBDT.
+    r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT.
 
     In competing risk analysis, one wants to predict each cause-specific
     Cumulative Incidence Function that is to say:
