@@ -82,7 +82,29 @@ class WeightedBinaryTargetSampler(IncidenceScoreComputer):
 
 
 class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
-    """Cause-specific Cumulative Incidence Function (CIF) with GBDT.
+    r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT.
+
+    In competing risk analysis, one wants to predict each cause-specific
+    Cumulative Incidence Function that is to say:
+
+    .. math::
+
+        \hat{F}_k(t) \approx \mathbb{P}(T \leq t, E=k)
+    where :math:`T` is a random variable for the uncensored time to first event
+    and :math:`E` is a random variable over the :math:`[1, K]` domain for the
+    uncensored event type.
+    One can obtain the survival probability of any event by computing
+    each CIF (that is to say running the model for each cause-specific CIF)
+    and computing 1 - “sum of CIF curves” because:
+
+    .. math::
+
+        S(t) = \mathbb{P}(T > t) = 1 - \mathbb{P}(T \leq t)
+        = 1 - \sum_{k=1}^K \mathbb{P}(T \leq t, E=k)
+        \approx 1 - \sum_{k=1}^K \hat{F}_k(t)
+
+    Note that this is equivalent in expectation to running the model once
+    for the collapsed `event_of_intercept="any"` formulation.
 
     This internally relies on the histogram-based gradient boosting classifier
     or regressor implementation of scikit-learn.
@@ -115,7 +137,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         In single event settings, "any" and 1 are equivalent.
 
     loss : {'ibs', 'inll'}, default='ibs'
-        The objective of the model. In practise, both objective yields
+        The objective of the model. In practice, both objective yields
         comparable results.
 
         - 'ibs' : integrated brier score. Use a `HistGradientBoostedRegressor`
@@ -278,7 +300,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         complement.
 
         When `event_of_interest == "any"` the second column therefore holds the
-        sum all individual events cumulative incidece and the first column
+        sum all individual events cumulative incidence and the first column
         holds the probability of remaining event free at `time_horizon`, that
         is, the survival probability.
 
