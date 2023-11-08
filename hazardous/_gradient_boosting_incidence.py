@@ -86,13 +86,19 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
 
     In competing risk analysis, one wants to predict each cause-specific
     Cumulative Incidence Function that is to say:
-    $$\hat{F}_k(t) \approx \mathbb{P}(T \leq t, E= k)$$
+
+    .. math::
+        \hat{F}_k(t) \approx \mathbb{P}(T \leq t, E= k)
+
     One can obtain the survival probability of any event by computing
     each CIF (that is to say running the model
     for each cause-specific CIF) and computing 1 - “sum of CIF curves” because:
-    $$S(t) = \mathbb{P}(T > t) = 1 - \mathbb{P}(T \leq t) $$
-    $$S(t) = 1 - \sum_{k=1}^K \mathbb{P}(T \leq t, E= k) $$
-    $$S(t) = \approx 1 - \sum_{k=1}^K \hat{F}_k(t) $$
+
+    .. math:
+        S(t) = \mathbb{P}(T > t) = 1 - \mathbb{P}(T \leq t)
+        1 - \sum_{k=1}^K \mathbb{P}(T \leq t, E= k)
+        = \approx 1 - \sum_{k=1}^K \hat{F}_k(t)
+
     This internally relies on the histogram-based gradient boosting classifier
     or regressor implementation of scikit-learn.
 
