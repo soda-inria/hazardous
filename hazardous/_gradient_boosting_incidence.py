@@ -89,7 +89,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
 
     .. math::
 
-        \hat{F}_k(t) \approx \mathbb{P}(T \leq t, E= k)
+        \hat{F}_k(t) \approx \mathbb{P}(T \leq t, E=k)
 
     One can obtain the survival probability of any event by computing
     each CIF (that is to say running the model
@@ -98,7 +98,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
     .. math::
 
         S(t) = \mathbb{P}(T > t) = 1 - \mathbb{P}(T \leq t)
-        1 - \sum_{k=1}^K \mathbb{P}(T \leq t, E=k)
+        = 1 - \sum_{k=1}^K \mathbb{P}(T \leq t, E=k)
         \approx 1 - \sum_{k=1}^K \hat{F}_k(t)
 
     This internally relies on the histogram-based gradient boosting classifier
