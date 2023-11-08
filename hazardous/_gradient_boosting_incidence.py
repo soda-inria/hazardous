@@ -95,7 +95,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
     each CIF (that is to say running the model
     for each cause-specific CIF) and computing 1 - “sum of CIF curves” because:
 
-    .. math:
+    .. math::
 
         S(t) = \mathbb{P}(T > t) = 1 - \mathbb{P}(T \leq t)
         1 - \sum_{k=1}^K \mathbb{P}(T \leq t, E=k)
