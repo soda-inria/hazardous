@@ -137,7 +137,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         In single event settings, "any" and 1 are equivalent.
 
     loss : {'ibs', 'inll'}, default='ibs'
-        The objective of the model. In practice, both objective yields
+        The objective of the model. In practice, both objectives yield
         comparable results.
 
         - 'ibs' : integrated brier score. Use a `HistGradientBoostedRegressor`
