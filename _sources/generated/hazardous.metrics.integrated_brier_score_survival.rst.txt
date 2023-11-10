@@ -1,0 +1,10 @@
+﻿:mod:`hazardous.metrics`.integrated_brier_score_survival
+=====================================================================
+
+.. currentmodule:: hazardous.metrics
+
+.. autofunction:: integrated_brier_score_survival
+
+.. raw:: html
+
+    <div class="clearer"></div>

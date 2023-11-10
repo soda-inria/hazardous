@@ -1,0 +1,10 @@
+﻿:mod:`hazardous.data`.make_synthetic_competing_weibull
+===================================================================
+
+.. currentmodule:: hazardous.data
+
+.. autofunction:: make_synthetic_competing_weibull
+
+.. raw:: html
+
+    <div class="clearer"></div>

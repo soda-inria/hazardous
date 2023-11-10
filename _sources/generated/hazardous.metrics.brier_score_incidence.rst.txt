@@ -1,0 +1,10 @@
+﻿:mod:`hazardous.metrics`.brier_score_incidence
+===========================================================
+
+.. currentmodule:: hazardous.metrics
+
+.. autofunction:: brier_score_incidence
+
+.. raw:: html
+
+    <div class="clearer"></div>

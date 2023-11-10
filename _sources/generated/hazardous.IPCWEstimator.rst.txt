@@ -1,0 +1,19 @@
+﻿:mod:`hazardous`.IPCWEstimator
+=====================================
+
+.. rst-class:: side_comment
+
+    Usage examples at the bottom of this page.
+
+.. currentmodule:: hazardous
+
+.. autoclass:: IPCWEstimator
+   :inherited-members:
+
+   
+
+   
+
+.. raw:: html
+
+    <div class="clearer"></div>

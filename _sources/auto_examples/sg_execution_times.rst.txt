@@ -1,0 +1,13 @@
+
+:orphan:
+
+.. _sphx_glr_auto_examples_sg_execution_times:
+
+
+Computation times
+=================
+**00:40.076** total execution time for **auto_examples** files:
+
++---------------------------------------------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_auto_examples_plot_marginal_cumulative_incidence_estimation.py` (``plot_marginal_cumulative_incidence_estimation.py``) | 00:40.076 | 0.0 MB |
++---------------------------------------------------------------------------------------------------------------------------------------+-----------+--------+

@@ -1,0 +1,749 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Estimating marginal cumulative incidence functions &#8212; hazardous 0.1.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6" />
+  <script src="../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=365ca57ee442770a23c6"></script>
+
+    <script src="../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'auto_examples/plot_marginal_cumulative_incidence_estimation';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Example gallery" href="index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">hazardous 0.1.0 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../api.html">
+                        API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="index.html">
+                        Example gallery
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../api.html">
+                        API
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="index.html">
+                        Example gallery
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item"><nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Estimating marginal cumulative incidence functions</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Example gallery</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">Estimating...</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-marginal-cumulative-incidence-estimation-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="estimating-marginal-cumulative-incidence-functions">
+<span id="sphx-glr-auto-examples-plot-marginal-cumulative-incidence-estimation-py"></span><h1>Estimating marginal cumulative incidence functions<a class="headerlink" href="#estimating-marginal-cumulative-incidence-functions" title="Link to this heading">#</a></h1>
+<p>This example demonstrates how to estimate the marginal cumulative incidence
+using <a class="reference internal" href="../generated/hazardous.GradientBoostingIncidence.html#hazardous.GradientBoostingIncidence" title="hazardous.GradientBoostingIncidence"><code class="xref py py-class docutils literal notranslate"><span class="pre">hazardous.GradientBoostingIncidence</span></code></a> and compares the results to
+the Aalen-Johansen estimator and to the theoretical cumulated incidence curves
+on synthetic data.</p>
+<p>Here the data is generated by taking the minimum time of samples from three
+competing Weibull distributions with fixed parameters and without any
+conditioning covariate. In this case, the Aalen-Johansen estimator is expected
+to be unbiased, and this is empirically confirmed by this example.</p>
+<p>The <a class="reference internal" href="../generated/hazardous.GradientBoostingIncidence.html#hazardous.GradientBoostingIncidence" title="hazardous.GradientBoostingIncidence"><code class="xref py py-class docutils literal notranslate"><span class="pre">hazardous.GradientBoostingIncidence</span></code></a> estimator on the other hand is
+a predictive estimator that expects at least one conditioning covariate. In
+this example, we use a dummy covariate that is constant for all samples. Here
+we are not interested in the discrimination power of the estimator: there is
+none by construction, since we do not have access to informative covariates.
+Instead we empirically study its marginal calibration, that is, its ability to
+approximately recover an unbiased estimate of the marginal cumulative incidence
+function for each competing event.</p>
+<p>This example also highlights that <a class="reference internal" href="../generated/hazardous.GradientBoostingIncidence.html#hazardous.GradientBoostingIncidence" title="hazardous.GradientBoostingIncidence"><code class="xref py py-class docutils literal notranslate"><span class="pre">hazardous.GradientBoostingIncidence</span></code></a>
+estimates noisy cumulative incidence functions, which are not smooth and not
+even monotonically increasing. This is a known limitation of the estimator,
+and attempting to enforce monotonicity at training time typically introduces
+severe over-estimation bias for large time horizons.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">perf_counter</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">weibull_min</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html#sklearn.base.clone" title="sklearn.base.clone" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-function"><span class="n">clone</span></a>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">from</span> <span class="nn">hazardous</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator" title="sklearn.base.BaseEstimator" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-class"><span class="n">GradientBoostingIncidence</span></a>
+<span class="kn">from</span> <span class="nn">lifelines</span> <span class="kn">import</span> <span class="n">AalenJohansenFitter</span>
+
+<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">n_samples</span> <span class="o">=</span> <span class="mi">3_000</span>
+
+<span class="c1"># Non-informative covariate because scikit-learn estimators expect at least</span>
+<span class="c1"># one feature.</span>
+<span class="n">X_dummy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+<span class="n">base_scale</span> <span class="o">=</span> <span class="mf">1_000.0</span>  <span class="c1"># some arbitrary time unit</span>
+
+<span class="n">distributions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">&quot;event_id&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">base_scale</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;event_id&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">base_scale</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;event_id&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">base_scale</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span>
+<span class="p">]</span>
+<span class="n">event_times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="n">weibull_min</span><span class="o">.</span><span class="n">rvs</span><span class="p">(</span>
+            <span class="n">dist</span><span class="p">[</span><span class="s2">&quot;shape&quot;</span><span class="p">],</span>
+            <span class="n">scale</span><span class="o">=</span><span class="n">dist</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
+            <span class="n">size</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">rng</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">distributions</span>
+    <span class="p">],</span>
+    <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">first_event_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">event_times</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">y_uncensored</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">event</span><span class="o">=</span><span class="n">first_event_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># 0 is reserved as the censoring marker</span>
+        <span class="n">duration</span><span class="o">=</span><span class="n">event_times</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_samples</span><span class="p">),</span> <span class="n">first_event_idx</span><span class="p">],</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="n">y_uncensored</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+<span class="n">t_max</span> <span class="o">=</span> <span class="n">y_uncensored</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Since we know the true distribution of the data, we can compute the
+theoretical cumulative incidence functions (CIFs) by integrating the hazard
+functions. The CIFs are the probability of experiencing the event of interest
+before time t, given that the subject has not experienced any other event
+before time t.</p>
+<p>The following function computes the hazard function of a <a class="reference external" href="https://en.wikipedia.org/wiki/Weibull_distribution">Weibull
+distribution</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">weibull_hazard</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">**</span><span class="n">ignored_kwargs</span><span class="p">):</span>
+    <span class="c1"># Plug an arbitrary finite hazard value at t==0 because fractional powers</span>
+    <span class="c1"># of 0 are undefined.</span>
+    <span class="c1">#</span>
+    <span class="c1"># XXX: this does not seem correct but in practice it does make it possible</span>
+    <span class="c1"># to integrate the hazard function into cumulative incidence functions in a</span>
+    <span class="c1"># way that matches the Aalen Johansen estimator.</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">t</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="n">shape</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">t</span> <span class="o">/</span> <span class="n">scale</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="n">shape</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Note that true CIFs are independent of the censoring distribution. We can use
+them as reference to check that the estimators are unbiased by the censoring.
+Here are the two estimators of interest:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">calculate_variance</span> <span class="o">=</span> <span class="n">n_samples</span> <span class="o">&lt;=</span> <span class="mi">5_000</span>
+<span class="n">aj</span> <span class="o">=</span> <span class="n">AalenJohansenFitter</span><span class="p">(</span><span class="n">calculate_variance</span><span class="o">=</span><span class="n">calculate_variance</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">gb_incidence</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator" title="sklearn.base.BaseEstimator" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-class"><span class="n">GradientBoostingIncidence</span></a><span class="p">(</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span>
+    <span class="n">n_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">max_leaf_nodes</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">hard_zero_fraction</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">min_samples_leaf</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+    <span class="n">loss</span><span class="o">=</span><span class="s2">&quot;ibs&quot;</span><span class="p">,</span>
+    <span class="n">show_progressbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="cifs-estimated-on-uncensored-data">
+<h2>CIFs estimated on uncensored data<a class="headerlink" href="#cifs-estimated-on-uncensored-data" title="Link to this heading">#</a></h2>
+<p>Let’s now estimate the CIFs on uncensored data and plot them against the
+theoretical CIFs:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_cumulative_incidence_functions</span><span class="p">(</span><span class="n">distributions</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">gb_incidence</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">ncols</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">distributions</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Compute the estimate of the CIFs on a coarse grid.</span>
+    <span class="n">coarse_timegrid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">t_max</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+    <span class="c1"># Compute the theoretical CIFs by integrating the hazard functions on a</span>
+    <span class="c1"># fine-grained time grid. Note that integration errors can accumulate quite</span>
+    <span class="c1"># quickly if the time grid is resolution too coarse, especially for the</span>
+    <span class="c1"># Weibull distribution with shape &lt; 1.</span>
+    <span class="n">tic</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">fine_time_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">t_max</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">10_000_000</span><span class="p">)</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">fine_time_grid</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">all_hazards</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">weibull_hazard</span><span class="p">(</span><span class="n">fine_time_grid</span><span class="p">,</span> <span class="o">**</span><span class="n">dist</span><span class="p">)</span> <span class="k">for</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">distributions</span><span class="p">],</span>
+        <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">any_event_hazards</span> <span class="o">=</span> <span class="n">all_hazards</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">any_event_survival</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">any_event_hazards</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;Integrated theoretical any event survival curve in&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">perf_counter</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">tic</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">censoring_fraction</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span>
+        <span class="s2">&quot;Cause-specific cumulative incidence functions&quot;</span>
+        <span class="sa">f</span><span class="s2">&quot; (</span><span class="si">{</span><span class="n">censoring_fraction</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2"> censoring)&quot;</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">event_id</span><span class="p">,</span> <span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">hazards_i</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">all_hazards</span><span class="p">),</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">theoretical_cif</span> <span class="o">=</span> <span class="p">(</span><span class="n">hazards_i</span> <span class="o">*</span> <span class="n">any_event_survival</span><span class="p">)</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="s2">&quot;Integrated theoretical cumulative incidence curve for event&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot; </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">perf_counter</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">tic</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s&quot;</span>
+        <span class="p">)</span>
+        <span class="n">downsampling_rate</span> <span class="o">=</span> <span class="n">fine_time_grid</span><span class="o">.</span><span class="n">size</span> <span class="o">//</span> <span class="n">coarse_timegrid</span><span class="o">.</span><span class="n">size</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+            <span class="n">fine_time_grid</span><span class="p">[::</span><span class="n">downsampling_rate</span><span class="p">],</span>
+            <span class="n">theoretical_cif</span><span class="p">[::</span><span class="n">downsampling_rate</span><span class="p">],</span>
+            <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;dashed&quot;</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Theoretical incidence&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+
+        <span class="k">if</span> <span class="n">gb_incidence</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">tic</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
+            <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator.set_params" title="sklearn.base.BaseEstimator.set_params" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-method"><span class="n">gb_incidence</span><span class="o">.</span><span class="n">set_params</span></a><span class="p">(</span><span class="n">event_of_interest</span><span class="o">=</span><span class="n">event_id</span><span class="p">)</span>
+            <span class="n">gb_incidence</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_dummy</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">tic</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GB Incidence for event </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2"> fit in </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s&quot;</span><span class="p">)</span>
+            <span class="n">tic</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
+            <span class="n">cif_pred</span> <span class="o">=</span> <span class="n">gb_incidence</span><span class="o">.</span><span class="n">predict_cumulative_incidence</span><span class="p">(</span>
+                <span class="n">X_dummy</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">],</span> <span class="n">coarse_timegrid</span>
+            <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">tic</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GB Incidence for event </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2"> prediction in </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="n">coarse_timegrid</span><span class="p">,</span>
+                <span class="n">cif_pred</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;GradientBoostingIncidence&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Event </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">aj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">tic</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
+            <span class="n">aj</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">],</span> <span class="n">event_of_interest</span><span class="o">=</span><span class="n">event_id</span><span class="p">)</span>
+            <span class="n">duration</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">tic</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Aalen-Johansen for event </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2"> fit in </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s&quot;</span><span class="p">)</span>
+            <span class="n">aj</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Aalen-Johansen&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">event_id</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;lower right&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+
+
+<span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span>
+    <span class="n">distributions</span><span class="p">,</span> <span class="n">gb_incidence</span><span class="o">=</span><span class="n">gb_incidence</span><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="n">aj</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_uncensored</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_001.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_001.png" alt="Cause-specific cumulative incidence functions (0.0% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.591 s
+Integrated theoretical cumulative incidence curve for event 1 in 0.652 s
+GB Incidence for event 1 fit in 0.461 s
+GB Incidence for event 1 prediction in 0.084 s
+Aalen-Johansen for event 1 fit in 5.272 s
+Integrated theoretical cumulative incidence curve for event 2 in 5.380 s
+GB Incidence for event 2 fit in 0.446 s
+GB Incidence for event 2 prediction in 0.087 s
+Aalen-Johansen for event 2 fit in 5.242 s
+Integrated theoretical cumulative incidence curve for event 3 in 5.321 s
+GB Incidence for event 3 fit in 0.427 s
+GB Incidence for event 3 prediction in 0.085 s
+Aalen-Johansen for event 3 fit in 5.327 s
+</pre></div>
+</div>
+</section>
+<section id="cifs-estimated-on-censored-data">
+<h2>CIFs estimated on censored data<a class="headerlink" href="#cifs-estimated-on-censored-data" title="Link to this heading">#</a></h2>
+<p>Add some independent censoring with some arbitrary parameters to control the
+amount of censoring: lowering the expected value bound increases the amount
+of censoring.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">censoring_times</span> <span class="o">=</span> <span class="n">weibull_min</span><span class="o">.</span><span class="n">rvs</span><span class="p">(</span>
+    <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">scale</span><span class="o">=</span><span class="mf">1.5</span> <span class="o">*</span> <span class="n">base_scale</span><span class="p">,</span>
+    <span class="n">size</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="n">rng</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">y_censored</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">event</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+            <span class="n">censoring_times</span> <span class="o">&lt;</span> <span class="n">y_uncensored</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">y_uncensored</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">]</span>
+        <span class="p">),</span>
+        <span class="n">duration</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">censoring_times</span><span class="p">,</span> <span class="n">y_uncensored</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]),</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="n">y_censored</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>event
+0    1427
+1     703
+2     733
+3     137
+Name: count, dtype: int64
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span>
+    <span class="n">distributions</span><span class="p">,</span> <span class="n">gb_incidence</span><span class="o">=</span><span class="n">gb_incidence</span><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="n">aj</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_censored</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_002.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_002.png" alt="Cause-specific cumulative incidence functions (47.6% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.598 s
+Integrated theoretical cumulative incidence curve for event 1 in 0.659 s
+GB Incidence for event 1 fit in 0.444 s
+GB Incidence for event 1 prediction in 0.084 s
+Aalen-Johansen for event 1 fit in 5.312 s
+Integrated theoretical cumulative incidence curve for event 2 in 5.418 s
+GB Incidence for event 2 fit in 0.456 s
+GB Incidence for event 2 prediction in 0.084 s
+Aalen-Johansen for event 2 fit in 5.314 s
+Integrated theoretical cumulative incidence curve for event 3 in 5.394 s
+GB Incidence for event 3 fit in 0.425 s
+GB Incidence for event 3 prediction in 0.084 s
+Aalen-Johansen for event 3 fit in 5.269 s
+</pre></div>
+</div>
+<p>Note that the Aalen-Johansen estimator is unbiased and empirically recovers
+the theoretical curves both with and without censoring. The
+GradientBoostingIncidence estimator also appears unbiased by censoring, but
+the predicted curves are not smooth and not even monotonically increasing. By
+adjusting the hyper-parameters, notably the learning rate, the number of
+boosting iterations and leaf nodes, it is possible to somewhat control the
+smoothness of the predicted curves, but it is likely that doing some kind of
+smoothing post-processing could be beneficial (but maybe at the cost of
+introducing some bias). This is left as future work.</p>
+<p>Alternatively, we could try to enable a monotonicity constraint at training
+time, however, in practice this often causes a sever over-estimation bias for
+the large time horizons:</p>
+<p>Finally let’s try again to fit the GB Incidence models using a monotonicity
+constraint:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">monotonic_gb_incidence</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html#sklearn.base.clone" title="sklearn.base.clone" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-function"><span class="n">clone</span></a><span class="p">(</span><span class="n">gb_incidence</span><span class="p">)</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span>
+    <span class="n">monotonic_incidence</span><span class="o">=</span><span class="s2">&quot;at_training_time&quot;</span>
+<span class="p">)</span>
+<span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span>
+    <span class="n">distributions</span><span class="p">,</span> <span class="n">gb_incidence</span><span class="o">=</span><span class="n">monotonic_gb_incidence</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_censored</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_003.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_003.png" alt="Cause-specific cumulative incidence functions (47.6% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.583 s
+Integrated theoretical cumulative incidence curve for event 1 in 0.644 s
+GB Incidence for event 1 fit in 0.437 s
+GB Incidence for event 1 prediction in 0.083 s
+Integrated theoretical cumulative incidence curve for event 2 in 0.146 s
+GB Incidence for event 2 fit in 0.442 s
+GB Incidence for event 2 prediction in 0.083 s
+Integrated theoretical cumulative incidence curve for event 3 in 0.146 s
+GB Incidence for event 3 fit in 0.426 s
+GB Incidence for event 3 prediction in 0.083 s
+</pre></div>
+</div>
+<p>The resulting incidence curves are indeed monotonic. However, for smaller
+training set sizes, the resulting models can be significantly biased, in
+particular large time horizons, where the CIFs are getting flatter. This
+effect diminishes with larger training set sizes (lower epistemic
+uncertainty).</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 40.076 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-marginal-cumulative-incidence-estimation-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/878bb6ffe7fba36a0655277b8151e4cd/plot_marginal_cumulative_incidence_estimation.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_marginal_cumulative_incidence_estimation.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/2932d6ac7842b6d781c27c5737ae52fa/plot_marginal_cumulative_incidence_estimation.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_marginal_cumulative_incidence_estimation.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer">
+                  <!-- Previous / next buttons -->
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Example gallery</p>
+      </div>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cifs-estimated-on-uncensored-data">CIFs estimated on uncensored data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cifs-estimated-on-censored-data">CIFs estimated on censored data</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div class="tocsection sourcelink">
+    <a href="../_sources/auto_examples/plot_marginal_cumulative_incidence_estimation.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+  <p class="copyright">
+    
+      © Copyright 2023, Olivier Grisel and Vincent Maladière.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.14.3.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
