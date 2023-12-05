@@ -7,9 +7,9 @@ from sklearn.datasets._base import Bunch
 from sklearn.utils import check_random_state
 
 DEFAULT_SHAPE_RANGES = (
-    (0.4, 0.9),
+    (0.7, 0.9),
     (1.0, 1.0),
-    (1.2, 3),
+    (2.0, 3.0),
 )
 
 DEFAULT_SCALE_RANGES = (
@@ -19,7 +19,7 @@ DEFAULT_SCALE_RANGES = (
 )
 
 
-def _censor(y, relative_scale, random_state=None):
+def _censor(y, relative_scale, random_state=0):
     if relative_scale == 0 or relative_scale is None:
         return y
 
@@ -34,7 +34,7 @@ def _censor(y, relative_scale, random_state=None):
 
 def make_synthetic_competing_weibull(
     n_events=3,
-    n_samples=3000,
+    n_samples=3_000,
     return_X_y=False,
     base_scale=1_000,
     feature_rounding=2,
@@ -101,4 +101,4 @@ def make_synthetic_competing_weibull(
         return X, y
 
     frame = pd.concat([X, y], axis=1)
-    return Bunch(data=frame[X.columns], target=X[y.columns], frame=frame)
+    return Bunch(data=frame[X.columns], target=frame[y.columns], frame=frame)
