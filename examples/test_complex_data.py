@@ -3,6 +3,7 @@ import numpy as np
 from complex_synthetic_data import complex_data
 from time import perf_counter
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 
 from hazardous import GradientBoostingIncidence
 from lifelines import AalenJohansenFitter
@@ -24,8 +25,22 @@ n_events = 3
 
 # %%
 
-X, y = complex_data()
-n_samples = len(X)
+X, y = complex_data(
+    n_events=n_events,
+    n_weibull_parameters=2 * n_events,
+    n_samples=10_000,
+    base_scale=1_000,
+    n_features=10,
+    features_rate=0.3,
+    degree_interaction=2,
+    relative_scale=0.95,
+    independant=False,
+    features_censoring_rate=0.1,
+)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+
+n_samples = len(X_train)
 calculate_variance = n_samples <= 5_000
 aj = AalenJohansenFitter(calculate_variance=calculate_variance, seed=0)
 
@@ -40,6 +55,7 @@ gb_incidence = GradientBoostingIncidence(
     random_state=0,
 )
 
+y["event"].value_counts()
 # %%
 #
 # CIFs estimated on uncensored data
@@ -49,7 +65,9 @@ gb_incidence = GradientBoostingIncidence(
 # theoretical CIFs:
 
 
-def plot_cumulative_incidence_functions(X, y, gb_incidence=None, aj=None):
+def plot_cumulative_incidence_functions(
+    X, y, gb_incidence=None, aj=None, X_test=None, y_test=None
+):
     n_events = y["event"].max()
     t_max = y["duration"].max()
     _, axes = plt.subplots(figsize=(12, 4), ncols=n_events, sharey=True)
@@ -74,6 +92,11 @@ def plot_cumulative_incidence_functions(X, y, gb_incidence=None, aj=None):
             )[0]
             duration = perf_counter() - tic
             print(f"GB Incidence for event {event_id} prediction in {duration:.3f} s")
+            print("Brier score on training data:", gb_incidence.score(X, y))
+            if X_test is not None:
+                print(
+                    "Brier score on testing data:", gb_incidence.score(X_test, y_test)
+                )
             ax.plot(
                 coarse_timegrid,
                 cif_pred,
@@ -97,8 +120,12 @@ def plot_cumulative_incidence_functions(X, y, gb_incidence=None, aj=None):
 # %%
 
 plot_cumulative_incidence_functions(
-    X,
-    y,
+    X_train,
+    y_train,
     gb_incidence=gb_incidence,
     aj=aj,
+    X_test=X_test,
+    y_test=y_test,
 )
+
+# %%
