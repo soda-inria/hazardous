@@ -8,8 +8,8 @@ from sklearn.model_selection import train_test_split
 from hazardous import GradientBoostingIncidence
 from lifelines import AalenJohansenFitter
 
-rng = np.random.default_rng(0)
 seed = 0
+rng = np.random.RandomState(seed)
 DEFAULT_SHAPE_RANGES = (
     (0.7, 0.9),
     (1.0, 1.0),
@@ -25,37 +25,25 @@ n_events = 3
 
 # %%
 
-X, y = complex_data(
+X, y_censored, y_uncensored = complex_data(
     n_events=n_events,
     n_weibull_parameters=2 * n_events,
-    n_samples=10_000,
+    n_samples=30_000,
     base_scale=1_000,
     n_features=10,
-    features_rate=0.3,
+    features_rate=0.5,
     degree_interaction=2,
     relative_scale=0.95,
     independant=False,
-    features_censoring_rate=0.1,
+    features_censoring_rate=0.2,
+    return_uncensored_data=True,
 )
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
-n_samples = len(X_train)
+n_samples = len(X)
 calculate_variance = n_samples <= 5_000
 aj = AalenJohansenFitter(calculate_variance=calculate_variance, seed=0)
 
-gb_incidence = GradientBoostingIncidence(
-    learning_rate=0.03,
-    n_iter=200,
-    max_leaf_nodes=5,
-    hard_zero_fraction=0.1,
-    min_samples_leaf=50,
-    loss="ibs",
-    show_progressbar=False,
-    random_state=0,
-)
-
-y["event"].value_counts()
 # %%
 #
 # CIFs estimated on uncensored data
@@ -110,6 +98,7 @@ def plot_cumulative_incidence_functions(
             duration = perf_counter() - tic
             print(f"Aalen-Johansen for event {event_id} fit in {duration:.3f} s")
             aj.plot(label="Aalen-Johansen", ax=ax)
+            print(aj.cumulative_density_.values[-1])
 
         if event_id == 1:
             ax.legend(loc="lower right")
@@ -119,13 +108,37 @@ def plot_cumulative_incidence_functions(
 
 # %%
 
+X_train, X_test, y_train_c, y_test_c = train_test_split(
+    X, y_censored, test_size=0.3, random_state=seed
+)
+y_train_u = y_uncensored.loc[y_train_c.index]
+y_test_u = y_uncensored.loc[y_test_c.index]
+gb_incidence = GradientBoostingIncidence(
+    learning_rate=0.05,
+    n_iter=1_000,
+    max_leaf_nodes=50,
+    hard_zero_fraction=0.1,
+    min_samples_leaf=5,
+    loss="inll",
+    show_progressbar=False,
+    random_state=seed,
+)
+
 plot_cumulative_incidence_functions(
     X_train,
-    y_train,
+    y_train_u,
     gb_incidence=gb_incidence,
     aj=aj,
     X_test=X_test,
-    y_test=y_test,
+    y_test=y_test_u,
 )
 
+plot_cumulative_incidence_functions(
+    X_train,
+    y_train_c,
+    gb_incidence=gb_incidence,
+    aj=aj,
+    X_test=X_test,
+    y_test=y_test_c,
+)
 # %%

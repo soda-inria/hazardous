@@ -14,9 +14,11 @@ import numpy as np
 from sklearn.preprocessing import PolynomialFeatures
 import pandas as pd
 from scipy.stats import weibull_min
+from scipy.special import expit
 
-rng = np.random.default_rng(0)
 seed = 0
+rng = np.random.RandomState(seed)
+
 DEFAULT_SHAPE_RANGES = (
     (0.7, 0.9),
     (1.0, 1.0),
@@ -53,10 +55,10 @@ def compute_shape_and_scale(
     df_trans = df_poly_features.fit_transform(df_features)
 
     # Create masked matrix with the interactions
-    w_star = np.random.randn(df_trans.shape[1], n_weibull_parameters)
+    w_star = rng.randn(df_trans.shape[1], n_weibull_parameters)
     # Set 1-feature_rate% of the w_star to 0
     w_star = np.where(
-        np.random.rand(w_star.shape[0], w_star.shape[1]) < features_rate, w_star, 0
+        rng.rand(w_star.shape[0], w_star.shape[1]) < features_rate, w_star, 0
     )
     # Computation of the true values of shape and scale
     shape_scale_star = df_trans.values @ w_star
@@ -65,69 +67,68 @@ def compute_shape_and_scale(
     ]
     df_shape_scale_star = pd.DataFrame(shape_scale_star, columns=shape_scale_columns)
     # Rescaling of these values to stay in the chosen range
-    df_shape_scale_star = rescaling_params_to_respect_default_ranges(
-        df_shape_scale_star
+    for event, (scale_default, shape_default) in enumerate(
+        zip(DEFAULT_SCALE_RANGES, DEFAULT_SHAPE_RANGES)
+    ):
+        df_shape_scale_star = rescaling_params_to_respect_default_ranges(
+            df_shape_scale_star, shape_default, scale_default, event
+        )
+    return df_shape_scale_star
+
+
+def rescaling_params_to_respect_default_ranges(
+    df_shape_scale_star, shape_default, scale_default, event
+):
+    # Rescaling of these values to stay in the chosen range
+    shape_min, shape_max = shape_default
+    scale_min, scale_max = scale_default
+    shape = df_shape_scale_star[f"shape_{event}"].copy()
+    scale = df_shape_scale_star[f"scale_{event}"].copy()
+    df_shape_scale_star[f"shape_{event}"] = shape_min + (shape_max - shape_min) * expit(
+        shape
+    )
+    df_shape_scale_star[f"scale_{event}"] = scale_min + (scale_max - scale_min) * expit(
+        scale
     )
     return df_shape_scale_star
 
 
-def rescaling_params_to_respect_default_ranges(df_shape_scale_star):
-    # Rescaling of these values to stay in the chosen range
-    for event, (scale_default, shape_default) in enumerate(
-        zip(DEFAULT_SCALE_RANGES, DEFAULT_SHAPE_RANGES)
-    ):
-        shape_min, shape_max = shape_default
-        scale_min, scale_max = scale_default
-        shape = df_shape_scale_star[f"shape_{event}"].copy()
-        scale = df_shape_scale_star[f"scale_{event}"].copy()
-        shape = shape_min + (shape_max - shape_min) * (shape - shape.min()) / (
-            shape.max() - shape.min()
-        )
-        scale = scale_min + (scale_max - scale_min) * (scale - scale.min()) / (
-            scale.max() - scale.min()
-        )
-        df_shape_scale_star[f"shape_{event}"] = shape
-        df_shape_scale_star[f"scale_{event}"] = scale
-
-    return df_shape_scale_star
-
-
 def censor_data(
-    y, relative_scale, independant=True, X=None, features_censoring_rate=0.2
+    y, independant=True, X=None, features_censoring_rate=0.2, relative_scale=1.5
 ):
     if relative_scale == 0 or relative_scale is None:
         return y
 
     if independant:
         scale_censoring = relative_scale * y["duration"].mean()
+        shape_censoring = 1
     else:
-        features_impact_censoring = np.abs(np.random.randn(X.shape[1], 1))
+        features_impact_censoring = rng.randn(X.shape[1], 2)
         features_impact_censoring = np.where(
-            np.random.rand(
+            rng.rand(
                 features_impact_censoring.shape[0], features_impact_censoring.shape[1]
             )
             < features_censoring_rate,
             features_impact_censoring,
             0,
         )
-        scale_censoring = (X @ features_impact_censoring).values.flatten()
-        scale_censoring = (
-            (
-                1
-                + (scale_censoring - scale_censoring.min())
-                / (scale_censoring.max() - scale_censoring.min())
-            )
-            * relative_scale
-            * y["duration"].mean()
+        df_censoring_params = relative_scale * X @ features_impact_censoring
+        df_censoring_params.columns = ["shape_0", "scale_0"]
+        df_censoring_params = rescaling_params_to_respect_default_ranges(
+            df_censoring_params,
+            shape_default=(0.5, 0.9),
+            scale_default=(10, 15),
+            event=0,
         )
-
+        scale_censoring = df_censoring_params["scale_0"].values * y["duration"].mean()
+        shape_censoring = df_censoring_params["shape_0"].values
     censoring = weibull_min.rvs(
-        1, scale=scale_censoring, size=y.shape[0], random_state=rng
+        shape_censoring, scale=scale_censoring, size=y.shape[0], random_state=rng
     )
-    y = y.copy()
-    y["event"] = np.where(y["duration"] < censoring, y["event"], 0)
-    y["duration"] = np.minimum(y["duration"], censoring)
-    return y
+    y_censored = y.copy()
+    y_censored["event"] = np.where(y["duration"] < censoring, y_censored["event"], 0)
+    y_censored["duration"] = np.minimum(y_censored["duration"], censoring)
+    return y_censored
 
 
 def complex_data(
@@ -144,7 +145,7 @@ def complex_data(
     return_uncensored_data=False,
 ):
     # Create features given to the model as X and then creating the interactions
-    df_features = pd.DataFrame(np.random.randn(n_samples, n_features))
+    df_features = pd.DataFrame(rng.randn(n_samples, n_features))
     df_features.columns = [f"feature_{i}" for i in range(n_features)]
 
     df_shape_scale_star = compute_shape_and_scale(
@@ -169,7 +170,7 @@ def complex_data(
     )
     y_censored = censor_data(
         y,
-        relative_scale,
+        relative_scale=relative_scale,
         independant=independant,
         X=df_features,
         features_censoring_rate=features_censoring_rate,
