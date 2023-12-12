@@ -1,9 +1,11 @@
 # %%
 import numpy as np
-from complex_synthetic_data import complex_data
+import hazardous.data._competing_weibull as competing_w
 from time import perf_counter
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+import pandas as pd
+import seaborn as sns
 
 from hazardous import GradientBoostingIncidence
 from lifelines import AalenJohansenFitter
@@ -23,26 +25,58 @@ DEFAULT_SCALE_RANGES = (
 )
 n_events = 3
 
+
+# %%
+# In the following cell, we verify that the synthetic dataset is well defined.
+
+rng = np.random.RandomState(seed)
+df_features = pd.DataFrame(rng.randn(100_000, 10))
+df_features.columns = [f"feature_{i}" for i in range(10)]
+
+df_shape_scale_star = competing_w.compute_shape_and_scale(
+    df_features,
+    6,
+    0.3,
+    n_events,
+    2,
+    DEFAULT_SHAPE_RANGES,
+    DEFAULT_SCALE_RANGES,
+    0,
+)
+fig, axes = plt.subplots(2, 3, figsize=(10, 7))
+for idx, col in enumerate(df_shape_scale_star.columns):
+    sns.histplot(df_shape_scale_star[col], ax=axes[idx // 3][idx % 3])
+
+
 # %%
 
-X, y_censored, y_uncensored = complex_data(
+X, y_censored, y_uncensored = competing_w.make_synthetic_dataset(
     n_events=n_events,
     n_weibull_parameters=2 * n_events,
-    n_samples=30_000,
+    n_samples=3_000,
     base_scale=1_000,
     n_features=10,
     features_rate=0.5,
     degree_interaction=2,
-    relative_scale=0.95,
     independant=False,
     features_censoring_rate=0.2,
     return_uncensored_data=True,
+    return_X_y=True,
+    feature_rounding=4,
+    target_rounding=1,
+    shape_ranges=DEFAULT_SHAPE_RANGES,
+    scale_ranges=DEFAULT_SCALE_RANGES,
+    censoring_relative_scale=0.1,
+    random_state=0,
+    complex_features=True,
 )
-
 
 n_samples = len(X)
 calculate_variance = n_samples <= 5_000
 aj = AalenJohansenFitter(calculate_variance=calculate_variance, seed=0)
+
+y_censored["event"].value_counts()
+
 
 # %%
 #
@@ -75,9 +109,9 @@ def plot_cumulative_incidence_functions(
             duration = perf_counter() - tic
             print(f"GB Incidence for event {event_id} fit in {duration:.3f} s")
             tic = perf_counter()
-            cif_pred = gb_incidence.predict_cumulative_incidence(
-                X[0:1], coarse_timegrid
-            )[0]
+            cifs_pred = gb_incidence.predict_cumulative_incidence(X, coarse_timegrid)
+            print(cifs_pred.shape)
+            cif_mean = cifs_pred.mean(axis=0)
             duration = perf_counter() - tic
             print(f"GB Incidence for event {event_id} prediction in {duration:.3f} s")
             print("Brier score on training data:", gb_incidence.score(X, y))
@@ -87,7 +121,7 @@ def plot_cumulative_incidence_functions(
                 )
             ax.plot(
                 coarse_timegrid,
-                cif_pred,
+                cif_mean,
                 label="GradientBoostingIncidence",
             )
             ax.set(title=f"Event {event_id}")
@@ -114,12 +148,12 @@ X_train, X_test, y_train_c, y_test_c = train_test_split(
 y_train_u = y_uncensored.loc[y_train_c.index]
 y_test_u = y_uncensored.loc[y_test_c.index]
 gb_incidence = GradientBoostingIncidence(
-    learning_rate=0.05,
-    n_iter=1_000,
-    max_leaf_nodes=50,
+    learning_rate=0.1,
+    n_iter=20,
+    max_leaf_nodes=15,
     hard_zero_fraction=0.1,
     min_samples_leaf=5,
-    loss="inll",
+    loss="ibs",
     show_progressbar=False,
     random_state=seed,
 )
@@ -141,4 +175,3 @@ plot_cumulative_incidence_functions(
     X_test=X_test,
     y_test=y_test_c,
 )
-# %%
