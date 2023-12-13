@@ -210,7 +210,7 @@ def make_complex_features_with_sparse_matrix(
 
 
 def make_synthetic_competing_weibull(
-    n_events,
+    n_events=3,
     n_samples=3_000,
     base_scale=1_000,
     n_features=10,
@@ -281,7 +281,7 @@ def make_synthetic_competing_weibull(
     if return_X_y:
         if return_uncensored_data:
             return X, y_censored, y
-        return X, y
+        return X, y_censored
 
     frame = pd.concat([X, y], axis=1)
     return Bunch(data=frame[X.columns], target=frame[y.columns], frame=frame)

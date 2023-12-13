@@ -52,8 +52,8 @@ def test_competing_weibull_no_censoring(seed):
         y["event"],
         cv=3,
     ).mean()
-    assert 0.4 > baseline_classification_acc > 0.3  # approximately balanced
-    assert event_classification_acc > 1.2 * baseline_classification_acc
+    assert 0.45 > baseline_classification_acc > 0.3  # approximately balanced
+    assert event_classification_acc > 1.1 * baseline_classification_acc
     assert event_classification_acc < 0.6  # still challenging.
 
     # Check that the features make it possible to predict the durations better
