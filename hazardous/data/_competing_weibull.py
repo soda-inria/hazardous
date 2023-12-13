@@ -23,7 +23,7 @@ DEFAULT_SCALE_RANGES = (
 
 def _censor(
     y,
-    independant=True,
+    independent=True,
     X=None,
     features_censoring_rate=0.2,
     censoring_relative_scale=1.5,
@@ -33,7 +33,7 @@ def _censor(
     if censoring_relative_scale == 0 or censoring_relative_scale is None:
         return y
 
-    if independant:
+    if independent:
         scale_censoring = censoring_relative_scale * y["duration"].mean()
         shape_censoring = 1
     else:
@@ -67,7 +67,6 @@ def _censor(
 
 def compute_shape_and_scale(
     df_features,
-    n_weibull_parameters=6,
     features_rate=0.2,
     n_events=3,
     degree_interaction=2,
@@ -84,6 +83,7 @@ def compute_shape_and_scale(
     df_trans = df_poly_features.fit_transform(df_features)
 
     # Create masked matrix with the interactions
+    n_weibull_parameters = 2 * n_events
     w_star = rng.randn(df_trans.shape[1], n_weibull_parameters)
     # Set 1-feature_rate% of the w_star to 0
     w_star = np.where(
@@ -172,7 +172,6 @@ def make_simple_features(
 
 def make_complex_features_with_sparse_matrix(
     n_events=3,
-    n_weibull_parameters=6,
     n_samples=3_000,
     base_scale=1_000,
     shape_ranges=DEFAULT_SHAPE_RANGES,
@@ -189,7 +188,6 @@ def make_complex_features_with_sparse_matrix(
 
     df_shape_scale_star = compute_shape_and_scale(
         df_features,
-        n_weibull_parameters,
         features_rate,
         n_events,
         degree_interaction,
@@ -211,15 +209,14 @@ def make_complex_features_with_sparse_matrix(
     return df_features, event_durations, duration_argmin
 
 
-def make_synthetic_dataset(
+def make_synthetic_competing_weibull(
     n_events,
-    n_weibull_parameters,
     n_samples=3_000,
     base_scale=1_000,
     n_features=10,
     features_rate=0.3,
     degree_interaction=2,
-    independant=True,
+    independent=True,
     features_censoring_rate=0.2,
     return_uncensored_data=False,
     return_X_y=True,
@@ -229,7 +226,7 @@ def make_synthetic_dataset(
     scale_ranges=DEFAULT_SCALE_RANGES,
     censoring_relative_scale=1.5,
     random_state=0,
-    complex_features=True,
+    complex_features=False,
 ):
     """
     Creating a synthetic dataset to make competing risks.
@@ -247,7 +244,6 @@ def make_synthetic_dataset(
     if complex_features:
         X, event_durations, duration_argmin = make_complex_features_with_sparse_matrix(
             n_events,
-            n_weibull_parameters,
             n_samples,
             base_scale,
             shape_ranges,
@@ -270,7 +266,7 @@ def make_synthetic_dataset(
     y_censored = _censor(
         y,
         censoring_relative_scale=censoring_relative_scale,
-        independant=independant,
+        independent=independent,
         X=X,
         features_censoring_rate=features_censoring_rate,
         random_state=random_state,

@@ -1,3 +1,17 @@
+"""
+==========================================
+Modeling competing risks on synthetic data
+==========================================
+
+This example introduces a synthetic data generation tool that can
+be helpful to study the relative performance and potential biases
+of predictive competing risks estimators on right-censored data.
+Some of the input features and their second order multiplicative
+interactions are statistically associated with the parameters of
+the distributions from which the competing events are sampled.
+
+"""
+
 # %%
 import numpy as np
 import hazardous.data._competing_weibull as competing_w
@@ -35,13 +49,12 @@ df_features.columns = [f"feature_{i}" for i in range(10)]
 
 df_shape_scale_star = competing_w.compute_shape_and_scale(
     df_features,
-    6,
-    0.3,
-    n_events,
-    2,
-    DEFAULT_SHAPE_RANGES,
-    DEFAULT_SCALE_RANGES,
-    0,
+    features_rate=0.2,
+    n_events=3,
+    degree_interaction=2,
+    shape_ranges=DEFAULT_SHAPE_RANGES,
+    scale_ranges=DEFAULT_SCALE_RANGES,
+    random_state=0,
 )
 fig, axes = plt.subplots(2, 3, figsize=(10, 7))
 for idx, col in enumerate(df_shape_scale_star.columns):
@@ -50,15 +63,14 @@ for idx, col in enumerate(df_shape_scale_star.columns):
 
 # %%
 
-X, y_censored, y_uncensored = competing_w.make_synthetic_dataset(
+X, y_censored, y_uncensored = competing_w.make_synthetic_competing_weibull(
     n_events=n_events,
-    n_weibull_parameters=2 * n_events,
     n_samples=3_000,
     base_scale=1_000,
     n_features=10,
     features_rate=0.5,
     degree_interaction=2,
-    independant=False,
+    independent=False,
     features_censoring_rate=0.2,
     return_uncensored_data=True,
     return_X_y=True,
@@ -122,7 +134,6 @@ def plot_cumulative_incidence_functions(
             print(f"GB Incidence for event {event_id} fit in {duration:.3f} s")
             tic = perf_counter()
             cifs_pred = gb_incidence.predict_cumulative_incidence(X, coarse_timegrid)
-            print(cifs_pred.shape)
             cif_mean = cifs_pred.mean(axis=0)
             duration = perf_counter() - tic
             print(f"GB Incidence for event {event_id} prediction in {duration:.3f} s")
