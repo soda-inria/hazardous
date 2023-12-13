@@ -91,16 +91,16 @@ def compute_shape_and_scale(
     )
     # Computation of the true values of shape and scale
     shape_scale_star = df_trans.values @ w_star
-    shape_scale_columns = [f"shape_{i}" for i in range(n_events)] + [
-        f"scale_{i}" for i in range(n_events)
+    shape_scale_columns = [f"shape_{i}" for i in range(1, n_events + 1)] + [
+        f"scale_{i}" for i in range(1, n_events + 1)
     ]
     df_shape_scale_star = pd.DataFrame(shape_scale_star, columns=shape_scale_columns)
     # Rescaling of these values to stay in the chosen range
-    for event, (scale_default, shape_default) in enumerate(
-        zip(scale_ranges, shape_ranges)
+    for event_id, shape_range, scale_range in zip(
+        range(1, n_events + 1), cycle(shape_ranges), cycle(scale_ranges)
     ):
         df_shape_scale_star = rescaling_params_to_respect_default_ranges(
-            df_shape_scale_star, shape_default, scale_default, event
+            df_shape_scale_star, shape_range, scale_range, event_id
         )
     return df_shape_scale_star
 
@@ -199,7 +199,7 @@ def make_complex_features_with_sparse_matrix(
     )
     # Throw durations from a weibull distribution with scale and shape as the parameters
     event_durations = []
-    for event in range(n_events):
+    for event in range(1, n_events + 1):
         shape = df_shape_scale_star[f"shape_{event}"]
         scale = df_shape_scale_star[f"scale_{event}"]
         durations = weibull_min.rvs(shape, scale=scale * base_scale, random_state=rng)

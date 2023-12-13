@@ -77,6 +77,18 @@ aj = AalenJohansenFitter(calculate_variance=calculate_variance, seed=0)
 
 y_censored["event"].value_counts()
 
+gb_incidence = GradientBoostingIncidence(
+    learning_rate=0.1,
+    n_iter=20,
+    max_leaf_nodes=15,
+    hard_zero_fraction=0.1,
+    min_samples_leaf=5,
+    loss="ibs",
+    show_progressbar=False,
+    random_state=seed,
+)
+gb_incidence.fit(X, y_censored)
+
 
 # %%
 #
@@ -114,10 +126,10 @@ def plot_cumulative_incidence_functions(
             cif_mean = cifs_pred.mean(axis=0)
             duration = perf_counter() - tic
             print(f"GB Incidence for event {event_id} prediction in {duration:.3f} s")
-            print("Brier score on training data:", gb_incidence.score(X, y))
+            print("Brier score on training data:", -gb_incidence.score(X, y))
             if X_test is not None:
                 print(
-                    "Brier score on testing data:", gb_incidence.score(X_test, y_test)
+                    "Brier score on testing data:", -gb_incidence.score(X_test, y_test)
                 )
             ax.plot(
                 coarse_timegrid,
@@ -175,3 +187,5 @@ plot_cumulative_incidence_functions(
     X_test=X_test,
     y_test=y_test_c,
 )
+
+# %%
