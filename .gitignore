@@ -161,5 +161,8 @@ cython_debug/
 #.idea/
 
 .vscode
-
 doc/generated/
+
+
+# This dataset should not be redistributed, because users have to sign an agreement.
+hazardous/data/seer_cancer_cardio_raw_data.txt

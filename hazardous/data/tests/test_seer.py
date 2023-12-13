@@ -11,12 +11,12 @@ from hazardous.data._seer import (
     load_seer,
 )
 
-DIR_SAMPLES = Path("hazardous/data/tests").resolve()
-DIR_DATA = Path("hazardous/data/").resolve()
+DIR_SAMPLES = Path(__file__).parent
+DIR_DATA = Path(__file__).parent.parent
 
 
 def test_load_seer_sample():
-    input_path = DIR_SAMPLES / "seer_sample.txt"
+    input_path = DIR_SAMPLES / "fake_seer_sample.txt"
 
     X, y = load_seer(input_path, survtrace_preprocessing=True)
     assert X.shape == (3, 23)
@@ -36,7 +36,7 @@ def test_load_seer_sample():
     assert sorted(numeric_column_names) == sorted(NUMERIC_COLUMN_NAMES)
 
 
-raw_seer_path = (DIR_DATA / "seer_cancer_cardio_raw_data.txt").resolve()
+raw_seer_path = DIR_DATA / "seer_cancer_cardio_raw_data.txt"
 
 
 @pytest.mark.skipif(
