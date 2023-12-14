@@ -24,30 +24,28 @@ DEFAULT_SCALE_RANGES = (
 
 def _censor(
     y,
-    independent=True,
+    independent_censoring=True,
     X=None,
     features_censoring_rate=0.2,
     censoring_relative_scale=1.5,
     random_state=0,
 ):
-    rng = np.random.RandomState(random_state)
+    rng = check_random_state(random_state)
     if censoring_relative_scale == 0 or censoring_relative_scale is None:
         return y
 
-    if independent:
+    if independent_censoring:
         scale_censoring = censoring_relative_scale * y["duration"].mean()
         shape_censoring = 3
     else:
-        features_impact_censoring = rng.randn(X.shape[1], 2)
-        features_impact_censoring = np.where(
-            rng.rand(
-                features_impact_censoring.shape[0], features_impact_censoring.shape[1]
-            )
+        w_censoring_star = rng.randn(X.shape[1], 2)
+        w_censoring_star = np.where(
+            rng.rand(w_censoring_star.shape[0], w_censoring_star.shape[1])
             < features_censoring_rate,
-            features_impact_censoring,
+            w_censoring_star,
             0,
         )
-        df_censoring_params = censoring_relative_scale * X @ features_impact_censoring
+        df_censoring_params = censoring_relative_scale * X @ w_censoring_star
         df_censoring_params.columns = ["shape_0", "scale_0"]
         df_censoring_params = rescaling_params_to_respect_default_ranges(
             df_censoring_params,
@@ -77,7 +75,7 @@ def compute_shape_and_scale(
     scale_ranges=DEFAULT_SCALE_RANGES,
     random_state=0,
 ):
-    rng = np.random.RandomState(random_state)
+    rng = check_random_state(random_state)
     # Adding interactions between features
     preprocessor = make_pipeline(
         SplineTransformer(n_knots=3),
@@ -86,15 +84,15 @@ def compute_shape_and_scale(
         ),
     )
     preprocessor.set_output(transform="pandas")
-    df_trans = preprocessor.fit_transform(df_features)
+    df_features_transformed = preprocessor.fit_transform(df_features)
     # Create masked matrix with the interactions
     n_weibull_parameters = 2 * n_events
-    w_star = rng.randn(df_trans.shape[1], n_weibull_parameters)
+    w_star = rng.randn(df_features_transformed.shape[1], n_weibull_parameters)
     # 1-feature_rate% of marginal features and interacted features
     # are set to 0
-    cols_features = df_trans.columns
+    cols_features = df_features_transformed.columns
     marginal_cols = np.array([len(c.split(" ")) == 1 for c in cols_features]) * np.ones(
-        (n_weibull_parameters, df_trans.shape[1])
+        (n_weibull_parameters, df_features_transformed.shape[1])
     )
     marginal_cols = marginal_cols.T.astype(bool)
     w_star_marg = np.where(
@@ -109,7 +107,7 @@ def compute_shape_and_scale(
     )
     w_star += w_star_marg
     # Computation of the true values of shape and scale
-    shape_scale_star = df_trans.values @ w_star
+    shape_scale_star = df_features_transformed.values @ w_star
     shape_scale_columns = [f"shape_{i}" for i in range(1, n_events + 1)] + [
         f"scale_{i}" for i in range(1, n_events + 1)
     ]
@@ -130,18 +128,16 @@ def rescaling_params_to_respect_default_ranges(
     # Rescaling of these values to stay in the chosen range
     shape_min, shape_max = shape_default
     scale_min, scale_max = scale_default
-    shape = df_shape_scale_star[f"shape_{event}"].copy()
-    scale = df_shape_scale_star[f"scale_{event}"].copy()
     scaler = StandardScaler()
     df_shape_scale_star[f"shape_{event}"] = (
         shape_min
         + (shape_max - shape_min)
-        * expit(scaler.fit_transform(shape.values.reshape(-1, 1)))
+        * expit(scaler.fit_transform(df_shape_scale_star[f"shape_{event}"]))
     ).flatten()
     df_shape_scale_star[f"scale_{event}"] = (
         scale_min
         + (scale_max - scale_min)
-        * expit(scaler.fit_transform(scale.values.reshape(-1, 1))).flatten()
+        * expit(scaler.fit_transform(df_shape_scale_star[f"scale_{event}"])).flatten()
     )
     return df_shape_scale_star
 
@@ -202,8 +198,11 @@ def make_complex_features_with_sparse_matrix(
 ):
     rng = np.random.RandomState(random_state)
     # Create features given to the model as X and then creating the interactions
-    df_features = pd.DataFrame(rng.rand(n_samples, n_features))
-    df_features.columns = [f"feature_{i}" for i in range(n_features)]
+    columns = [f"feature_{i}" for i in range(n_features)]
+    df_features = pd.DataFrame(
+        rng.randn(n_samples, n_features),
+        columns=columns,
+    )
 
     df_shape_scale_star = compute_shape_and_scale(
         df_features,
@@ -235,12 +234,12 @@ def make_synthetic_competing_weibull(
     n_features=10,
     features_rate=0.3,
     degree_interaction=2,
-    independent=True,
+    independent_censoring=True,
     features_censoring_rate=0.2,
     return_uncensored_data=False,
     return_X_y=True,
     feature_rounding=2,
-    target_rounding=2,
+    target_rounding=4,
     shape_ranges=DEFAULT_SHAPE_RANGES,
     scale_ranges=DEFAULT_SCALE_RANGES,
     censoring_relative_scale=1.5,
@@ -262,19 +261,24 @@ def make_synthetic_competing_weibull(
     """
     if complex_features:
         X, event_durations, duration_argmin = make_complex_features_with_sparse_matrix(
-            n_events,
-            n_samples,
-            base_scale,
-            shape_ranges,
-            scale_ranges,
-            n_features,
-            features_rate,
-            degree_interaction,
-            random_state,
+            n_events=n_events,
+            n_samples=n_samples,
+            base_scale=base_scale,
+            shape_ranges=shape_ranges,
+            scale_ranges=scale_ranges,
+            n_features=n_features,
+            features_rate=features_rate,
+            degree_interaction=degree_interaction,
+            random_state=random_state,
         )
     else:
         X, event_durations, duration_argmin = make_simple_features(
-            n_events, n_samples, base_scale, shape_ranges, scale_ranges, random_state
+            n_events=n_events,
+            n_samples=n_samples,
+            base_scale=base_scale,
+            shape_ranges=shape_ranges,
+            scale_ranges=scale_ranges,
+            random_state=random_state,
         )
     y = pd.DataFrame(
         dict(
@@ -285,7 +289,7 @@ def make_synthetic_competing_weibull(
     y_censored = _censor(
         y,
         censoring_relative_scale=censoring_relative_scale,
-        independent=independent,
+        independent_censoring=independent_censoring,
         X=X,
         features_censoring_rate=features_censoring_rate,
         random_state=random_state,
@@ -303,4 +307,4 @@ def make_synthetic_competing_weibull(
         return X, y_censored
 
     frame = pd.concat([X, y], axis=1)
-    return Bunch(data=frame[X.columns], target=frame[y.columns], frame=frame)
+    return Bunch(data=frame[X.columns], target=frame[y_censored.columns], frame=frame)

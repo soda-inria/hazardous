@@ -18,6 +18,7 @@ import hazardous.data._competing_weibull as competing_w
 from time import perf_counter
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+from sklearn.utils import check_random_state
 import pandas as pd
 import seaborn as sns
 
@@ -25,13 +26,12 @@ from hazardous import GradientBoostingIncidence
 from lifelines import AalenJohansenFitter
 
 seed = 0
-rng = np.random.RandomState(seed)
+rng = check_random_state(seed)
 
 
 # %%
 # In the following cell, we verify that the synthetic dataset is well defined.
 
-rng = np.random.RandomState(seed)
 df_features = pd.DataFrame(rng.randn(100_000, 10))
 df_features.columns = [f"feature_{i}" for i in range(10)]
 
@@ -54,7 +54,7 @@ X, y_censored, y_uncensored = competing_w.make_synthetic_competing_weibull(
     n_features=10,
     features_rate=0.5,
     degree_interaction=2,
-    independent=False,
+    independent_censoring=False,
     features_censoring_rate=0.2,
     return_uncensored_data=True,
     return_X_y=True,
@@ -167,7 +167,7 @@ gb_incidence = GradientBoostingIncidence(
 plot_cumulative_incidence_functions(
     X_train,
     y_train_u,
-    gb_incidence=None,
+    gb_incidence=gb_incidence,
     aj=aj,
     X_test=X_test,
     y_test=y_test_u,
@@ -176,7 +176,7 @@ plot_cumulative_incidence_functions(
 plot_cumulative_incidence_functions(
     X_train,
     y_train_c,
-    gb_incidence=None,
+    gb_incidence=gb_incidence,
     aj=aj,
     X_test=X_test,
     y_test=y_test_c,
