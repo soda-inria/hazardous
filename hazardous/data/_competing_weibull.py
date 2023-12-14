@@ -5,18 +5,19 @@ import pandas as pd
 from scipy.special import expit
 from scipy.stats import weibull_min
 from sklearn.datasets._base import Bunch
-from sklearn.preprocessing import MinMaxScaler, PolynomialFeatures
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures, SplineTransformer, StandardScaler
 from sklearn.utils import check_random_state
 
 DEFAULT_SHAPE_RANGES = (
-    (0.7, 0.9),
+    (0.8, 1.0),
     (1.0, 1.0),
-    (2.0, 3.0),
+    (1.2, 3.0),
 )
 
 DEFAULT_SCALE_RANGES = (
-    (1, 20),
-    (1, 10),
+    (1, 15),
+    (1, 7),
     (1.5, 5),
 )
 
@@ -35,7 +36,7 @@ def _censor(
 
     if independent:
         scale_censoring = censoring_relative_scale * y["duration"].mean()
-        shape_censoring = 1
+        shape_censoring = 3
     else:
         features_impact_censoring = rng.randn(X.shape[1], 2)
         features_impact_censoring = np.where(
@@ -50,7 +51,7 @@ def _censor(
         df_censoring_params.columns = ["shape_0", "scale_0"]
         df_censoring_params = rescaling_params_to_respect_default_ranges(
             df_censoring_params,
-            shape_default=(1.0, 1.0),
+            shape_default=(3.0, 4.0),
             scale_default=(1, 10 * censoring_relative_scale),
             event=0,
         )
@@ -60,7 +61,9 @@ def _censor(
         shape_censoring, scale=scale_censoring, size=y.shape[0], random_state=rng
     )
     y_censored = y.copy()
-    y_censored["event"] = np.where(y["duration"] < censoring, y_censored["event"], 0)
+    y_censored["event"] = np.where(
+        y_censored["duration"] < censoring, y_censored["event"], 0
+    )
     y_censored["duration"] = np.minimum(y_censored["duration"], censoring)
     return y_censored
 
@@ -76,19 +79,35 @@ def compute_shape_and_scale(
 ):
     rng = np.random.RandomState(random_state)
     # Adding interactions between features
-    df_poly_features = PolynomialFeatures(
-        degree=degree_interaction, interaction_only=True, include_bias=False
+    preprocessor = make_pipeline(
+        SplineTransformer(n_knots=3),
+        PolynomialFeatures(
+            degree=degree_interaction, interaction_only=True, include_bias=False
+        ),
     )
-    df_poly_features.set_output(transform="pandas")
-    df_trans = df_poly_features.fit_transform(df_features)
-
+    preprocessor.set_output(transform="pandas")
+    df_trans = preprocessor.fit_transform(df_features)
     # Create masked matrix with the interactions
     n_weibull_parameters = 2 * n_events
     w_star = rng.randn(df_trans.shape[1], n_weibull_parameters)
-    # Set 1-feature_rate% of the w_star to 0
-    w_star = np.where(
-        rng.rand(w_star.shape[0], w_star.shape[1]) < features_rate, w_star, 0
+    # 1-feature_rate% of marginal features and interacted features
+    # are set to 0
+    cols_features = df_trans.columns
+    marginal_cols = np.array([len(c.split(" ")) == 1 for c in cols_features]) * np.ones(
+        (n_weibull_parameters, df_trans.shape[1])
     )
+    marginal_cols = marginal_cols.T.astype(bool)
+    w_star_marg = np.where(
+        (rng.rand(w_star.shape[0], w_star.shape[1]) < features_rate) & marginal_cols,
+        w_star,
+        0,
+    )
+    w_star = np.where(
+        (rng.rand(w_star.shape[0], w_star.shape[1]) < features_rate) & ~marginal_cols,
+        w_star,
+        0,
+    )
+    w_star += w_star_marg
     # Computation of the true values of shape and scale
     shape_scale_star = df_trans.values @ w_star
     shape_scale_columns = [f"shape_{i}" for i in range(1, n_events + 1)] + [
@@ -113,7 +132,7 @@ def rescaling_params_to_respect_default_ranges(
     scale_min, scale_max = scale_default
     shape = df_shape_scale_star[f"shape_{event}"].copy()
     scale = df_shape_scale_star[f"scale_{event}"].copy()
-    scaler = MinMaxScaler(feature_range=(-2, 2))
+    scaler = StandardScaler()
     df_shape_scale_star[f"shape_{event}"] = (
         shape_min
         + (shape_max - shape_min)
@@ -183,7 +202,7 @@ def make_complex_features_with_sparse_matrix(
 ):
     rng = np.random.RandomState(random_state)
     # Create features given to the model as X and then creating the interactions
-    df_features = pd.DataFrame(rng.randn(n_samples, n_features))
+    df_features = pd.DataFrame(rng.rand(n_samples, n_features))
     df_features.columns = [f"feature_{i}" for i in range(n_features)]
 
     df_shape_scale_star = compute_shape_and_scale(
@@ -221,7 +240,7 @@ def make_synthetic_competing_weibull(
     return_uncensored_data=False,
     return_X_y=True,
     feature_rounding=2,
-    target_rounding=1,
+    target_rounding=2,
     shape_ranges=DEFAULT_SHAPE_RANGES,
     scale_ranges=DEFAULT_SCALE_RANGES,
     censoring_relative_scale=1.5,
@@ -275,7 +294,7 @@ def make_synthetic_competing_weibull(
         X = X.round(feature_rounding)
 
     if target_rounding is not None:
-        y_censored = y_censored.round(target_rounding)
+        y_censored["duration"] = y_censored["duration"].round(target_rounding)
         y = y.round(target_rounding)
 
     if return_X_y:

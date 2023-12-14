@@ -26,18 +26,6 @@ from lifelines import AalenJohansenFitter
 
 seed = 0
 rng = np.random.RandomState(seed)
-DEFAULT_SHAPE_RANGES = (
-    (0.7, 0.9),
-    (1.0, 1.0),
-    (2.0, 3.0),
-)
-
-DEFAULT_SCALE_RANGES = (
-    (1, 20),
-    (1, 10),
-    (1.5, 5),
-)
-n_events = 3
 
 
 # %%
@@ -52,19 +40,15 @@ df_shape_scale_star = competing_w.compute_shape_and_scale(
     features_rate=0.2,
     n_events=3,
     degree_interaction=2,
-    shape_ranges=DEFAULT_SHAPE_RANGES,
-    scale_ranges=DEFAULT_SCALE_RANGES,
     random_state=0,
 )
 fig, axes = plt.subplots(2, 3, figsize=(10, 7))
 for idx, col in enumerate(df_shape_scale_star.columns):
     sns.histplot(df_shape_scale_star[col], ax=axes[idx // 3][idx % 3])
 
-
 # %%
 
 X, y_censored, y_uncensored = competing_w.make_synthetic_competing_weibull(
-    n_events=n_events,
     n_samples=3_000,
     base_scale=1_000,
     n_features=10,
@@ -74,15 +58,14 @@ X, y_censored, y_uncensored = competing_w.make_synthetic_competing_weibull(
     features_censoring_rate=0.2,
     return_uncensored_data=True,
     return_X_y=True,
-    feature_rounding=4,
-    target_rounding=1,
-    shape_ranges=DEFAULT_SHAPE_RANGES,
-    scale_ranges=DEFAULT_SCALE_RANGES,
-    censoring_relative_scale=0.1,
+    feature_rounding=3,
+    target_rounding=4,
+    censoring_relative_scale=4.0,
     random_state=0,
     complex_features=True,
 )
 
+# %%
 n_samples = len(X)
 calculate_variance = n_samples <= 5_000
 aj = AalenJohansenFitter(calculate_variance=calculate_variance, seed=0)
@@ -99,7 +82,6 @@ gb_incidence = GradientBoostingIncidence(
     show_progressbar=False,
     random_state=seed,
 )
-gb_incidence.fit(X, y_censored)
 
 
 # %%
@@ -155,8 +137,8 @@ def plot_cumulative_incidence_functions(
             duration = perf_counter() - tic
             print(f"Aalen-Johansen for event {event_id} fit in {duration:.3f} s")
             aj.plot(label="Aalen-Johansen", ax=ax)
-            print(aj.cumulative_density_.values[-1])
-
+            ax.set_xlim(0, 8_000)
+            ax.set_ylim(0, 0.5)
         if event_id == 1:
             ax.legend(loc="lower right")
         else:
@@ -170,6 +152,7 @@ X_train, X_test, y_train_c, y_test_c = train_test_split(
 )
 y_train_u = y_uncensored.loc[y_train_c.index]
 y_test_u = y_uncensored.loc[y_test_c.index]
+
 gb_incidence = GradientBoostingIncidence(
     learning_rate=0.1,
     n_iter=20,
@@ -184,7 +167,7 @@ gb_incidence = GradientBoostingIncidence(
 plot_cumulative_incidence_functions(
     X_train,
     y_train_u,
-    gb_incidence=gb_incidence,
+    gb_incidence=None,
     aj=aj,
     X_test=X_test,
     y_test=y_test_u,
@@ -193,7 +176,7 @@ plot_cumulative_incidence_functions(
 plot_cumulative_incidence_functions(
     X_train,
     y_train_c,
-    gb_incidence=gb_incidence,
+    gb_incidence=None,
     aj=aj,
     X_test=X_test,
     y_test=y_test_c,
