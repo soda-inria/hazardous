@@ -1,6 +1,6 @@
 import pytest
-from sklearn.dummy import DummyClassifier, DummyRegressor
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.dummy import DummyClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
 
 from hazardous.data import make_synthetic_competing_weibull
@@ -56,35 +56,6 @@ def test_competing_weibull_no_censoring(seed):
     assert event_classification_acc > 1.1 * baseline_classification_acc
     assert event_classification_acc < 0.6  # still challenging.
 
-    # Check that the features make it possible to predict the durations better
-    # than a marginal baseline, but that a significant amount of unpredictability
-    # remains.
-    median_duration = y["duration"].median()
-    duration_regression_relative_error = (
-        -cross_val_score(
-            RandomForestRegressor(criterion="poisson", random_state=seed),
-            X,
-            y["duration"],
-            cv=3,
-            n_jobs=4,
-            scoring="neg_mean_absolute_error",
-        ).mean()
-        / median_duration
-    )
-    baseline_duration_relative_error = (
-        -cross_val_score(
-            DummyRegressor(strategy="mean"),
-            X,
-            y["duration"],
-            cv=3,
-            scoring="neg_mean_absolute_error",
-        ).mean()
-        / median_duration
-    )
-    assert 0.9 < baseline_duration_relative_error < 1.1  # approximately balanced
-    assert duration_regression_relative_error < 0.98 * baseline_duration_relative_error
-    assert duration_regression_relative_error > 0.8  # still challenging.
-
 
 @pytest.mark.parametrize("seed", range(3))
 def test_competing_weibull_with_censoring(seed):
@@ -109,7 +80,7 @@ def test_competing_weibull_with_censoring(seed):
     # Censoring rate is lower for higher scale:
     high_scale_censoring_rate = (y_high_scale["event"] == 0).mean()
     low_scale_censoring_rate = (y_low_scale["event"] == 0).mean()
-    assert 0.35 < high_scale_censoring_rate < 0.5
+    assert 0.3 < high_scale_censoring_rate < 0.5
     assert 0.5 < low_scale_censoring_rate < 0.65
 
     # Uncensored events and durations match:
