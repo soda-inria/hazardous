@@ -304,6 +304,7 @@ def _extract_target_events(
         events_of_interest = target[event_column_name].unique().tolist()
         for censoring_label in censoring_labels:
             events_of_interest.remove(censoring_label)
+        events_of_interest = sorted(events_of_interest)
 
     event_labels = events_of_interest
 
