@@ -133,8 +133,9 @@ def load_seer(
             The original data.
     """
     msg = (
-        f"The SEER extracted file doesn't exist at {input_path}."
-        "See the installation guide at https://soda-inria.github.io/hazardous/xxx."
+        f"The SEER dataset file doesn't exist at {input_path}."
+        "See the installation guide at "
+        "https://soda-inria.github.io/hazardous/downloading_seer.html"
     )
     if not Path(input_path).exists():
         raise FileNotFoundError(msg)
