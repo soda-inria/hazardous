@@ -10,14 +10,14 @@ from sklearn.preprocessing import PolynomialFeatures, SplineTransformer, Standar
 from sklearn.utils import check_random_state
 
 DEFAULT_SHAPE_RANGES = (
-    (0.8, 1.0),
+    (1.0, 3.5),
     (1.0, 1.0),
-    (1.2, 3.0),
+    (3.0, 6.0),
 )
 
 DEFAULT_SCALE_RANGES = (
-    (1, 15),
     (1, 7),
+    (1, 15),
     (1.5, 5),
 )
 
@@ -47,12 +47,18 @@ def _censor(
         )
         df_censoring_params = censoring_relative_scale * X @ w_censoring_star
         df_censoring_params.columns = ["shape_0", "scale_0"]
-        df_censoring_params = rescaling_params_to_respect_default_ranges(
-            df_censoring_params,
-            shape_default=(3.0, 4.0),
-            scale_default=(1, 10 * censoring_relative_scale),
-            event=0,
+
+        df_censoring_params["shape_0"] = _rescale_params(
+            df_censoring_params[["shape_0"]],
+            param_min=2.0,
+            param_max=3.0,
         )
+        df_censoring_params["scale_0"] = _rescale_params(
+            df_censoring_params[["scale_0"]],
+            param_min=1,
+            param_max=censoring_relative_scale,
+        )
+
         scale_censoring = df_censoring_params["scale_0"].values * y["duration"].mean()
         shape_censoring = df_censoring_params["shape_0"].values
     censoring = weibull_min.rvs(
@@ -67,7 +73,7 @@ def _censor(
 
 
 def compute_shape_and_scale(
-    df_features,
+    X,
     features_rate=0.2,
     n_events=3,
     degree_interaction=2,
@@ -84,62 +90,64 @@ def compute_shape_and_scale(
         ),
     )
     preprocessor.set_output(transform="pandas")
-    df_features_transformed = preprocessor.fit_transform(df_features)
+    X_trans = preprocessor.fit_transform(X)
     # Create masked matrix with the interactions
     n_weibull_parameters = 2 * n_events
-    w_star = rng.randn(df_features_transformed.shape[1], n_weibull_parameters)
+    w_star = rng.randn(X_trans.shape[1], n_weibull_parameters)
     # 1-feature_rate% of marginal features and interacted features
     # are set to 0
-    cols_features = df_features_transformed.columns
-    marginal_cols = np.array([len(c.split(" ")) == 1 for c in cols_features]) * np.ones(
-        (n_weibull_parameters, df_features_transformed.shape[1])
-    )
-    marginal_cols = marginal_cols.T.astype(bool)
-    w_star_marg = np.where(
-        (rng.rand(w_star.shape[0], w_star.shape[1]) < features_rate) & marginal_cols,
+    cols_features = X_trans.columns
+    marginal_mask = np.array([len(col.split(" ")) == 1 for col in cols_features])
+    marginal_cols = np.repeat(
+        marginal_mask.reshape(-1, 1), repeats=n_weibull_parameters, axis=1
+    )  # (X_trans.shape[1], n_weibull_parameters)
+
+    drop_out_mask = rng.rand(w_star.shape[0], w_star.shape[1]) < features_rate
+    w_star_marginal = np.where(
+        drop_out_mask & marginal_cols,
         w_star,
         0,
     )
     w_star = np.where(
-        (rng.rand(w_star.shape[0], w_star.shape[1]) < features_rate) & ~marginal_cols,
+        drop_out_mask & ~marginal_cols,
         w_star,
         0,
     )
-    w_star += w_star_marg
+    w_star += w_star_marginal
+
     # Computation of the true values of shape and scale
-    shape_scale_star = df_features_transformed.values @ w_star
+    shape_scale_star = X_trans.values @ w_star
     shape_scale_columns = [f"shape_{i}" for i in range(1, n_events + 1)] + [
         f"scale_{i}" for i in range(1, n_events + 1)
     ]
     df_shape_scale_star = pd.DataFrame(shape_scale_star, columns=shape_scale_columns)
     # Rescaling of these values to stay in the chosen range
+
+    return rescale_params(df_shape_scale_star, n_events, shape_ranges, scale_ranges)
+
+
+def rescale_params(df_shape_scale_star, n_events, shape_ranges, scale_ranges):
     for event_id, shape_range, scale_range in zip(
         range(1, n_events + 1), cycle(shape_ranges), cycle(scale_ranges)
     ):
-        df_shape_scale_star = rescaling_params_to_respect_default_ranges(
-            df_shape_scale_star, shape_range, scale_range, event_id
+        shape_min, shape_max = shape_range
+        scale_min, scale_max = scale_range
+        df_shape_scale_star[f"shape_{event_id}"] = _rescale_params(
+            df_shape_scale_star[[f"shape_{event_id}"]], shape_min, shape_max
+        )
+        df_shape_scale_star[f"scale_{event_id}"] = _rescale_params(
+            df_shape_scale_star[[f"scale_{event_id}"]], scale_min, scale_max
         )
     return df_shape_scale_star
 
 
-def rescaling_params_to_respect_default_ranges(
-    df_shape_scale_star, shape_default, scale_default, event
-):
+def _rescale_params(column_param, param_min, param_max):
     # Rescaling of these values to stay in the chosen range
-    shape_min, shape_max = shape_default
-    scale_min, scale_max = scale_default
     scaler = StandardScaler()
-    df_shape_scale_star[f"shape_{event}"] = (
-        shape_min
-        + (shape_max - shape_min)
-        * expit(scaler.fit_transform(df_shape_scale_star[f"shape_{event}"]))
+    column_param = (
+        param_min + (param_max - param_min) * expit(scaler.fit_transform(column_param))
     ).flatten()
-    df_shape_scale_star[f"scale_{event}"] = (
-        scale_min
-        + (scale_max - scale_min)
-        * expit(scaler.fit_transform(df_shape_scale_star[f"scale_{event}"])).flatten()
-    )
-    return df_shape_scale_star
+    return column_param
 
 
 def make_simple_features(

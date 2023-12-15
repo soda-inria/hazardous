@@ -54,7 +54,7 @@ def test_competing_weibull_no_censoring(seed):
     ).mean()
     assert 0.45 > baseline_classification_acc > 0.3  # approximately balanced
     assert event_classification_acc > 1.1 * baseline_classification_acc
-    assert event_classification_acc < 0.6  # still challenging.
+    assert event_classification_acc < 0.63  # still challenging.
 
 
 @pytest.mark.parametrize("seed", range(3))
