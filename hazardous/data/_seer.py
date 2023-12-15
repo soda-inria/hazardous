@@ -2,13 +2,17 @@
 
 See: https://github.com/RyanWangZf/SurvTRACE/blob/main/data/process_seer.py
 """
+
+from collections import defaultdict
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+from sklearn.datasets._base import Bunch  # XXX: use a dataclass instead?
 
 CATEGORICAL_COLUMN_NAMES = [
     "Sex",
-    "Year of diagnosis",
+    "Year of diagnosis",  # XXX shall this be typed as a numerical feature instead?
     "Race recode (W, B, AI, API)",
     "Histologic Type ICD-O-3",
     "Laterality",
@@ -46,9 +50,9 @@ COLUMN_NAMES = [
     "ER Status Recode Breast Cancer (1990+)",
     "PR Status Recode Breast Cancer (1990+)",
     "Regional nodes examined (1988+)",
-    "Undefined 1",
+    "Unused 1",  # TODO: fixme: find informative column name
     "Summary stage 2000 (1998-2017)",
-    "Undefined 2",
+    "Unused 2",  # TODO: fixme: find informative column name
     "Reason no cancer-directed surgery",
     "CS tumor size (2004-2015)",
     "First malignant primary indicator",
@@ -60,11 +64,23 @@ COLUMN_NAMES = [
     "SEER other cause of death classification",
     "SEER cause-specific death classification",
     "Survival months",
-    "Undefined 3",
+    "Unused 3",  # TODO: fixme: find informative column name
 ]
 
 
-def load_seer(input_path, survtrace_preprocessing=False):
+def load_seer(
+    input_path,
+    event_column_name="COD to site recode",
+    duration_column_name="Survival months",
+    events_of_interest=(
+        "Breast",
+        "Diseases of Heart",
+    ),
+    censoring_labels=("Alive",),
+    other_event_name="Other",
+    survtrace_preprocessing=False,
+    return_X_y=False,
+):
     """Load the seer dataset and optionally apply the same preprocessing \
         as done in SurvTRACE.
 
@@ -75,19 +91,46 @@ def load_seer(input_path, survtrace_preprocessing=False):
     input_path : str or file_path
         The path of the txt file.
 
+    events_of_interest : tuple of str or "all", \
+            default=("Breast", "Diseases of Heart")
+        If "all": all event types are preserved. Other specificy the labels of
+        the event of interest to extract. All other events are collapsed into
+        an "Other" event with a dedicated integer event code.
+
+    censoring_labels : typle of str, default=("Alive",)
+        The label(s) used in the COD (cause of death) column that should be
+        interpreted as censoring marker(s) in the original dataset.
+
+    other_event_name : str, default="Other"
+        Whe other_events is "collapse", this parameter controls the name of the
+        collapsed competing event.
+
     survtrace_preprocessing : bool, default=False
         If set to True, apply the preprocessing steps used in SurvTRACE to
-        ensure reproducibility.
+        ensure reproducibility of the results in its paper. Note that to fully
+        replicate the preprocessing used by SurvTRACE, one would also need to
+        recode the "Other" competing event as 0 to treat it as censoring.
 
     Returns
     -------
-    X : pandas.DataFrame of shape (n_samples, n_features)
-        The dataframe of features.
+    bunch_dataset : a Bunch object with the following attributes:
 
-    y : pandas.DataFrame of shape (n_samples, 2)
-        The dataframe of targets, with columns 'event' and 'duration'.
-        The event 1 is 'Breast Cancer', and the event 2 is 'Disease of Heart'.
-        The event 0 indicates censoring.
+        data : pandas.DataFrame of shape (n_samples, n_features)
+            The dataframe of features.
+
+        target : pandas.DataFrame of shape (n_samples, 2)
+            The two columns are named "event" and "duration". The "event"
+            columns holds integer idenfiers of event of interest or 0 for
+            censoring. The meaning of event integer codes is defined by the
+            position in the event_labels list. The "duration" columns holds a
+            numerical value for the event free duration expressed in months. #
+            TODO: document what t0 mean.
+
+        event_labels : list of str
+            The labels of the events.
+
+        original_data : pandas.DataFrame of shape (n_samples, 29)
+            The original data.
     """
     msg = (
         f"The SEER extracted file doesn't exist at {input_path}."
@@ -96,23 +139,83 @@ def load_seer(input_path, survtrace_preprocessing=False):
     if not Path(input_path).exists():
         raise FileNotFoundError(msg)
 
-    X = pd.read_csv(input_path, sep="\t", header=None, names=COLUMN_NAMES)
-
-    if survtrace_preprocessing:
-        X = preprocess_features_as_survtrace(X)
-
-    y = preprocess_events(X)
-
-    categorical_dtypes = {col: "category" for col in CATEGORICAL_COLUMN_NAMES}
-    numerical_dtypes = {col: "float64" for col in NUMERIC_COLUMN_NAMES}
-    X = X.astype({**numerical_dtypes, **categorical_dtypes}).drop(
-        columns=["COD to site recode", "Survival months"]
+    # XXX: specify dtypes for all columns at load time insted of retyping a
+    # posteriori?
+    # In particular this should help remove a pandas warning for column 22.
+    original_data = data = pd.read_csv(
+        input_path, sep="\t", header=None, names=COLUMN_NAMES
     )
 
-    return X, y
+    if survtrace_preprocessing:
+        data = _filter_rows_as_survtrace(data)
+
+    # Extract the target events and remove the corresponding columns from the
+    # data.
+    target_columns = [event_column_name, duration_column_name]
+    target, event_labels = _extract_target_events(
+        data[target_columns],
+        event_column_name,
+        duration_column_name,
+        censoring_labels,
+        events_of_interest=events_of_interest,
+        other_event_name=other_event_name,
+    )
+    data = data.drop(columns=target_columns)
+
+    # Remove columns that should not be used as predictors.
+    data = data.drop(columns="Patient ID")
+
+    # TODO: fixme: once informative column names are used, this should be
+    # updated accordingly.
+    kept_columns = data.columns[~data.columns.str.startswith("Unused")]
+    data = data[kept_columns]
+
+    if survtrace_preprocessing:
+        data = _preprocess_cols_as_survtrace(data)
+
+    categorical_dtypes = {col: "category" for col in CATEGORICAL_COLUMN_NAMES}
+
+    # There are no decimal values in the numerical columns so let's use int64.
+    numerical_dtypes = {col: "int64" for col in NUMERIC_COLUMN_NAMES}
+
+    # Encode missing values with None so that astype will convert missing
+    # numerical values to nan and categorical values to pd.NA.
+    data.replace("Unknown", None, inplace=True)
+    data = data.astype({**numerical_dtypes, **categorical_dtypes})
+
+    if return_X_y:
+        return data, target
+
+    return Bunch(
+        data=data,
+        target=target,
+        event_labels=event_labels,
+        original_data=original_data,
+    )
 
 
-def preprocess_features_as_survtrace(X):
+def _filter_rows_as_survtrace(data):
+    """Filter rows as done in the SurvTRACE paper"""
+    mask = (
+        # 4 records have N/A cause-specific death classification and are all
+        # "Alive".
+        (data["SEER cause-specific death classification"] != "N/A not seq 0-59")
+        # 282 records with "Survival months" between 1 and 67 months and a mean
+        # of 3.2 months. All have a "COD to site recode" with a death cause
+        # (non marked as "Alive").
+        & (
+            data["Reason no cancer-directed surgery"]
+            != "Not performed, patient died prior to recommended surgery"
+        )
+        # The following was part of the original SurvTRACE preprocessing but it
+        # is not clear why it is needed: all the values in that column are
+        # integers.
+        # & (data["Survival months"] != "Unknown")
+    )
+    return data.loc[mask]
+
+
+def _preprocess_cols_as_survtrace(X):
     """Replace inplace rare categories to reduce the entropy of the input.
 
     This function reproduces the preprocessing heuristics from SurvTRACE:
@@ -131,17 +234,9 @@ def preprocess_features_as_survtrace(X):
     -------
     X : pandas.DataFrame
     """
-    X = X.drop(columns="Patient ID")
-
-    mask = (
-        (X["SEER cause-specific death classification"] != "N/A not seq 0-59")
-        & (
-            X["Reason no cancer-directed surgery"]
-            != "Not performed, patient died prior to recommended surgery"
-        )
-        & (X["Survival months"] != "Unknown")
-    )
-    X = X.loc[mask]
+    # Make it such that inplace column modifications to not alter the input
+    # dataframe
+    X = X.copy()
 
     # Equivalent of OrdinalEncoder on frequencies of "Histologic Type ICD-O-3"
     val_counts = X["Histologic Type ICD-O-3"].value_counts()
@@ -179,8 +274,6 @@ def preprocess_features_as_survtrace(X):
         inplace=True,
     )
 
-    X.replace("Unknown", None, inplace=True)
-
     min_threshold = {
         "Sequence number": 100,
         "Diagnostic Confirmation": 160,
@@ -191,30 +284,42 @@ def preprocess_features_as_survtrace(X):
         replace_dict = {k: low_freq_keys[0] for k in low_freq_keys[1:]}
         X[col].replace(replace_dict, inplace=True)
 
-    column_names = X.columns[~X.columns.str.contains("Undefined")]
-
-    return X[column_names]
+    return X
 
 
-def preprocess_events(X):
-    """Ordinal encode the events and rename event columns.
+def _extract_target_events(
+    raw_event_df,
+    event_column_name,
+    duration_column_name,
+    censoring_labels,
+    events_of_interest="all",
+    other_event_name="Other",
+):
+    target = raw_event_df.rename(columns={duration_column_name: "duration"})
 
-    Returns a copy of X.
+    if events_of_interest == "all":
+        # Encode the event label that corresponds to censoring with 0 and map
+        # all the others event labels to integers starting at 1 in
+        # lexicographical order.
+        events_of_interest = target[event_column_name].unique().tolist()
+        for censoring_label in censoring_labels:
+            events_of_interest.remove(censoring_label)
 
-    Parameters
-    ----------
-    X : pandas.DataFrame
+    event_labels = events_of_interest
 
-    Returns
-    -------
-    X : pandas.DataFrame of shape (n_samples, 2)
-    """
-    X = X.rename(columns={"Survival months": "duration"})
+    other_event_code = len(events_of_interest) + 1
+    event_codes = defaultdict(lambda: other_event_code)
 
-    target_encoded = {
-        "Breast": 1,
-        "Diseases of Heart": 2,
-    }
-    X["event"] = X["COD to site recode"].map(target_encoded).fillna(0)
+    for censoring_label in censoring_labels:
+        event_codes[censoring_label] = 0
 
-    return X[["event", "duration"]]
+    for i, event_name in enumerate(events_of_interest):
+        event_codes[event_name] = i + 1
+
+    other_event_code = len(event_codes)
+    target["event"] = target[event_column_name].map(event_codes)
+
+    if other_event_code in target["event"].unique():
+        event_labels += (other_event_name,)
+
+    return target[["event", "duration"]], np.asarray(event_labels)

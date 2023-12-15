@@ -15,18 +15,25 @@ DIR_SAMPLES = Path(__file__).parent
 DIR_DATA = Path(__file__).parent.parent
 
 
-def test_load_seer_sample():
+def test_load_seer_from_fake_sample_file():
     input_path = DIR_SAMPLES / "fake_seer_sample.txt"
 
-    X, y = load_seer(input_path, survtrace_preprocessing=True)
+    seer_dataset = load_seer(input_path)
+
+    event_labels = seer_dataset.event_labels
+    assert list(event_labels) == ["Breast", "Diseases of Heart", "Other"]
+
+    X = seer_dataset.data
     assert X.shape == (3, 23)
 
     expected_y = pd.DataFrame(
         dict(
-            event=[0.0, 0.0, 1.0],
+            # 0 is the censoring marker, 1 is "Breast", 3 is "Other"
+            event=[3, 0, 1],
             duration=[7, 81, 28],
         )
     )
+    y = seer_dataset.target
     assert_frame_equal(y, expected_y)
 
     categorical_column_names = X.select_dtypes("category").columns
@@ -43,12 +50,19 @@ raw_seer_path = DIR_DATA / "seer_cancer_cardio_raw_data.txt"
     not raw_seer_path.exists(), reason=f"{raw_seer_path} doesn't exist."
 )
 def test_load_seer():
-    X, y = load_seer(raw_seer_path, survtrace_preprocessing=True)
+    X, y = load_seer(raw_seer_path, survtrace_preprocessing=True, return_X_y=True)
 
     assert X.shape[0] == 476_746
     assert X.shape[0] == y.shape[0]
 
-    assert y.mean().round(2).to_dict() == {"event": 0.27, "duration": 67.41}
+    assert sorted(y.columns) == ["duration", "event"]
+    assert dict(y["event"].value_counts()) == {
+        0: 298168,  # Alive
+        1: 87495,  # Breast
+        2: 21549,  # Diseases of Heart
+        3: 69534,  # Other
+    }
+    assert y["duration"].mean().round(2) == 67.41
 
     categorical_column_names = X.select_dtypes("category").columns
     assert sorted(categorical_column_names) == sorted(CATEGORICAL_COLUMN_NAMES)
