@@ -13,6 +13,7 @@ from hazardous.data._seer import (
 
 DIR_SAMPLES = Path(__file__).parent
 DIR_DATA = Path(__file__).parent.parent
+RAW_SEER_FILE_PATH = DIR_DATA / "seer_cancer_cardio_raw_data.txt"
 
 
 def test_load_seer_from_fake_sample_file():
@@ -43,14 +44,33 @@ def test_load_seer_from_fake_sample_file():
     assert sorted(numeric_column_names) == sorted(NUMERIC_COLUMN_NAMES)
 
 
-raw_seer_path = DIR_DATA / "seer_cancer_cardio_raw_data.txt"
+def test_load_seer_from_fake_sample_file_with_all_events():
+    input_path = DIR_SAMPLES / "fake_seer_sample.txt"
+    seer_dataset = load_seer(input_path, events_of_interest="all")
+
+    event_labels = seer_dataset.event_labels
+    assert list(event_labels) == ["Alzheimers (ICD-9 and 10 only)", "Breast"]
+
+    X = seer_dataset.data
+    assert X.shape == (3, 23)
+
+    expected_y = pd.DataFrame(
+        dict(
+            # 0 is the censoring marker, 1 is "Alzheimers...", 2 is "Brest"
+            # and there are not "Other"
+            event=[1, 0, 2],
+            duration=[7, 81, 28],
+        )
+    )
+    y = seer_dataset.target
+    assert_frame_equal(y, expected_y)
 
 
 @pytest.mark.skipif(
-    not raw_seer_path.exists(), reason=f"{raw_seer_path} doesn't exist."
+    not RAW_SEER_FILE_PATH.exists(), reason=f"{RAW_SEER_FILE_PATH} doesn't exist."
 )
 def test_load_seer():
-    X, y = load_seer(raw_seer_path, survtrace_preprocessing=True, return_X_y=True)
+    X, y = load_seer(RAW_SEER_FILE_PATH, survtrace_preprocessing=True, return_X_y=True)
 
     assert X.shape[0] == 476_746
     assert X.shape[0] == y.shape[0]
