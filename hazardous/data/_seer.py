@@ -34,7 +34,7 @@ NUMERIC_COLUMN_NAMES = [
     "Total number of in situ/malignant tumors for patient",
 ]
 
-# "Undefined x" names are placeholders, these columns are not used by SurvTRACE.
+# "Unused x" names are placeholders, these columns are not used by SurvTRACE.
 COLUMN_NAMES = [
     "Patient ID",
     "Sex",
@@ -119,11 +119,14 @@ def load_seer(
             The dataframe of features.
 
         target : pandas.DataFrame of shape (n_samples, 2)
-            The two columns are named "event" and "duration". The "event"
-            columns holds integer idenfiers of event of interest or 0 for
-            censoring. The meaning of event integer codes is defined by the
-            position in the event_labels list. The "duration" columns holds a
-            numerical value for the event free duration expressed in months. #
+            The two columns are named "event" and "duration".
+
+            * The "event" columns holds integer identifiers of event of
+            interest or 0 for censoring. The meaning of event integer codes
+            is defined by the position in the event_labels list.
+            * The "duration" columns holds a numerical value for the event
+            free duration expressed in months.
+
             TODO: document what t0 mean.
 
         event_labels : list of str
