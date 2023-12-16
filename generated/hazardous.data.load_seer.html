@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>hazardous.metrics.brier_score_survival &#8212; hazardous 0.1.0 documentation</title>
+    <title>hazardous.data.load_seer &#8212; hazardous 0.1.0 documentation</title>
   
   
   
@@ -42,12 +42,11 @@
     <script src="../_static/documentation_options.js?v=01f34227"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/hazardous.metrics.brier_score_survival';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/hazardous.data.load_seer';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="hazardous.metrics.brier_score_incidence" href="hazardous.metrics.brier_score_incidence.html" />
-    <link rel="prev" title="hazardous.GradientBoostingIncidence" href="hazardous.GradientBoostingIncidence.html" />
+    <link rel="next" title="hazardous.IPCWEstimator" href="hazardous.IPCWEstimator.html" />
+    <link rel="prev" title="hazardous.data.make_synthetic_competing_weibull" href="hazardous.data.make_synthetic_competing_weibull.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -299,15 +298,15 @@ document.write(`
   <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="hazardous.GradientBoostingIncidence.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous</span></code>.GradientBoostingIncidence</a></li>
 </ul>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_survival</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.brier_score_survival.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_survival</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.brier_score_incidence.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_incidence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.integrated_brier_score_survival.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.integrated_brier_score_survival</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.integrated_brier_score_incidence.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.integrated_brier_score_incidence</a></li>
 </ul>
-<ul class="nav bd-sidenav">
+<ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="hazardous.data.make_synthetic_competing_weibull.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.data</span></code>.make_synthetic_competing_weibull</a></li>
-<li class="toctree-l1"><a class="reference internal" href="hazardous.data.load_seer.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.data</span></code>.load_seer</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.data</span></code>.load_seer</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="hazardous.IPCWEstimator.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous</span></code>.IPCWEstimator</a></li>
@@ -368,76 +367,59 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article" role="main">
                   
-  <section id="hazardous-metrics-brier-score-survival">
-<h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_survival<a class="headerlink" href="#hazardous-metrics-brier-score-survival" title="Link to this heading">#</a></h1>
+  <section id="hazardous-data-load-seer">
+<h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.data</span></code>.load_seer<a class="headerlink" href="#hazardous-data-load-seer" title="Link to this heading">#</a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="hazardous.metrics.brier_score_survival">
-<span class="sig-prename descclassname"><span class="pre">hazardous.metrics.</span></span><span class="sig-name descname"><span class="pre">brier_score_survival</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.metrics.brier_score_survival" title="Link to this definition">#</a></dt>
-<dd><p>Time-dependent Brier score of a survival function estimate.</p>
-<div class="math notranslate nohighlight">
-\[\mathrm{BS}(t) = \frac{1}{n} \sum_{i=1}^n \mathbb{I}
-(y_i \leq t \land \delta_i = 1)
-\frac{(0 - \hat{S}(t | \mathbf{x}_i))^2}{\hat{G}(y_i)} +
-\mathbb{I}(y_i &gt; t)
-\frac{(1 - \hat{S}(t | \mathbf{x}_i))^2}{\hat{G}(t)} ,\]</div>
-<p>where <span class="math notranslate nohighlight">\(\hat{S}(t | \mathbf{x})\)</span> is the predicted probability of
-surviving up to time point <span class="math notranslate nohighlight">\(t\)</span> for a feature vector <span class="math notranslate nohighlight">\(\mathbf{x}\)</span>,
-and <span class="math notranslate nohighlight">\(\hat{G}(t)\)</span> is the probability of remaining uncensored at time
-<span class="math notranslate nohighlight">\(t\)</span>, estimated on the training set by the Kaplan-Meier estimator on the
-negation of the binary any-event indicator.</p>
-<p>Note that this assumes independence between censoring and the covariates.
-When this assumption is violated, the IPCW weights are biased and the Brier
-score is not a proper scoring rule anymore. See <a class="reference internal" href="#r30a9e330826f-gerds2006" id="id1">[Gerds2006]</a> for a study of this
-bias.</p>
-<dl class="field-list simple">
+<dt class="sig sig-object py" id="hazardous.data.load_seer">
+<span class="sig-prename descclassname"><span class="pre">hazardous.data.</span></span><span class="sig-name descname"><span class="pre">load_seer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_column_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'COD</span> <span class="pre">to</span> <span class="pre">site</span> <span class="pre">recode'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration_column_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Survival</span> <span class="pre">months'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">events_of_interest</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('Breast',</span> <span class="pre">'Diseases</span> <span class="pre">of</span> <span class="pre">Heart')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">censoring_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('Alive',)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other_event_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Other'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">survtrace_preprocessing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_X_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.data.load_seer" title="Link to this definition">#</a></dt>
+<dd><p>Load the seer dataset and optionally apply the same preprocessing         as done in SurvTRACE.</p>
+<p>The file is expected to be a txt file.</p>
+<dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>y_train</strong><span class="classifier">record-array, dictionnary or dataframe of shape (n_samples, 2)</span></dt><dd><p>The target, consisting in the ‘event’ and ‘duration’ columns. If the
-‘event’ column holds more than 1 event types, they are automatically
-collapsed to a single event type to compute the Brier score of the
-“any-event” survival function estimate.
-This is only used to estimate the IPCW values to adjust for censoring in
-the evaluation data.</p>
+<dt><strong>input_path</strong><span class="classifier">str or file_path</span></dt><dd><p>The path of the txt file.</p>
 </dd>
-<dt><strong>y_test</strong><span class="classifier">record-array, dictionnary or dataframe of shape (n_samples, 2)</span></dt><dd><p>The ground truth, consisting in the ‘event’ and ‘duration’ columns.
-The same remark applies as for <code class="docutils literal notranslate"><span class="pre">y_train</span></code> with respect to the ‘event’
-column.</p>
+<dt><strong>events_of_interest</strong><span class="classifier">tuple of str or “all”,             default=(“Breast”, “Diseases of Heart”)</span></dt><dd><p>If “all”: all event types are preserved. Other specificy the labels of
+the event of interest to extract. All other events are collapsed into
+an “Other” event with a dedicated integer event code.</p>
 </dd>
-<dt><strong>y_pred</strong><span class="classifier">array-like of shape (n_samples, n_times)</span></dt><dd><p>Survival probability estimates predicted at <code class="docutils literal notranslate"><span class="pre">times</span></code>.</p>
+<dt><strong>censoring_labels</strong><span class="classifier">typle of str, default=(“Alive”,)</span></dt><dd><p>The label(s) used in the COD (cause of death) column that should be
+interpreted as censoring marker(s) in the original dataset.</p>
 </dd>
-<dt><strong>times</strong><span class="classifier">array-like of shape (n_times)</span></dt><dd><p>Times at which the survival probability <code class="docutils literal notranslate"><span class="pre">y_pred</span></code> has been estimated
-and for which we compute the Brier score.</p>
+<dt><strong>other_event_name</strong><span class="classifier">str, default=”Other”</span></dt><dd><p>Whe other_events is “collapse”, this parameter controls the name of the
+collapsed competing event.</p>
+</dd>
+<dt><strong>survtrace_preprocessing</strong><span class="classifier">bool, default=False</span></dt><dd><p>If set to True, apply the preprocessing steps used in SurvTRACE to
+ensure reproducibility of the results in its paper. Note that to fully
+replicate the preprocessing used by SurvTRACE, one would also need to
+recode the “Other” competing event as 0 to treat it as censoring.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><dl class="simple">
-<dt><strong>brier_score</strong><span class="classifier">np.ndarray of shape (n_times)</span></dt><dd></dd>
+<dd class="field-even"><dl>
+<dt><strong>bunch_dataset</strong><span class="classifier">a Bunch object with the following attributes:</span></dt><dd><dl>
+<dt>data<span class="classifier">pandas.DataFrame of shape (n_samples, n_features)</span></dt><dd><p>The dataframe of features.</p>
+</dd>
+<dt>target<span class="classifier">pandas.DataFrame of shape (n_samples, 2)</span></dt><dd><p>The two columns are named “event” and “duration”.</p>
+<ul class="simple">
+<li><p>The “event” columns holds integer identifiers of event of</p></li>
+</ul>
+<p>interest or 0 for censoring. The meaning of event integer codes
+is defined by the position in the event_labels list.
+* The “duration” columns holds a numerical value for the event
+free duration expressed in months.</p>
+<p>TODO: document what t0 mean.</p>
+</dd>
+<dt>event_labels<span class="classifier">list of str</span></dt><dd><p>The labels of the events.</p>
+</dd>
+<dt>original_data<span class="classifier">pandas.DataFrame of shape (n_samples, 29)</span></dt><dd><p>The original data.</p>
+</dd>
 </dl>
 </dd>
 </dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><a class="reference internal" href="hazardous.metrics.integrated_brier_score_survival.html#hazardous.metrics.integrated_brier_score_survival" title="hazardous.metrics.integrated_brier_score_survival"><code class="xref py py-obj docutils literal notranslate"><span class="pre">integrated_brier_score_survival</span></code></a></dt><dd><p>Time-integrated Brier score of a survival function estimate.</p>
 </dd>
 </dl>
-</div>
-<p class="rubric">References</p>
-<div role="list" class="citation-list">
-<div class="citation" id="r30a9e330826f-graf1999" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span>Graf1999<span class="fn-bracket">]</span></span>
-<p>E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher, “Assessment
-and comparison of prognostic classification schemes for survival data”,
-1999</p>
-</div>
-<div class="citation" id="r30a9e330826f-gerds2006" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">Gerds2006</a><span class="fn-bracket">]</span></span>
-<p>T. Gerds and M. Schumacher, “Consistent Estimation of the
-Expected Brier Score in General Survival Models with Right-Censored
-Event Times”, 2006</p>
-</div>
-</div>
 </dd></dl>
 
 <div class="clearer"></div></section>
@@ -453,20 +435,20 @@ Event Times”, 2006</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="hazardous.GradientBoostingIncidence.html"
+       href="hazardous.data.make_synthetic_competing_weibull.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous</span></code>.GradientBoostingIncidence</p>
+        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.data</span></code>.make_synthetic_competing_weibull</p>
       </div>
     </a>
     <a class="right-next"
-       href="hazardous.metrics.brier_score_incidence.html"
+       href="hazardous.IPCWEstimator.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_incidence</p>
+        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous</span></code>.IPCWEstimator</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -486,14 +468,14 @@ Event Times”, 2006</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.metrics.brier_score_survival"><code class="docutils literal notranslate"><span class="pre">brier_score_survival()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.data.load_seer"><code class="docutils literal notranslate"><span class="pre">load_seer()</span></code></a></li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/generated/hazardous.metrics.brier_score_survival.rst.txt">
+    <a href="../_sources/generated/hazardous.data.load_seer.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

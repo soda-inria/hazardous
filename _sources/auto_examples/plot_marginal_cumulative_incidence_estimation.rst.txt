@@ -49,7 +49,7 @@ severe over-estimation bias for large time horizons.
 
 .. GENERATED FROM PYTHON SOURCE LINES 32-79
 
-.. code-block:: default
+.. code-block:: Python
 
     from time import perf_counter
     import numpy as np
@@ -118,7 +118,7 @@ distribution <https://en.wikipedia.org/wiki/Weibull_distribution>`_:
 
 .. GENERATED FROM PYTHON SOURCE LINES 89-102
 
-.. code-block:: default
+.. code-block:: Python
 
 
 
@@ -148,7 +148,7 @@ Here are the two estimators of interest:
 
 .. GENERATED FROM PYTHON SOURCE LINES 107-122
 
-.. code-block:: default
+.. code-block:: Python
 
 
     calculate_variance = n_samples <= 5_000
@@ -182,7 +182,7 @@ theoretical CIFs:
 
 .. GENERATED FROM PYTHON SOURCE LINES 129-211
 
-.. code-block:: default
+.. code-block:: Python
 
 
 
@@ -279,19 +279,19 @@ theoretical CIFs:
 
  .. code-block:: none
 
-    Integrated theoretical any event survival curve in 0.591 s
-    Integrated theoretical cumulative incidence curve for event 1 in 0.652 s
-    GB Incidence for event 1 fit in 0.461 s
+    Integrated theoretical any event survival curve in 0.597 s
+    Integrated theoretical cumulative incidence curve for event 1 in 0.657 s
+    GB Incidence for event 1 fit in 0.458 s
     GB Incidence for event 1 prediction in 0.084 s
-    Aalen-Johansen for event 1 fit in 5.272 s
-    Integrated theoretical cumulative incidence curve for event 2 in 5.380 s
-    GB Incidence for event 2 fit in 0.446 s
-    GB Incidence for event 2 prediction in 0.087 s
+    Aalen-Johansen for event 1 fit in 5.220 s
+    Integrated theoretical cumulative incidence curve for event 2 in 5.314 s
+    GB Incidence for event 2 fit in 0.444 s
+    GB Incidence for event 2 prediction in 0.082 s
     Aalen-Johansen for event 2 fit in 5.242 s
-    Integrated theoretical cumulative incidence curve for event 3 in 5.321 s
-    GB Incidence for event 3 fit in 0.427 s
-    GB Incidence for event 3 prediction in 0.085 s
-    Aalen-Johansen for event 3 fit in 5.327 s
+    Integrated theoretical cumulative incidence curve for event 3 in 5.319 s
+    GB Incidence for event 3 fit in 0.431 s
+    GB Incidence for event 3 prediction in 0.082 s
+    Aalen-Johansen for event 3 fit in 5.303 s
 
 
 
@@ -307,7 +307,7 @@ of censoring.
 
 .. GENERATED FROM PYTHON SOURCE LINES 219-235
 
-.. code-block:: default
+.. code-block:: Python
 
     censoring_times = weibull_min.rvs(
         1.0,
@@ -345,7 +345,7 @@ of censoring.
 
 .. GENERATED FROM PYTHON SOURCE LINES 236-239
 
-.. code-block:: default
+.. code-block:: Python
 
     plot_cumulative_incidence_functions(
         distributions, gb_incidence=gb_incidence, aj=aj, y=y_censored
@@ -363,19 +363,19 @@ of censoring.
 
  .. code-block:: none
 
-    Integrated theoretical any event survival curve in 0.598 s
-    Integrated theoretical cumulative incidence curve for event 1 in 0.659 s
-    GB Incidence for event 1 fit in 0.444 s
+    Integrated theoretical any event survival curve in 0.575 s
+    Integrated theoretical cumulative incidence curve for event 1 in 0.635 s
+    GB Incidence for event 1 fit in 0.448 s
     GB Incidence for event 1 prediction in 0.084 s
-    Aalen-Johansen for event 1 fit in 5.312 s
-    Integrated theoretical cumulative incidence curve for event 2 in 5.418 s
-    GB Incidence for event 2 fit in 0.456 s
+    Aalen-Johansen for event 1 fit in 5.306 s
+    Integrated theoretical cumulative incidence curve for event 2 in 5.409 s
+    GB Incidence for event 2 fit in 0.451 s
     GB Incidence for event 2 prediction in 0.084 s
-    Aalen-Johansen for event 2 fit in 5.314 s
-    Integrated theoretical cumulative incidence curve for event 3 in 5.394 s
-    GB Incidence for event 3 fit in 0.425 s
-    GB Incidence for event 3 prediction in 0.084 s
-    Aalen-Johansen for event 3 fit in 5.269 s
+    Aalen-Johansen for event 2 fit in 5.258 s
+    Integrated theoretical cumulative incidence curve for event 3 in 5.335 s
+    GB Incidence for event 3 fit in 0.420 s
+    GB Incidence for event 3 prediction in 0.086 s
+    Aalen-Johansen for event 3 fit in 5.210 s
 
 
 
@@ -403,7 +403,7 @@ constraint:
 
 .. GENERATED FROM PYTHON SOURCE LINES 259-266
 
-.. code-block:: default
+.. code-block:: Python
 
 
     monotonic_gb_incidence = clone(gb_incidence).set_params(
@@ -425,15 +425,15 @@ constraint:
 
  .. code-block:: none
 
-    Integrated theoretical any event survival curve in 0.583 s
-    Integrated theoretical cumulative incidence curve for event 1 in 0.644 s
-    GB Incidence for event 1 fit in 0.437 s
-    GB Incidence for event 1 prediction in 0.083 s
-    Integrated theoretical cumulative incidence curve for event 2 in 0.146 s
-    GB Incidence for event 2 fit in 0.442 s
-    GB Incidence for event 2 prediction in 0.083 s
-    Integrated theoretical cumulative incidence curve for event 3 in 0.146 s
-    GB Incidence for event 3 fit in 0.426 s
+    Integrated theoretical any event survival curve in 0.576 s
+    Integrated theoretical cumulative incidence curve for event 1 in 0.636 s
+    GB Incidence for event 1 fit in 0.435 s
+    GB Incidence for event 1 prediction in 0.082 s
+    Integrated theoretical cumulative incidence curve for event 2 in 0.144 s
+    GB Incidence for event 2 fit in 0.443 s
+    GB Incidence for event 2 prediction in 0.082 s
+    Integrated theoretical cumulative incidence curve for event 3 in 0.143 s
+    GB Incidence for event 3 fit in 0.424 s
     GB Incidence for event 3 prediction in 0.083 s
 
 
@@ -450,7 +450,7 @@ uncertainty).
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 40.076 seconds)
+   **Total running time of the script:** (0 minutes 39.757 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_marginal_cumulative_incidence_estimation.py:
@@ -459,16 +459,13 @@ uncertainty).
 
   .. container:: sphx-glr-footer sphx-glr-footer-example
 
+    .. container:: sphx-glr-download sphx-glr-download-jupyter
 
-
+      :download:`Download Jupyter notebook: plot_marginal_cumulative_incidence_estimation.ipynb <plot_marginal_cumulative_incidence_estimation.ipynb>`
 
     .. container:: sphx-glr-download sphx-glr-download-python
 
       :download:`Download Python source code: plot_marginal_cumulative_incidence_estimation.py <plot_marginal_cumulative_incidence_estimation.py>`
-
-    .. container:: sphx-glr-download sphx-glr-download-jupyter
-
-      :download:`Download Jupyter notebook: plot_marginal_cumulative_incidence_estimation.ipynb <plot_marginal_cumulative_incidence_estimation.ipynb>`
 
 
 .. only:: html

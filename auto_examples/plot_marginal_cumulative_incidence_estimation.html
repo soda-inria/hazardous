@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 
 
-<html lang="en" >
+<html lang="en" data-content_root="../" >
 
   <head>
     <meta charset="utf-8" />
@@ -18,12 +18,12 @@
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
-<link href="../_static/styles/bootstrap.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=5b4479735964841361fd" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=5b4479735964841361fd" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=5b4479735964841361fd" rel="stylesheet" />
 
   
-  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=365ca57ee442770a23c6" rel="stylesheet" />
+  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=5b4479735964841361fd" rel="stylesheet" />
   <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
@@ -35,9 +35,9 @@
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6" />
-  <script src="../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=365ca57ee442770a23c6"></script>
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=5b4479735964841361fd" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=5b4479735964841361fd" />
+  <script src="../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=5b4479735964841361fd"></script>
 
     <script src="../_static/documentation_options.js?v=01f34227"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
@@ -45,6 +45,7 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'auto_examples/plot_marginal_cumulative_incidence_estimation';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="How to get the SEER dataset" href="../downloading_seer.html" />
     <link rel="prev" title="Example gallery" href="index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -109,6 +110,7 @@
   <div class="col-lg-3 navbar-header-items__start">
     
       <div class="navbar-item">
+
   
 
 <a class="navbar-brand logo" href="../index.html">
@@ -128,7 +130,8 @@
     
     <div class="me-auto navbar-header-items__center">
       
-        <div class="navbar-item"><nav class="navbar-nav">
+        <div class="navbar-item">
+<nav class="navbar-nav">
   <p class="sidebar-header-items__title"
      role="heading"
      aria-level="1"
@@ -150,6 +153,13 @@
                       </a>
                     </li>
                 
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../downloading_seer.html">
+                        How to get the SEER dataset
+                      </a>
+                    </li>
+                
   </ul>
 </nav></div>
       
@@ -160,6 +170,7 @@
       
         <div class="navbar-item navbar-persistent--container">
           
+
  <script>
  document.write(`
    <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
@@ -173,6 +184,7 @@
       
       
         <div class="navbar-item">
+
 <script>
 document.write(`
   <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
@@ -189,6 +201,7 @@ document.write(`
   
   
     <div class="navbar-persistent--mobile">
+
  <script>
  document.write(`
    <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
@@ -222,7 +235,8 @@ document.write(`
     
       <div class="sidebar-header-items__center">
         
-          <div class="navbar-item"><nav class="navbar-nav">
+          <div class="navbar-item">
+<nav class="navbar-nav">
   <p class="sidebar-header-items__title"
      role="heading"
      aria-level="1"
@@ -244,6 +258,13 @@ document.write(`
                       </a>
                     </li>
                 
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../downloading_seer.html">
+                        How to get the SEER dataset
+                      </a>
+                    </li>
+                
   </ul>
 </nav></div>
         
@@ -254,6 +275,7 @@ document.write(`
       <div class="sidebar-header-items__end">
         
           <div class="navbar-item">
+
 <script>
 document.write(`
   <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
@@ -269,7 +291,8 @@ document.write(`
   </div>
   
     <div class="sidebar-primary-items__start sidebar-primary__section">
-        <div class="sidebar-primary-item"><nav class="bd-docs-nav bd-links"
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
@@ -359,7 +382,7 @@ estimates noisy cumulative incidence functions, which are not smooth and not
 even monotonically increasing. This is a known limitation of the estimator,
 and attempting to enforce monotonicity at training time typically introduces
 severe over-estimation bias for large time horizons.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">perf_counter</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">perf_counter</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">weibull_min</span>
 <span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html#sklearn.base.clone" title="sklearn.base.clone" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-function"><span class="n">clone</span></a>
@@ -414,7 +437,7 @@ before time t, given that the subject has not experienced any other event
 before time t.</p>
 <p>The following function computes the hazard function of a <a class="reference external" href="https://en.wikipedia.org/wiki/Weibull_distribution">Weibull
 distribution</a>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">weibull_hazard</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">**</span><span class="n">ignored_kwargs</span><span class="p">):</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">weibull_hazard</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">**</span><span class="n">ignored_kwargs</span><span class="p">):</span>
     <span class="c1"># Plug an arbitrary finite hazard value at t==0 because fractional powers</span>
     <span class="c1"># of 0 are undefined.</span>
     <span class="c1">#</span>
@@ -428,7 +451,7 @@ distribution</a>:</p>
 <p>Note that true CIFs are independent of the censoring distribution. We can use
 them as reference to check that the estimators are unbiased by the censoring.
 Here are the two estimators of interest:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">calculate_variance</span> <span class="o">=</span> <span class="n">n_samples</span> <span class="o">&lt;=</span> <span class="mi">5_000</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">calculate_variance</span> <span class="o">=</span> <span class="n">n_samples</span> <span class="o">&lt;=</span> <span class="mi">5_000</span>
 <span class="n">aj</span> <span class="o">=</span> <span class="n">AalenJohansenFitter</span><span class="p">(</span><span class="n">calculate_variance</span><span class="o">=</span><span class="n">calculate_variance</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="n">gb_incidence</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator" title="sklearn.base.BaseEstimator" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-class"><span class="n">GradientBoostingIncidence</span></a><span class="p">(</span>
@@ -447,7 +470,7 @@ Here are the two estimators of interest:</p>
 <h2>CIFs estimated on uncensored data<a class="headerlink" href="#cifs-estimated-on-uncensored-data" title="Link to this heading">#</a></h2>
 <p>Let’s now estimate the CIFs on uncensored data and plot them against the
 theoretical CIFs:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_cumulative_incidence_functions</span><span class="p">(</span><span class="n">distributions</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">gb_incidence</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_cumulative_incidence_functions</span><span class="p">(</span><span class="n">distributions</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">gb_incidence</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">_</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">ncols</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">distributions</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="c1"># Compute the estimate of the CIFs on a coarse grid.</span>
@@ -528,19 +551,19 @@ theoretical CIFs:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_001.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_001.png" alt="Cause-specific cumulative incidence functions (0.0% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.591 s
-Integrated theoretical cumulative incidence curve for event 1 in 0.652 s
-GB Incidence for event 1 fit in 0.461 s
+<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_001.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_001.png" alt="Cause-specific cumulative incidence functions (0.0% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.597 s
+Integrated theoretical cumulative incidence curve for event 1 in 0.657 s
+GB Incidence for event 1 fit in 0.458 s
 GB Incidence for event 1 prediction in 0.084 s
-Aalen-Johansen for event 1 fit in 5.272 s
-Integrated theoretical cumulative incidence curve for event 2 in 5.380 s
-GB Incidence for event 2 fit in 0.446 s
-GB Incidence for event 2 prediction in 0.087 s
+Aalen-Johansen for event 1 fit in 5.220 s
+Integrated theoretical cumulative incidence curve for event 2 in 5.314 s
+GB Incidence for event 2 fit in 0.444 s
+GB Incidence for event 2 prediction in 0.082 s
 Aalen-Johansen for event 2 fit in 5.242 s
-Integrated theoretical cumulative incidence curve for event 3 in 5.321 s
-GB Incidence for event 3 fit in 0.427 s
-GB Incidence for event 3 prediction in 0.085 s
-Aalen-Johansen for event 3 fit in 5.327 s
+Integrated theoretical cumulative incidence curve for event 3 in 5.319 s
+GB Incidence for event 3 fit in 0.431 s
+GB Incidence for event 3 prediction in 0.082 s
+Aalen-Johansen for event 3 fit in 5.303 s
 </pre></div>
 </div>
 </section>
@@ -549,7 +572,7 @@ Aalen-Johansen for event 3 fit in 5.327 s
 <p>Add some independent censoring with some arbitrary parameters to control the
 amount of censoring: lowering the expected value bound increases the amount
 of censoring.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">censoring_times</span> <span class="o">=</span> <span class="n">weibull_min</span><span class="o">.</span><span class="n">rvs</span><span class="p">(</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">censoring_times</span> <span class="o">=</span> <span class="n">weibull_min</span><span class="o">.</span><span class="n">rvs</span><span class="p">(</span>
     <span class="mf">1.0</span><span class="p">,</span>
     <span class="n">scale</span><span class="o">=</span><span class="mf">1.5</span> <span class="o">*</span> <span class="n">base_scale</span><span class="p">,</span>
     <span class="n">size</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span>
@@ -574,24 +597,24 @@ of censoring.</p>
 Name: count, dtype: int64
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span>
     <span class="n">distributions</span><span class="p">,</span> <span class="n">gb_incidence</span><span class="o">=</span><span class="n">gb_incidence</span><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="n">aj</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_censored</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_002.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_002.png" alt="Cause-specific cumulative incidence functions (47.6% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.598 s
-Integrated theoretical cumulative incidence curve for event 1 in 0.659 s
-GB Incidence for event 1 fit in 0.444 s
+<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_002.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_002.png" alt="Cause-specific cumulative incidence functions (47.6% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.575 s
+Integrated theoretical cumulative incidence curve for event 1 in 0.635 s
+GB Incidence for event 1 fit in 0.448 s
 GB Incidence for event 1 prediction in 0.084 s
-Aalen-Johansen for event 1 fit in 5.312 s
-Integrated theoretical cumulative incidence curve for event 2 in 5.418 s
-GB Incidence for event 2 fit in 0.456 s
+Aalen-Johansen for event 1 fit in 5.306 s
+Integrated theoretical cumulative incidence curve for event 2 in 5.409 s
+GB Incidence for event 2 fit in 0.451 s
 GB Incidence for event 2 prediction in 0.084 s
-Aalen-Johansen for event 2 fit in 5.314 s
-Integrated theoretical cumulative incidence curve for event 3 in 5.394 s
-GB Incidence for event 3 fit in 0.425 s
-GB Incidence for event 3 prediction in 0.084 s
-Aalen-Johansen for event 3 fit in 5.269 s
+Aalen-Johansen for event 2 fit in 5.258 s
+Integrated theoretical cumulative incidence curve for event 3 in 5.335 s
+GB Incidence for event 3 fit in 0.420 s
+GB Incidence for event 3 prediction in 0.086 s
+Aalen-Johansen for event 3 fit in 5.210 s
 </pre></div>
 </div>
 <p>Note that the Aalen-Johansen estimator is unbiased and empirically recovers
@@ -608,7 +631,7 @@ time, however, in practice this often causes a sever over-estimation bias for
 the large time horizons:</p>
 <p>Finally let’s try again to fit the GB Incidence models using a monotonicity
 constraint:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">monotonic_gb_incidence</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html#sklearn.base.clone" title="sklearn.base.clone" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-function"><span class="n">clone</span></a><span class="p">(</span><span class="n">gb_incidence</span><span class="p">)</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">monotonic_gb_incidence</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html#sklearn.base.clone" title="sklearn.base.clone" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-function"><span class="n">clone</span></a><span class="p">(</span><span class="n">gb_incidence</span><span class="p">)</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span>
     <span class="n">monotonic_incidence</span><span class="o">=</span><span class="s2">&quot;at_training_time&quot;</span>
 <span class="p">)</span>
 <span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span>
@@ -616,15 +639,15 @@ constraint:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_003.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_003.png" alt="Cause-specific cumulative incidence functions (47.6% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.583 s
-Integrated theoretical cumulative incidence curve for event 1 in 0.644 s
-GB Incidence for event 1 fit in 0.437 s
-GB Incidence for event 1 prediction in 0.083 s
-Integrated theoretical cumulative incidence curve for event 2 in 0.146 s
-GB Incidence for event 2 fit in 0.442 s
-GB Incidence for event 2 prediction in 0.083 s
-Integrated theoretical cumulative incidence curve for event 3 in 0.146 s
-GB Incidence for event 3 fit in 0.426 s
+<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_003.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_003.png" alt="Cause-specific cumulative incidence functions (47.6% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.576 s
+Integrated theoretical cumulative incidence curve for event 1 in 0.636 s
+GB Incidence for event 1 fit in 0.435 s
+GB Incidence for event 1 prediction in 0.082 s
+Integrated theoretical cumulative incidence curve for event 2 in 0.144 s
+GB Incidence for event 2 fit in 0.443 s
+GB Incidence for event 2 prediction in 0.082 s
+Integrated theoretical cumulative incidence curve for event 3 in 0.143 s
+GB Incidence for event 3 fit in 0.424 s
 GB Incidence for event 3 prediction in 0.083 s
 </pre></div>
 </div>
@@ -633,13 +656,13 @@ training set sizes, the resulting models can be significantly biased, in
 particular large time horizons, where the CIFs are getting flatter. This
 effect diminishes with larger training set sizes (lower epistemic
 uncertainty).</p>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 40.076 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 39.757 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-marginal-cumulative-incidence-estimation-py">
-<div class="sphx-glr-download sphx-glr-download-python docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/878bb6ffe7fba36a0655277b8151e4cd/plot_marginal_cumulative_incidence_estimation.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_marginal_cumulative_incidence_estimation.py</span></code></a></p>
-</div>
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/2932d6ac7842b6d781c27c5737ae52fa/plot_marginal_cumulative_incidence_estimation.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_marginal_cumulative_incidence_estimation.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/878bb6ffe7fba36a0655277b8151e4cd/plot_marginal_cumulative_incidence_estimation.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_marginal_cumulative_incidence_estimation.py</span></code></a></p>
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
@@ -654,7 +677,7 @@ uncertainty).</p>
               
               
                 <footer class="prev-next-footer">
-                  <!-- Previous / next buttons -->
+                  
 <div class="prev-next-area">
     <a class="left-prev"
        href="index.html"
@@ -664,6 +687,15 @@ uncertainty).</p>
         <p class="prev-next-subtitle">previous</p>
         <p class="prev-next-title">Example gallery</p>
       </div>
+    </a>
+    <a class="right-next"
+       href="../downloading_seer.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">How to get the SEER dataset</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
                 </footer>
@@ -675,6 +707,7 @@ uncertainty).</p>
                 <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
   <div class="sidebar-secondary-item">
+
   <div class="page-toc tocsection onthispage">
     <i class="fa-solid fa-list"></i> On this page
   </div>
@@ -686,6 +719,7 @@ uncertainty).</p>
   </nav></div>
 
   <div class="sidebar-secondary-item">
+
   <div class="tocsection sourcelink">
     <a href="../_sources/auto_examples/plot_marginal_cumulative_incidence_estimation.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
@@ -706,8 +740,8 @@ uncertainty).</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="../_static/scripts/bootstrap.js?digest=365ca57ee442770a23c6"></script>
-<script src="../_static/scripts/pydata-sphinx-theme.js?digest=365ca57ee442770a23c6"></script>
+  <script src="../_static/scripts/bootstrap.js?digest=5b4479735964841361fd"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=5b4479735964841361fd"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -715,6 +749,7 @@ uncertainty).</p>
     <div class="footer-items__start">
       
         <div class="footer-item">
+
   <p class="copyright">
     
       © Copyright 2023, Olivier Grisel and Vincent Maladière.
@@ -724,6 +759,7 @@ uncertainty).</p>
 </div>
       
         <div class="footer-item">
+
   <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
     <br/>
@@ -736,8 +772,9 @@ uncertainty).</p>
   
     <div class="footer-items__end">
       
-        <div class="footer-item"><p class="theme-version">
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.14.3.
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.14.4.
 </p></div>
       
     </div>

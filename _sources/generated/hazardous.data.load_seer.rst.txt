@@ -1,0 +1,10 @@
+﻿:mod:`hazardous.data`.load_seer
+============================================
+
+.. currentmodule:: hazardous.data
+
+.. autofunction:: load_seer
+
+.. raw:: html
+
+    <div class="clearer"></div>
