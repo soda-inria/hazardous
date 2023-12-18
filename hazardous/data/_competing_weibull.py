@@ -31,6 +31,18 @@ def _censor(
     random_state=0,
     return_params_censo=False,
 ):
+    """Censor data.
+
+    With the data created from the synthetic dataset, the function censors the
+    dataset.
+    The user can either choose if the censoring will be independent of the
+    covariates of will depending on X (with the 'features_censoring_rate', the
+    user can choose the level of dependencies of the censoring.).
+    The parameters are rescale to respect certain ranges.
+    Then, after throwing censored duration for each sample, depending on the
+    parameters, 'y_censored' is created, returning the first event that happened
+    with its duration.
+    """
     rng = check_random_state(random_state)
     if censoring_relative_scale == 0 or censoring_relative_scale is None:
         return y
@@ -39,26 +51,17 @@ def _censor(
         scale_censoring = censoring_relative_scale * y["duration"].mean()
         shape_censoring = 3
     else:
-        w_censoring_star = rng.randn(X.shape[1], 2)
-        w_censoring_star = np.where(
-            rng.rand(w_censoring_star.shape[0], w_censoring_star.shape[1])
-            < features_censoring_rate,
-            w_censoring_star,
-            0,
+        df_censoring_params = compute_shape_and_scale(
+            X,
+            features_rate=features_censoring_rate,
+            n_events=1,
+            degree_interaction=2,
+            shape_ranges=(2.0, 3.0),
+            scale_ranges=(1, censoring_relative_scale),
+            random_state=random_state,
         )
-        df_censoring_params = censoring_relative_scale * X @ w_censoring_star
-        df_censoring_params.columns = ["shape_0", "scale_0"]
 
-        df_censoring_params["shape_0"] = _rescale_params(
-            df_censoring_params[["shape_0"]],
-            param_min=2.0,
-            param_max=3.0,
-        )
-        df_censoring_params["scale_0"] = _rescale_params(
-            df_censoring_params[["scale_0"]],
-            param_min=1,
-            param_max=censoring_relative_scale,
-        )
+        df_censoring_params.columns = ["shape_0", "scale_0"]
         df_censoring_params["scale_0"] *= y["duration"].mean()
         scale_censoring = df_censoring_params["scale_0"].values
         shape_censoring = df_censoring_params["shape_0"].values
@@ -211,6 +214,21 @@ def make_complex_features_with_sparse_matrix(
     degree_interaction=2,
     random_state=0,
 ):
+    """Create complex features.
+
+    Create complex interaction between the synthetic samples and the future targets.
+    To do so, we first add some non linear transformation to each feature (ith a Spline)
+    and then add polynomial interaction between the features.
+    After this, for each event, the parameters of the weibull distribution are chosen
+    ollowing:
+    We create a sparse matrix 'W_star' (X.shape[1], n_weibull_parameters) with
+    (1 - 'features_rate') * 100 % of zeros and the rest is thrown from a normal law.
+    After computing a scalar product with X, we obtain the Weibull parameters.
+    Then, the parameters are scaled to respect defaults ranges using a Standard Scaler
+    and the logistic function.
+    Finally,durations are thrown for each event from a weibull distribution with the
+    parameters computed above.
+    """
     rng = np.random.RandomState(random_state)
     # Create features given to the model as X and then creating the interactions
     columns = [f"feature_{i}" for i in range(n_features)]
@@ -273,6 +291,7 @@ def make_synthetic_competing_weibull(
     Setting ``censoring_relative_scale`` to 0 or None disables censoring.
     Setting it to a small value (e.g. 0.5 instead of 1.5) will result in a
     larger fraction of censored individuals.
+    We return all of the durations thrown and the features.
     """
     if complex_features:
         X, event_durations, duration_argmin = make_complex_features_with_sparse_matrix(
