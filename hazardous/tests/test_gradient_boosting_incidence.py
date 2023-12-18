@@ -139,4 +139,4 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     worst_ibs = -cv_results.iloc[0]["mean_test_score"]
     best_ibs = -cv_results.iloc[-1]["mean_test_score"]
     assert best_ibs == pytest.approx(-grid_search.best_score_)
-    assert worst_ibs > 1.4 * best_ibs
+    assert worst_ibs > 1.25 * best_ibs

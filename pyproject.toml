@@ -47,6 +47,7 @@ doc = [
     "matplotlib",
     "pillow",  # to scrape images from the examples
     "numpydoc",
+    "seaborn",
 ]
 
 [project.urls]
@@ -106,7 +107,6 @@ exclude = [
     "venv",
     "doc",
 ]
-per-file-ignores = {}
 
 # Same as Black.
 line-length = 88
@@ -118,3 +118,7 @@ target-version = "py39"
 
 [tool.ruff.mccabe]
 max-complexity = 10
+
+[tool.ruff.per-file-ignores]
+# It's fine not to put the import at the top of the file in the examples
+"examples/*" = ["E402"]
