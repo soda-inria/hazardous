@@ -49,18 +49,18 @@ for idx, col in enumerate(df_shape_scale_star.columns):
 # %%
 
 X, y_censored, y_uncensored = competing_w.make_synthetic_competing_weibull(
-    n_samples=3_000,
+    n_samples=30_000,
     base_scale=1_000,
     n_features=10,
     features_rate=0.5,
     degree_interaction=2,
-    independent_censoring=False,
+    independent_censoring=True,
     features_censoring_rate=0.2,
     return_uncensored_data=True,
     return_X_y=True,
     feature_rounding=3,
-    target_rounding=4,
-    censoring_relative_scale=4.0,
+    target_rounding=None,
+    censoring_relative_scale=1.5,
     random_state=0,
     complex_features=True,
 )
@@ -167,7 +167,7 @@ gb_incidence = GradientBoostingIncidence(
 plot_cumulative_incidence_functions(
     X_train,
     y_train_u,
-    gb_incidence=gb_incidence,
+    gb_incidence=None,
     aj=aj,
     X_test=X_test,
     y_test=y_test_u,
@@ -176,7 +176,7 @@ plot_cumulative_incidence_functions(
 plot_cumulative_incidence_functions(
     X_train,
     y_train_c,
-    gb_incidence=gb_incidence,
+    gb_incidence=None,
     aj=aj,
     X_test=X_test,
     y_test=y_test_c,

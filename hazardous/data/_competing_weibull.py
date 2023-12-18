@@ -29,6 +29,7 @@ def _censor(
     features_censoring_rate=0.2,
     censoring_relative_scale=1.5,
     random_state=0,
+    return_params_censo=False,
 ):
     rng = check_random_state(random_state)
     if censoring_relative_scale == 0 or censoring_relative_scale is None:
@@ -58,8 +59,8 @@ def _censor(
             param_min=1,
             param_max=censoring_relative_scale,
         )
-
-        scale_censoring = df_censoring_params["scale_0"].values * y["duration"].mean()
+        df_censoring_params["scale_0"] *= y["duration"].mean()
+        scale_censoring = df_censoring_params["scale_0"].values
         shape_censoring = df_censoring_params["shape_0"].values
     censoring = weibull_min.rvs(
         shape_censoring, scale=scale_censoring, size=y.shape[0], random_state=rng
@@ -69,6 +70,12 @@ def _censor(
         y_censored["duration"] < censoring, y_censored["event"], 0
     )
     y_censored["duration"] = np.minimum(y_censored["duration"], censoring)
+    if return_params_censo:
+        return Bunch(
+            shape_censoring=shape_censoring,
+            scale_censoring=scale_censoring,
+            y_censored=y_censored,
+        )
     return y_censored
 
 
