@@ -6,21 +6,16 @@
 #
 
 # %%
-import matplotlib.pyplot as plt
+import seaborn as sns
 
-import hazardous.data._competing_weibull as competing_w
-from hazardous import GradientBoostingIncidence
-from hazardous.metrics._brier_score import brier_score_incidence
-from hazardous.evaluation.debiased_brier_score import (
-    compute_true_probas,
-    brier_score_true_probas,
-)
+from hazardous.data._competing_weibull import make_synthetic_competing_weibull
+
 
 independent_censoring = True
 event_of_interest = 1
 seed = 0
 
-X, _, y_uncensored = competing_w.make_synthetic_competing_weibull(
+X, _, y_uncensored = make_synthetic_competing_weibull(
     n_samples=1_000_000,
     base_scale=1_000,
     n_features=10,
@@ -36,13 +31,25 @@ X, _, y_uncensored = competing_w.make_synthetic_competing_weibull(
     random_state=seed,
     complex_features=True,
 )
-# %%
 
-bunch_data = competing_w._censor(
+sns.histplot(
     y_uncensored,
-    X=X,
-    return_params_censo=True,
+    x="duration",
+    hue="event",
+    palette="magma",
+    title="Duration distributions",
+)
+
+# %%
+from hazardous.data._competing_weibull import _censor
+from hazardous.evaluation.debiased_brier_score import compute_true_probas
+
+
+bunch_data = _censor(
+    y_uncensored,
     independent_censoring=independent_censoring,
+    X=X,
+    return_censoring_params=True,
     features_censoring_rate=0.5,
     censoring_relative_scale=0.5,
     random_state=seed,
@@ -50,6 +57,7 @@ bunch_data = competing_w._censor(
 y_censored = bunch_data.y_censored
 shape_censoring = bunch_data.shape_censoring
 scale_censoring = bunch_data.scale_censoring
+
 probas = compute_true_probas(
     y_censored,
     shape_censoring,
@@ -61,6 +69,9 @@ censored_proba_duration = probas.censored_proba_duration
 censored_proba_time_grid = probas.censored_proba_time_grid
 
 # %%
+from hazardous import GradientBoostingIncidence
+
+
 gbi = GradientBoostingIncidence(
     learning_rate=0.1,
     n_iter=20,
@@ -73,6 +84,14 @@ gbi = GradientBoostingIncidence(
     event_of_interest=event_of_interest,
 )
 gbi.fit(X, y_censored)
+gbi
+
+# %%
+from matplotlib import pyplot as plt
+
+from hazardous.metrics._brier_score import brier_score_incidence
+from hazardous.evaluation.debiased_brier_score import brier_score_true_probas
+
 
 y_pred = gbi.predict_cumulative_incidence(X, times=time_grid)
 
@@ -97,5 +116,4 @@ ax.set(
     title="Time-varying Brier score",
 )
 ax.legend()
-ax.show()
 # %%

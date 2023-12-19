@@ -178,7 +178,7 @@ def compute_shape_and_scale(
 
     # 1 - feature_rate % of marginal features and interacted features
     # are set to 0
-    W_star = _sparsify(W_star, X_trans.column, features_rate, rng)
+    W_star = _sparsify(W_star, X_trans.columns, features_rate, rng)
 
     # Computation of the true values of shape and scale
     SS_star = X_trans.values @ W_star

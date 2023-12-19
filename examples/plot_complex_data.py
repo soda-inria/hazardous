@@ -78,8 +78,7 @@ sns.histplot(
 from lifelines import AalenJohansenFitter
 
 
-calculate_variance = X.shape[0] <= 5_000
-aj = AalenJohansenFitter(calculate_variance=calculate_variance, seed=0)
+aj = AalenJohansenFitter(calculate_variance=True, seed=0)
 aj
 
 # %%
