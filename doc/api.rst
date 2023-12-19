@@ -40,6 +40,7 @@ Datasets
     :nosignatures:
 
     data.make_synthetic_competing_weibull
+    data.load_seer
 
 
 Inverse Probability Censoring Weight

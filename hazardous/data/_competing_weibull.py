@@ -23,35 +23,71 @@ DEFAULT_SCALE_RANGES = (
 
 
 def _censor(
-    y,
+    y_uncensored,
     independent_censoring=True,
     X=None,
     features_censoring_rate=0.2,
     censoring_relative_scale=1.5,
+    return_censoring_params=False,
     random_state=0,
-    return_params_censo=False,
 ):
-    """Censor data.
+    """Apply right censoring to y_uncensored by sampling from a Weibull distribution.
 
-    With the data created from the synthetic dataset, the function censors the
-    dataset.
-    The user can either choose if the censoring will be independent of the
-    covariates of will depending on X (with the 'features_censoring_rate', the
-    user can choose the level of dependencies of the censoring.).
-    The parameters are rescale to respect certain ranges.
-    Then, after throwing censored duration for each sample, depending on the
-    parameters, 'y_censored' is created, returning the first event that happened
-    with its duration.
+    Parameters
+    ----------
+    y_uncensored : pandas.DataFrame of shape (n_samples, 2)
+        The input dataframe with columns 'event' and 'duration'.
+
+    independent_censoring : bool, default=True
+        Whether the censoring is independent of the covariates X or not.
+
+        * If set to True, the scale and shape parameters are set using
+          baseline scalars.
+        * If set to False and X is defined, the scale and shape parameters
+          are obtained using compute_shape_and_scale.
+
+    X : pandas.DataFrame of shape (n_samples, n_features), default=None
+        Only used when independent_censoring is set to True.
+        Passed to compute_shape_and_scale as input data to generate the shape
+        and scale parameters.
+
+    features_censoring_rate : float, default=0.2
+        Only used when independent_censoring is set to True.
+        Passed to compute_shape_and_scale to define the "dropout" probability of
+        the feature weight matrix.
+
+    censoring_relative_scale : float, default=1.5
+        Only used when independent_censoring is set to True.
+        Passed to compute_shape_and_scale to define the upper bound of the scale
+        parameter.
+
+    return_censoring_params : bool, default=False
+        If set to True, this function returns the scale and shape of the
+        parameters of the censoring distribution, along with y_censored,
+        in a Bunch object.
+
+    random_state : int or instance of RandomState, default=0
+
+    Returns
+    -------
+    y_censored : pandas.DataFrame of shape (n_samples, 2) or Bunch.
+        The input dataframe updated with right-censoring.
+        If return_censoring_params is set to True, this functions also returns
+        the parameters of the censoring distribution, along with y_censored,
+        in a Bunch object.
     """
     rng = check_random_state(random_state)
     if censoring_relative_scale == 0 or censoring_relative_scale is None:
-        return y
+        return y_uncensored
+
+    mean_duration = y_uncensored["duration"].mean()
 
     if independent_censoring:
-        scale_censoring = censoring_relative_scale * y["duration"].mean()
+        scale_censoring = censoring_relative_scale * mean_duration
         shape_censoring = 3
+
     else:
-        df_censoring_params = compute_shape_and_scale(
+        SS_star = compute_shape_and_scale(
             X,
             features_rate=features_censoring_rate,
             n_events=1,
@@ -60,20 +96,24 @@ def _censor(
             scale_ranges=(1, censoring_relative_scale),
             random_state=random_state,
         )
+        SS_star.columns = ["shape_0", "scale_0"]
+        SS_star["scale_0"] *= mean_duration
+        scale_censoring = SS_star["scale_0"]
+        shape_censoring = SS_star["shape_0"]
 
-        df_censoring_params.columns = ["shape_0", "scale_0"]
-        df_censoring_params["scale_0"] *= y["duration"].mean()
-        scale_censoring = df_censoring_params["scale_0"].values
-        shape_censoring = df_censoring_params["shape_0"].values
     censoring = weibull_min.rvs(
-        shape_censoring, scale=scale_censoring, size=y.shape[0], random_state=rng
+        shape_censoring,
+        scale=scale_censoring,
+        size=y_uncensored.shape[0],
+        random_state=rng,
     )
-    y_censored = y.copy()
+    y_censored = y_uncensored.copy()
     y_censored["event"] = np.where(
         y_censored["duration"] < censoring, y_censored["event"], 0
     )
     y_censored["duration"] = np.minimum(y_censored["duration"], censoring)
-    if return_params_censo:
+
+    if return_censoring_params:
         return Bunch(
             shape_censoring=shape_censoring,
             scale_censoring=scale_censoring,
@@ -91,7 +131,37 @@ def compute_shape_and_scale(
     scale_ranges=DEFAULT_SCALE_RANGES,
     random_state=0,
 ):
+    """Derive Weibull's shape and scale parameters from covariates X.
+
+    The steps are:
+
+    * Transformation of X by using spline then polynomial extensions,
+      of shape (n_samples, n_features_transformed)
+    * Generation of W_star by sampling from a standard distribution,
+      of shape (n_features_transformed, n_weibull_params)
+    * Sparsifying of W_star by uniformly setting features to 0.
+    * Matrix multiplication between X_trans and W_star to obtain
+      the scale and shape parameters SS_star:
+
+    .. math::
+
+        SS_star = X_trans . W_star
+
+    * Standardization of SS_star and rescaling to the desired parameters intervals.
+
+    Parameters
+    ----------
+    TODO
+
+    Returns
+    -------
+    SS_star : pandas.DataFrame of shape (n_samples, n_weibull_params)
+        The scale and shape matrix to sample individual duration from using a
+        Weibull distribution.
+    """
+
     rng = check_random_state(random_state)
+
     # Adding interactions between features
     preprocessor = make_pipeline(
         SplineTransformer(n_knots=3),
@@ -101,58 +171,90 @@ def compute_shape_and_scale(
     )
     preprocessor.set_output(transform="pandas")
     X_trans = preprocessor.fit_transform(X)
+
     # Create masked matrix with the interactions
     n_weibull_parameters = 2 * n_events
-    w_star = rng.randn(X_trans.shape[1], n_weibull_parameters)
-    # 1-feature_rate% of marginal features and interacted features
-    # are set to 0
-    cols_features = X_trans.columns
-    marginal_mask = np.array([len(col.split(" ")) == 1 for col in cols_features])
-    marginal_cols = np.repeat(
-        marginal_mask.reshape(-1, 1), repeats=n_weibull_parameters, axis=1
-    )  # (X_trans.shape[1], n_weibull_parameters)
+    W_star = rng.randn(X_trans.shape[1], n_weibull_parameters)
 
-    drop_out_mask = rng.rand(w_star.shape[0], w_star.shape[1]) < features_rate
-    w_star_marginal = np.where(
-        drop_out_mask & marginal_cols,
-        w_star,
-        0,
-    )
-    w_star = np.where(
-        drop_out_mask & ~marginal_cols,
-        w_star,
-        0,
-    )
-    w_star += w_star_marginal
+    # 1 - feature_rate % of marginal features and interacted features
+    # are set to 0
+    W_star = _sparsify(W_star, X_trans.column, features_rate, rng)
 
     # Computation of the true values of shape and scale
-    shape_scale_star = X_trans.values @ w_star
-    shape_scale_columns = [f"shape_{i}" for i in range(1, n_events + 1)] + [
+    SS_star = X_trans.values @ W_star
+    column_names = [f"shape_{i}" for i in range(1, n_events + 1)] + [
         f"scale_{i}" for i in range(1, n_events + 1)
     ]
-    df_shape_scale_star = pd.DataFrame(shape_scale_star, columns=shape_scale_columns)
+    SS_star = pd.DataFrame(SS_star, columns=column_names)
+
     # Rescaling of these values to stay in the chosen range
+    return rescale_params(SS_star, n_events, shape_ranges, scale_ranges)
 
-    return rescale_params(df_shape_scale_star, n_events, shape_ranges, scale_ranges)
+
+def _sparsify(W_star, column_names, features_rate, rng):
+    """Apply uniform sparsity to W_star by setting 1 - feature_rate % of features to 0.
+
+    The W_star matrix is split across lines corresponding to marginal and
+    interaction features, to ensure that the same degree of sparsity is applied
+    to both, i.e. we can't sparsify the marginal features only.
+
+    Parameters
+    ----------
+    W_star : ndarray of shape (n_features, n_weibull_parameters)
+        The weight matrix representing the linear combination between input
+        features.
+
+    column_names : list of str, of length (n_features)
+        The column names of the covariates X, to be split between marginal and
+        interaction.
+
+    feature_rate : float,
+        The probability threshold under which a feature is kept, or set to 0
+        otherwise.
+
+    rng : int or instance of RandomState
+
+    Returns
+    -------
+    W_star : ndarray of shape (n_features, n_weibull_parameters)
+        The sparsified input matrix.
+    """
+
+    # Feature names without " " are marginal, otherwise they are interactions.
+    marginal_indices, interaction_indices = [], []
+    for idx, col in enumerate(column_names):
+        if len(col.split(" ")) == 1:
+            marginal_indices.append(idx)
+        else:
+            interaction_indices.append(idx)
+
+    sparse_mask = rng.rand(*W_star[marginal_indices, :].shape) < features_rate
+    W_star[marginal_indices, :] = W_star[marginal_indices, :] * sparse_mask
+
+    sparse_mask = rng.rand(*W_star[interaction_indices, :].shape) < features_rate
+    W_star[interaction_indices, :] = W_star[interaction_indices, :] * sparse_mask
+
+    return W_star
 
 
-def rescale_params(df_shape_scale_star, n_events, shape_ranges, scale_ranges):
+def rescale_params(SS_star, n_events, shape_ranges, scale_ranges):
     for event_id, shape_range, scale_range in zip(
         range(1, n_events + 1), cycle(shape_ranges), cycle(scale_ranges)
     ):
         shape_min, shape_max = shape_range
         scale_min, scale_max = scale_range
-        df_shape_scale_star[f"shape_{event_id}"] = _rescale_params(
-            df_shape_scale_star[[f"shape_{event_id}"]], shape_min, shape_max
+        SS_star[f"shape_{event_id}"] = _rescale_params(
+            SS_star[[f"shape_{event_id}"]], shape_min, shape_max
         )
-        df_shape_scale_star[f"scale_{event_id}"] = _rescale_params(
-            df_shape_scale_star[[f"scale_{event_id}"]], scale_min, scale_max
+        SS_star[f"scale_{event_id}"] = _rescale_params(
+            SS_star[[f"scale_{event_id}"]], scale_min, scale_max
         )
-    return df_shape_scale_star
+    return SS_star
 
 
 def _rescale_params(column_param, param_min, param_max):
     # Rescaling of these values to stay in the chosen range
+    # Expit is the logistic sigmoid function.
     scaler = StandardScaler()
     column_param = (
         param_min + (param_max - param_min) * expit(scaler.fit_transform(column_param))
@@ -214,31 +316,42 @@ def make_complex_features_with_sparse_matrix(
     degree_interaction=2,
     random_state=0,
 ):
-    """Create complex features.
+    """Generate some covariates X and sample event-specific durations from a Weibull \
+        distribution derived from X.
 
-    Create complex interaction between the synthetic samples and the future targets.
-    To do so, we first add some non linear transformation to each feature (ith a Spline)
-    and then add polynomial interaction between the features.
-    After this, for each event, the parameters of the weibull distribution are chosen
-    ollowing:
-    We create a sparse matrix 'W_star' (X.shape[1], n_weibull_parameters) with
-    (1 - 'features_rate') * 100 % of zeros and the rest is thrown from a normal law.
-    After computing a scalar product with X, we obtain the Weibull parameters.
-    Then, the parameters are scaled to respect defaults ranges using a Standard Scaler
-    and the logistic function.
-    Finally,durations are thrown for each event from a weibull distribution with the
-    parameters computed above.
+    Each event-specific Weibull distribution is defined with a shape and scale
+    parameters. These parameters are derived from the input X, using a sparse weight
+    matrix to linearly combine a polynomial expansion of splines of X.
+    See the compute_shape_and_scale function for more details.
+
+    For each event, durations are drawn from their corresponding Weibull distribution.
+    The event of interest is the first hit, i.e. the event with the minimum duration.
+
+    Parameters
+    ----------
+    TODO
+
+    Returns
+    -------
+    X : pandas.DataFrame of shape (n_samples, n_features)
+        Covariate matrix, generated from a standard distribution.
+
+    event_durations : ndarray of shape (n_events, n_samples)
+        The generated durations, for each events.
+
+    duration_argmin : ndarray of shape (n_samples,)
+        The index of the minimum duration, for each sample.
     """
-    rng = np.random.RandomState(random_state)
+    rng = check_random_state(random_state)
     # Create features given to the model as X and then creating the interactions
     columns = [f"feature_{i}" for i in range(n_features)]
-    df_features = pd.DataFrame(
+    X = pd.DataFrame(
         rng.randn(n_samples, n_features),
         columns=columns,
     )
 
-    df_shape_scale_star = compute_shape_and_scale(
-        df_features,
+    SS_star = compute_shape_and_scale(
+        X,
         features_rate,
         n_events,
         degree_interaction,
@@ -249,15 +362,15 @@ def make_complex_features_with_sparse_matrix(
     # Throw durations from a weibull distribution with scale and shape as the parameters
     event_durations = []
     for event in range(1, n_events + 1):
-        shape = df_shape_scale_star[f"shape_{event}"]
-        scale = df_shape_scale_star[f"scale_{event}"]
+        shape = SS_star[f"shape_{event}"]
+        scale = SS_star[f"scale_{event}"]
         durations = weibull_min.rvs(shape, scale=scale * base_scale, random_state=rng)
         event_durations.append(durations)
 
     # Creating the target tabular
     event_durations = np.asarray(event_durations)
     duration_argmin = np.argmin(event_durations, axis=0)
-    return df_features, event_durations, duration_argmin
+    return X, event_durations, duration_argmin
 
 
 def make_synthetic_competing_weibull(
@@ -314,18 +427,18 @@ def make_synthetic_competing_weibull(
             scale_ranges=scale_ranges,
             random_state=random_state,
         )
-    y = pd.DataFrame(
+    y_uncensored = pd.DataFrame(
         dict(
             event=duration_argmin + 1,
             duration=event_durations[duration_argmin, np.arange(n_samples)],
         )
     )
     y_censored = _censor(
-        y,
-        censoring_relative_scale=censoring_relative_scale,
+        y_uncensored,
         independent_censoring=independent_censoring,
         X=X,
         features_censoring_rate=features_censoring_rate,
+        censoring_relative_scale=censoring_relative_scale,
         random_state=random_state,
     )
     if feature_rounding is not None:
@@ -333,12 +446,12 @@ def make_synthetic_competing_weibull(
 
     if target_rounding is not None:
         y_censored["duration"] = y_censored["duration"].round(target_rounding)
-        y = y.round(target_rounding)
+        y_uncensored = y_uncensored.round(target_rounding)
 
     if return_X_y:
         if return_uncensored_data:
-            return X, y_censored, y
+            return X, y_censored, y_uncensored
         return X, y_censored
 
-    frame = pd.concat([X, y], axis=1)
+    frame = pd.concat([X, y_censored], axis=1)
     return Bunch(data=frame[X.columns], target=frame[y_censored.columns], frame=frame)
