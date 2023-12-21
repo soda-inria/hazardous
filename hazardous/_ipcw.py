@@ -1,6 +1,7 @@
 import numpy as np
 from lifelines import KaplanMeierFitter
 from scipy.interpolate import interp1d
+from scipy.stats import weibull_min
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_is_fitted
 
@@ -91,3 +92,40 @@ class IPCWEstimator(BaseEstimator):
         cs_prob = self.censoring_survival_func_(times)
         cs_prob = np.clip(cs_prob, self.min_censoring_prob_, 1)
         return 1 / cs_prob
+
+
+class IPCWSampler(BaseEstimator):
+    """Compute the True survival probabilities based on the \
+        distribution parameters.
+
+    Parameters
+    ----------
+    shape : float or ndarray of shape (n_samples,)
+        Weibull distribution shape parameter.
+
+    scale : float or ndarray of shape (n_samples,)
+        Weibull distribution scale parameter.
+    """
+
+    def __init__(self, shape, scale):
+        self.shape = shape
+        self.scale = scale
+
+    def fit(self, y):
+        """No-op"""
+        return self
+
+    def compute_ipcw_at(self, times):
+        """Compute the IPCW for a given array of time.
+
+        Parameters
+        ----------
+        times : ndarray of shape (n_samples, 1)
+
+        Returns
+        -------
+        ipcw_y : pandas.DataFrame of shape (n_samples, )
+            True Survival Probability at each t_i| x_i in times
+            G^*(t_i|x_i).
+        """
+        return 1 - weibull_min.cdf(times, self.shape, scale=self.scale)

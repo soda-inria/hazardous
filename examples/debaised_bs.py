@@ -7,66 +7,57 @@
 
 # %%
 import seaborn as sns
+import numpy as np
+import pandas as pd
 
-from hazardous.data._competing_weibull import make_synthetic_competing_weibull
+from hazardous.data._competing_weibull import (
+    make_complex_features_with_sparse_matrix,
+)
 
 
-independent_censoring = True
+independent_censoring = False
 event_of_interest = 1
 seed = 0
+n_samples = 30_000
 
-X, _, y_uncensored = make_synthetic_competing_weibull(
-    n_samples=1_000_000,
+X, event_durations, duration_argmin = make_complex_features_with_sparse_matrix(
+    n_events=3,
+    n_samples=n_samples,
     base_scale=1_000,
     n_features=10,
     features_rate=0.3,
     degree_interaction=2,
-    independent_censoring=independent_censoring,
-    features_censoring_rate=0.2,
-    return_uncensored_data=True,
-    return_X_y=True,
-    feature_rounding=None,
-    target_rounding=None,
-    censoring_relative_scale=None,
     random_state=seed,
-    complex_features=True,
 )
 
-sns.histplot(
-    y_uncensored,
-    x="duration",
-    hue="event",
-    palette="magma",
-    title="Duration distributions",
+y_uncensored = pd.DataFrame(
+    dict(
+        event=duration_argmin + 1,
+        duration=event_durations[duration_argmin, np.arange(n_samples)],
+    )
 )
 
 # %%
 from hazardous.data._competing_weibull import _censor
-from hazardous.evaluation.debiased_brier_score import compute_true_probas
 
 
-bunch_data = _censor(
+y_censored, shape_censoring, scale_censoring = _censor(
     y_uncensored,
     independent_censoring=independent_censoring,
     X=X,
-    return_censoring_params=True,
     features_censoring_rate=0.5,
-    censoring_relative_scale=0.5,
+    censoring_relative_scale=40,
     random_state=seed,
 )
-y_censored = bunch_data.y_censored
-shape_censoring = bunch_data.shape_censoring
-scale_censoring = bunch_data.scale_censoring
 
-probas = compute_true_probas(
+ax = sns.histplot(
     y_censored,
-    shape_censoring,
-    scale_censoring,
-    independent_censoring=independent_censoring,
+    x="duration",
+    hue="event",
+    palette="magma",
+    multiple="stack",
 )
-time_grid = probas.time_grid
-censored_proba_duration = probas.censored_proba_duration
-censored_proba_time_grid = probas.censored_proba_time_grid
+ax.set(title="Duration distributions")
 
 # %%
 from hazardous import GradientBoostingIncidence
@@ -84,28 +75,35 @@ gbi = GradientBoostingIncidence(
     event_of_interest=event_of_interest,
 )
 gbi.fit(X, y_censored)
-gbi
 
 # %%
 from matplotlib import pyplot as plt
 
-from hazardous.metrics._brier_score import brier_score_incidence
-from hazardous.evaluation.debiased_brier_score import brier_score_true_probas
+from hazardous.metrics._brier_score import (
+    brier_score_incidence,
+    brier_score_true_probas_incidence,
+)
 
 
+time_grid = gbi.time_grid_
 y_pred = gbi.predict_cumulative_incidence(X, times=time_grid)
 
-scores = brier_score_true_probas(
-    y_censored,
-    y_pred,
+scores = brier_score_true_probas_incidence(
+    y_train=y_censored,
+    y_test=y_censored,
+    y_pred=y_pred,
     times=time_grid,
+    shape_censoring=shape_censoring,
+    scale_censoring=scale_censoring,
     event_of_interest=event_of_interest,
-    censored_proba_duration=censored_proba_duration,
-    censored_proba_time_grid=censored_proba_time_grid,
 )
 
 bs_scores = brier_score_incidence(
-    y_censored, y_censored, y_pred, time_grid, event_of_interest=event_of_interest
+    y_train=y_censored,
+    y_test=y_censored,
+    y_pred=y_pred,
+    times=time_grid,
+    event_of_interest=event_of_interest,
 )
 
 fig, ax = plt.subplots(figsize=(12, 5))

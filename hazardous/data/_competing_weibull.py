@@ -28,7 +28,6 @@ def _censor(
     X=None,
     features_censoring_rate=0.2,
     censoring_relative_scale=1.5,
-    return_censoring_params=False,
     random_state=0,
 ):
     """Apply right censoring to y_uncensored by sampling from a Weibull distribution.
@@ -44,7 +43,7 @@ def _censor(
         * If set to True, the scale and shape parameters are set using
           baseline scalars.
         * If set to False and X is defined, the scale and shape parameters
-          are obtained using compute_shape_and_scale.
+          are obtained using the compute_shape_and_scale function.
 
     X : pandas.DataFrame of shape (n_samples, n_features), default=None
         Only used when independent_censoring is set to True.
@@ -57,14 +56,13 @@ def _censor(
         the feature weight matrix.
 
     censoring_relative_scale : float, default=1.5
-        Only used when independent_censoring is set to True.
-        Passed to compute_shape_and_scale to define the upper bound of the scale
-        parameter.
+        The magnitude of censoring to apply.
 
-    return_censoring_params : bool, default=False
-        If set to True, this function returns the scale and shape of the
-        parameters of the censoring distribution, along with y_censored,
-        in a Bunch object.
+        * If independent_censoring is set to True, censoring_relative_scale is passed
+          to compute_shape_and_scale to define the upper bound of the scale.
+          parameter.
+        * Otherwise, the scale is a scalar, computed as
+          censoring_relative_scale * mean duration.
 
     random_state : int or instance of RandomState, default=0
 
@@ -72,13 +70,16 @@ def _censor(
     -------
     y_censored : pandas.DataFrame of shape (n_samples, 2) or Bunch.
         The input dataframe updated with right-censoring.
-        If return_censoring_params is set to True, this functions also returns
-        the parameters of the censoring distribution, along with y_censored,
-        in a Bunch object.
+
+    shape_censoring : ndarray of shape (n_samples,)
+        The Weibull shape parameter used to generate the censoring distribution.
+
+    scale_censoring : ndarray of shape (n_samples,)
+        The Weibull scale parameter used to generate the censoring distribution.
     """
     rng = check_random_state(random_state)
     if censoring_relative_scale == 0 or censoring_relative_scale is None:
-        return y_uncensored
+        return (y_uncensored, None, None)
 
     mean_duration = y_uncensored["duration"].mean()
 
@@ -92,8 +93,8 @@ def _censor(
             features_rate=features_censoring_rate,
             n_events=1,
             degree_interaction=2,
-            shape_ranges=(2.0, 3.0),
-            scale_ranges=(1, censoring_relative_scale),
+            shape_ranges=[(2.0, 3.0)],
+            scale_ranges=[(1, censoring_relative_scale)],
             random_state=random_state,
         )
         SS_star.columns = ["shape_0", "scale_0"]
@@ -113,13 +114,7 @@ def _censor(
     )
     y_censored["duration"] = np.minimum(y_censored["duration"], censoring)
 
-    if return_censoring_params:
-        return Bunch(
-            shape_censoring=shape_censoring,
-            scale_censoring=scale_censoring,
-            y_censored=y_censored,
-        )
-    return y_censored
+    return (y_censored, shape_censoring, scale_censoring)
 
 
 def compute_shape_and_scale(
@@ -433,7 +428,7 @@ def make_synthetic_competing_weibull(
             duration=event_durations[duration_argmin, np.arange(n_samples)],
         )
     )
-    y_censored = _censor(
+    y_censored, _, _ = _censor(
         y_uncensored,
         independent_censoring=independent_censoring,
         X=X,
