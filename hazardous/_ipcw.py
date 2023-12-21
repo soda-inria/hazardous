@@ -107,9 +107,10 @@ class IPCWSampler(BaseEstimator):
         Weibull distribution scale parameter.
     """
 
-    def __init__(self, shape, scale):
+    def __init__(self, shape, scale, min_censoring_prob=1e-3):
         self.shape = shape
         self.scale = scale
+        self.min_censoring_prob = min_censoring_prob
 
     def fit(self, y):
         """No-op"""
@@ -128,4 +129,6 @@ class IPCWSampler(BaseEstimator):
             True Survival Probability at each t_i| x_i in times
             G^*(t_i|x_i).
         """
-        return 1 - weibull_min.cdf(times, self.shape, scale=self.scale)
+        cs_prob = 1 - weibull_min.cdf(times, self.shape, scale=self.scale)
+        cs_prob = np.clip(cs_prob, self.min_censoring_prob, 1)
+        return 1 / cs_prob
