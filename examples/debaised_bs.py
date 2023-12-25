@@ -207,9 +207,45 @@ plot_marginal_incidence(y_censored_dep, y_uncensored, kind="dependent")
 from hazardous._ipcw import IPCWEstimator, IPCWSampler
 
 
-def plot_ipcw_comparison(
-    y_uncensored, y_censored, shape_censoring, scale_censoring, kind
-):
+def plot_censoring_survival_proba(y_censored, shape_censoring, scale_censoring, kind):
+    t_max = y_uncensored["duration"].max()
+    time_grid = np.linspace(0, t_max, 100)
+
+    estimator = IPCWEstimator().fit(y_censored)
+    g_hat = estimator.compute_censoring_survival_proba(time_grid)
+
+    sampler = IPCWSampler(
+        shape=shape_censoring,
+        scale=scale_censoring,
+    ).fit(y_censored)
+
+    g_star = []
+    for time_step in time_grid:
+        time_step = np.full(y_censored.shape[0], fill_value=time_step)
+        g_star_ = sampler.compute_censoring_survival_proba(time_step)
+        g_star.append(g_star_.mean())
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(time_grid, g_hat, label="$G^*$")
+    ax.plot(time_grid, g_star, label="$\hat{G}$ with KM")
+    ax.set_title(f"Censoring survival proba, with {kind} censoring")
+    plt.legend()
+
+
+plot_censoring_survival_proba(
+    y_censored_indep, shape_censoring_indep, scale_censoring_indep, kind="independent"
+)
+
+# %%
+
+plot_censoring_survival_proba(
+    y_censored_dep, shape_censoring_dep, scale_censoring_dep, kind="dependent"
+)
+
+# %%
+
+
+def plot_ipcw(y_uncensored, y_censored, shape_censoring, scale_censoring, kind):
     t_max = y_uncensored["duration"].max()
     time_grid = np.linspace(0, t_max, 100)
 
@@ -221,21 +257,20 @@ def plot_ipcw_comparison(
         scale=scale_censoring,
     ).fit(y_censored)
 
-    ipcw_samples = []
+    ipcw_sampled = []
     for time_step in time_grid:
         time_step = np.full(y_censored.shape[0], fill_value=time_step)
-        ipcw_sample = sampler.compute_ipcw_at(time_step)
-        ipcw_samples.append(ipcw_sample)
-    ipcw_samples = np.mean(ipcw_samples, axis=1)
+        ipcw_sampled_ = sampler.compute_ipcw_at(time_step)
+        ipcw_sampled.append(ipcw_sampled_.mean())
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(time_grid, ipcw_samples, label="$G^*$")
-    ax.plot(time_grid, ipcw_pred, label="$\hat{G}$, using KM")
-    ax.set_title(f"{kind} censoring")
+    ax.plot(time_grid, ipcw_sampled, label="$1/G^*}$")
+    ax.plot(time_grid, ipcw_pred, label="$1/\hat{G}}$, using KM")
+    ax.set_title(f"IPCW, with {kind} censoring")
     plt.legend()
 
 
-plot_ipcw_comparison(
+plot_ipcw(
     y_uncensored,
     y_censored_indep,
     shape_censoring=shape_censoring_indep,
@@ -246,7 +281,7 @@ plot_ipcw_comparison(
 
 # %%
 
-plot_ipcw_comparison(
+plot_ipcw(
     y_uncensored,
     y_censored_dep,
     shape_censoring=shape_censoring_dep,

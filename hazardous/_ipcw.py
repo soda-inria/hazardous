@@ -8,7 +8,53 @@ from sklearn.utils.validation import check_is_fitted
 from .utils import check_y_survival
 
 
-class IPCWEstimator(BaseEstimator):
+class BaseIPCW(BaseEstimator):
+    def fit(self, y):
+        event, duration = check_y_survival(y)
+
+        km = KaplanMeierFitter()
+        censoring = event == 0
+        km.fit(
+            durations=duration,
+            event_observed=censoring,
+        )
+
+        df = km.survival_function_
+        self.unique_times_ = df.index
+        self.censoring_survival_probs_ = df.values[:, 0]
+        self.min_censoring_prob_ = self.censoring_survival_probs_[
+            self.censoring_survival_probs_ > 0
+        ].min()
+
+        return self
+
+    def compute_ipcw_at(self, times):
+        """Estimate inverse censoring weight probability at times.
+
+        Linearly interpolate the censoring survival function and return the
+        inverse values.
+
+        Parameters
+        ----------
+        times : np.ndarray of shape (n_times,)
+            The input times for which to predict the IPCW.
+
+        Returns
+        -------
+        ipcw : np.ndarray of shape (n_times,)
+            The IPCW for times
+        """
+        check_is_fitted(self, "min_censoring_prob_")
+
+        cs_prob = self.compute_censoring_survival_proba(times)
+        cs_prob = np.clip(cs_prob, self.min_censoring_prob_, 1)
+        return 1 / cs_prob
+
+    def compute_censoring_survival_proba(self, times):
+        raise NotImplementedError()
+
+
+class IPCWEstimator(BaseIPCW):
     """Estimate the Inverse Probability of Censoring Weight (IPCW).
 
     This class estimates the inverse of the probability of "survival" to
@@ -47,18 +93,7 @@ class IPCWEstimator(BaseEstimator):
         self : object
             Fitted estimator.
         """
-        event, duration = check_y_survival(y)
-
-        km = KaplanMeierFitter()
-        censoring = event == 0
-        km.fit(
-            durations=duration,
-            event_observed=censoring,
-        )
-
-        df = km.survival_function_
-        self.unique_times_ = df.index
-        self.censoring_survival_probs_ = df.values[:, 0]
+        super().fit(y)
         self.censoring_survival_func_ = interp1d(
             self.unique_times_,
             self.censoring_survival_probs_,
@@ -66,12 +101,9 @@ class IPCWEstimator(BaseEstimator):
             bounds_error=False,
             fill_value="extrapolate",
         )
-        self.min_censoring_prob_ = self.censoring_survival_probs_[
-            self.censoring_survival_probs_ > 0
-        ].min()
         return self
 
-    def compute_ipcw_at(self, times):
+    def compute_censoring_survival_proba(self, times):
         """Estimate inverse censoring weight probability at times.
 
         Linearly interpolate the censoring survival function and return the
@@ -87,14 +119,10 @@ class IPCWEstimator(BaseEstimator):
         ipcw : np.ndarray of shape (n_times,)
             The IPCW for times
         """
-        check_is_fitted(self, "censoring_survival_func_")
-
-        cs_prob = self.censoring_survival_func_(times)
-        cs_prob = np.clip(cs_prob, self.min_censoring_prob_, 1)
-        return 1 / cs_prob
+        return self.censoring_survival_func_(times)
 
 
-class IPCWSampler(BaseEstimator):
+class IPCWSampler(BaseIPCW):
     """Compute the True survival probabilities based on the \
         distribution parameters.
 
@@ -112,23 +140,17 @@ class IPCWSampler(BaseEstimator):
         self.scale = scale
         self.min_censoring_prob = min_censoring_prob
 
-    def fit(self, y):
-        """No-op"""
-        return self
-
-    def compute_ipcw_at(self, times):
-        """Compute the IPCW for a given array of time.
+    def compute_censoring_survival_proba(self, times):
+        """Compute the censoring survival proba G for a given array of time.
 
         Parameters
         ----------
-        times : ndarray of shape (n_samples, 1)
+        times : ndarray of shape (n_samples,)
+            The time step to consider for each sample.
 
         Returns
         -------
-        ipcw_y : pandas.DataFrame of shape (n_samples, )
-            True Survival Probability at each t_i| x_i in times
-            G^*(t_i|x_i).
+        cs_prob : ndarray of shape (n_samples)
+            The censoring survival probability of each sample.
         """
-        cs_prob = 1 - weibull_min.cdf(times, self.shape, scale=self.scale)
-        cs_prob = np.clip(cs_prob, self.min_censoring_prob, 1)
-        return 1 / cs_prob
+        return 1 - weibull_min.cdf(times, self.shape, scale=self.scale)
