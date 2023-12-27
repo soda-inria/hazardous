@@ -48,17 +48,17 @@ from hazardous.data._competing_weibull import make_synthetic_competing_weibull
 
 
 X, y_censored, y_uncensored = make_synthetic_competing_weibull(
-    n_samples=3_000,
+    n_samples=30_000,
     base_scale=1_000,
     n_features=10,
     features_rate=0.5,
     degree_interaction=2,
-    independent_censoring=False,
+    independent_censoring=True,
     features_censoring_rate=0.2,
     return_uncensored_data=True,
     feature_rounding=3,
-    target_rounding=4,
-    censoring_relative_scale=4.0,
+    target_rounding=None,
+    censoring_relative_scale=1.5,
     complex_features=True,
     return_X_y=True,
     random_state=seed,
@@ -78,8 +78,7 @@ sns.histplot(
 from lifelines import AalenJohansenFitter
 
 
-calculate_variance = X.shape[0] <= 5_000
-aj = AalenJohansenFitter(calculate_variance=calculate_variance, seed=0)
+aj = AalenJohansenFitter(calculate_variance=True, seed=0)
 aj
 
 # %%
@@ -122,7 +121,6 @@ def plot_cumulative_incidence_functions(
     n_events = y["event"].max()
     t_max = y["duration"].max()
     _, axes = plt.subplots(figsize=(12, 4), ncols=n_events, sharey=True)
-
     # Compute the estimate of the CIFs on a coarse grid.
     coarse_timegrid = np.linspace(0, t_max, num=100)
     censoring_fraction = (y["event"] == 0).mean()

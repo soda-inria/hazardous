@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 
-from .._ipcw import IPCWEstimator
+from .._ipcw import IPCWEstimator, IPCWSampler
 from ..utils import check_event_of_interest, check_y_survival
 
 
@@ -35,6 +35,7 @@ class IncidenceScoreComputer:
         self,
         y_train,
         event_of_interest="any",
+        ipcw_est=None,
     ):
         self.y_train = y_train
         self.event_train, self.duration_train = check_y_survival(y_train)
@@ -42,14 +43,16 @@ class IncidenceScoreComputer:
         self.any_event_train = self.event_train > 0
         self.event_of_interest = event_of_interest
 
+        y = dict(
+            event=self.any_event_train,
+            duration=self.duration_train,
+        )
         # Estimate the censoring distribution from the training set
         # using Kaplan-Meier.
-        self.ipcw_est = IPCWEstimator().fit(
-            dict(
-                event=self.any_event_train,
-                duration=self.duration_train,
-            )
-        )
+        if ipcw_est is None:
+            self.ipcw_est = IPCWEstimator().fit(y)
+        else:
+            self.ipcw_est = ipcw_est.fit(y)
 
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
@@ -559,5 +562,39 @@ def integrated_brier_score_incidence(
     computer = IncidenceScoreComputer(
         y_train,
         event_of_interest=event_of_interest,
+    )
+    return computer.integrated_brier_score_incidence(y_test, y_pred, times)
+
+
+def brier_score_true_probas_incidence(
+    y_train,
+    y_test,
+    y_pred,
+    times,
+    shape_censoring,
+    scale_censoring,
+    event_of_interest="any",
+):
+    ipcw_est = IPCWSampler(shape=shape_censoring, scale=scale_censoring)
+    computer = IncidenceScoreComputer(
+        y_train, event_of_interest=event_of_interest, ipcw_est=ipcw_est
+    )
+    return computer.brier_score_incidence(y_test, y_pred, times)
+
+
+def integrated_brier_score_true_probas_incidence(
+    y_train,
+    y_test,
+    y_pred,
+    times,
+    shape_censoring,
+    scale_censoring,
+    event_of_interest="any",
+):
+    ipcw_est = IPCWSampler(shape=shape_censoring, scale=scale_censoring)
+    computer = IncidenceScoreComputer(
+        y_train,
+        event_of_interest=event_of_interest,
+        ipcw_est=ipcw_est,
     )
     return computer.integrated_brier_score_incidence(y_test, y_pred, times)
