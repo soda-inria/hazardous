@@ -82,6 +82,50 @@ y_censored_dep, shape_censoring_dep, scale_censoring_dep = _censor(
 )
 plot_events(y_censored_dep, kind="dependent")
 
+# %%
+
+from lifelines import AalenJohansenFitter
+
+
+def plot_marginal_incidence(y_censored, y_uncensored, kind):
+    aj = AalenJohansenFitter(calculate_variance=False, seed=seed)
+    n_events = y_uncensored["event"].max()
+
+    censoring_fraction = (y_censored["event"] == 0).mean()
+
+    # Compute the estimate of the CIFs on a coarse grid.
+    _, axes = plt.subplots(figsize=(12, 5), ncols=n_events, sharey=True)
+
+    plt.suptitle(
+        f"Cause-specific cumulative incidence functions, {kind}"
+        f" ({censoring_fraction:.1%} censoring)"
+    )
+
+    for event_id, ax in enumerate(axes, 1):
+        aj.fit(
+            y_uncensored["duration"],
+            y_uncensored["event"],
+            event_of_interest=event_id,
+        )
+        aj.plot(label="Aalen-Johansen_uncensored", ax=ax)
+
+        aj.fit(
+            y_censored["duration"],
+            y_censored["event"],
+            event_of_interest=event_id,
+        )
+        aj.plot(label="Aalen-Johansen_censored", ax=ax)
+
+        ax.set_xlim(0, 8_000)
+        ax.set_ylim(0, 0.5)
+        ax.set_title(f"{event_id=!r}")
+    plt.legend()
+
+
+plot_marginal_incidence(y_censored_indep, y_uncensored, kind="independent")
+# %%
+
+plot_marginal_incidence(y_censored_dep, y_uncensored, kind="dependent")
 
 # %%
 from hazardous import GradientBoostingIncidence
@@ -155,64 +199,29 @@ plot_brier_scores_comparisons(
     event_of_interest=event_of_interest,
 )
 
-
 # %%
 
-from lifelines import AalenJohansenFitter
+from hazardous._ipcw import IPCWEstimator, IPCWCoxEstimator, IPCWSampler
 
 
-def plot_marginal_incidence(y_censored, y_uncensored, kind):
-    aj = AalenJohansenFitter(calculate_variance=False, seed=seed)
-    n_events = y_uncensored["event"].max()
-
-    censoring_fraction = (y_censored["event"] == 0).mean()
-
-    # Compute the estimate of the CIFs on a coarse grid.
-    _, axes = plt.subplots(figsize=(12, 5), ncols=n_events, sharey=True)
-
-    plt.suptitle(
-        f"Cause-specific cumulative incidence functions, {kind}"
-        f" ({censoring_fraction:.1%} censoring)"
-    )
-
-    for event_id, ax in enumerate(axes, 1):
-        aj.fit(
-            y_uncensored["duration"],
-            y_uncensored["event"],
-            event_of_interest=event_id,
-        )
-        aj.plot(label="Aalen-Johansen_uncensored", ax=ax)
-
-        aj.fit(
-            y_censored["duration"],
-            y_censored["event"],
-            event_of_interest=event_id,
-        )
-        aj.plot(label="Aalen-Johansen_censored", ax=ax)
-
-        ax.set_xlim(0, 8_000)
-        ax.set_ylim(0, 0.5)
-        ax.set_title(f"{event_id=!r}")
-    plt.legend()
-
-
-plot_marginal_incidence(y_censored_indep, y_uncensored, kind="independent")
-# %%
-
-plot_marginal_incidence(y_censored_dep, y_uncensored, kind="dependent")
-
-
-# %%
-
-from hazardous._ipcw import IPCWEstimator, IPCWSampler
-
-
-def plot_censoring_survival_proba(y_censored, shape_censoring, scale_censoring, kind):
+def plot_censoring_survival_proba(
+    X,
+    y_censored,
+    shape_censoring,
+    scale_censoring,
+    kind,
+):
     t_max = y_uncensored["duration"].max()
     time_grid = np.linspace(0, t_max, 100)
 
-    estimator = IPCWEstimator().fit(y_censored)
-    g_hat = estimator.compute_censoring_survival_proba(time_grid)
+    estimator_marginal = IPCWEstimator().fit(y_censored)
+    g_hat_marginal = estimator_marginal.compute_censoring_survival_proba(time_grid)
+
+    estimator_conditional = IPCWCoxEstimator().fit(y_censored, X=X)
+    g_hat_conditional = estimator_conditional.compute_censoring_survival_proba(
+        time_grid,
+        X=X,
+    )
 
     sampler = IPCWSampler(
         shape=shape_censoring,
@@ -226,31 +235,43 @@ def plot_censoring_survival_proba(y_censored, shape_censoring, scale_censoring, 
         g_star.append(g_star_.mean())
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(time_grid, g_hat, label="$G^*$")
-    ax.plot(time_grid, g_star, label="$\hat{G}$ with KM")
+    ax.plot(time_grid, g_hat_marginal, label="$\hat{G}$ with KM")
+    ax.plot(time_grid, g_hat_conditional, label="$\hat{G}$ with Cox")
+    ax.plot(time_grid, g_star, label="$G^*$")
     ax.set_title(f"Censoring survival proba, with {kind} censoring")
     plt.legend()
 
 
 plot_censoring_survival_proba(
-    y_censored_indep, shape_censoring_indep, scale_censoring_indep, kind="independent"
+    X,
+    y_censored_indep,
+    shape_censoring_indep,
+    scale_censoring_indep,
+    kind="independent",
 )
 
 # %%
 
 plot_censoring_survival_proba(
-    y_censored_dep, shape_censoring_dep, scale_censoring_dep, kind="dependent"
+    X,
+    y_censored_dep,
+    shape_censoring_dep,
+    scale_censoring_dep,
+    kind="dependent",
 )
 
 # %%
 
 
-def plot_ipcw(y_uncensored, y_censored, shape_censoring, scale_censoring, kind):
+def plot_ipcw(X, y_uncensored, y_censored, shape_censoring, scale_censoring, kind):
     t_max = y_uncensored["duration"].max()
     time_grid = np.linspace(0, t_max, 100)
 
-    estimator = IPCWEstimator().fit(y_censored)
-    ipcw_pred = estimator.compute_ipcw_at(time_grid)
+    estimator_marginal = IPCWEstimator().fit(y_censored)
+    ipcw_pred_marginal = estimator_marginal.compute_ipcw_at(time_grid)
+
+    estimator_conditional = IPCWCoxEstimator().fit(y_censored, X=X)
+    ipcw_pred_conditional = estimator_conditional.compute_ipcw_at(time_grid, X=X)
 
     sampler = IPCWSampler(
         shape=shape_censoring,
@@ -264,13 +285,15 @@ def plot_ipcw(y_uncensored, y_censored, shape_censoring, scale_censoring, kind):
         ipcw_sampled.append(ipcw_sampled_.mean())
 
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(time_grid, ipcw_sampled, label="$1/G^*}$")
-    ax.plot(time_grid, ipcw_pred, label="$1/\hat{G}}$, using KM")
+    ax.plot(time_grid, ipcw_sampled, label="$1/G^*$")
+    ax.plot(time_grid, ipcw_pred_marginal, label="$1/\hat{G}$, using KM")
+    ax.plot(time_grid, ipcw_pred_conditional, label="$1/\hat{G}$, using Cox")
     ax.set_title(f"IPCW, with {kind} censoring")
     plt.legend()
 
 
 plot_ipcw(
+    X,
     y_uncensored,
     y_censored_indep,
     shape_censoring=shape_censoring_indep,
@@ -278,10 +301,10 @@ plot_ipcw(
     kind="independent",
 )
 
-
 # %%
 
 plot_ipcw(
+    X,
     y_uncensored,
     y_censored_dep,
     shape_censoring=shape_censoring_dep,
