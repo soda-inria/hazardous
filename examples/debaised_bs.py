@@ -218,21 +218,24 @@ def plot_censoring_survival_proba(
     g_hat_marginal = estimator_marginal.compute_censoring_survival_proba(time_grid)
 
     estimator_conditional = IPCWCoxEstimator().fit(y_censored, X=X)
-    g_hat_conditional = estimator_conditional.compute_censoring_survival_proba(
-        time_grid,
-        X=X,
-    )
 
     sampler = IPCWSampler(
         shape=shape_censoring,
         scale=scale_censoring,
     ).fit(y_censored)
 
-    g_star = []
+    g_hat_conditional, g_star = [], []
     for time_step in time_grid:
         time_step = np.full(y_censored.shape[0], fill_value=time_step)
+
         g_star_ = sampler.compute_censoring_survival_proba(time_step)
         g_star.append(g_star_.mean())
+
+        g_hat_conditional_ = estimator_conditional.compute_censoring_survival_proba(
+            time_step,
+            X=X,
+        )
+        g_hat_conditional.append(g_hat_conditional_.mean())
 
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.plot(time_grid, g_hat_marginal, label="$\hat{G}$ with KM")
@@ -271,18 +274,24 @@ def plot_ipcw(X, y_uncensored, y_censored, shape_censoring, scale_censoring, kin
     ipcw_pred_marginal = estimator_marginal.compute_ipcw_at(time_grid)
 
     estimator_conditional = IPCWCoxEstimator().fit(y_censored, X=X)
-    ipcw_pred_conditional = estimator_conditional.compute_ipcw_at(time_grid, X=X)
 
     sampler = IPCWSampler(
         shape=shape_censoring,
         scale=scale_censoring,
     ).fit(y_censored)
 
-    ipcw_sampled = []
+    ipcw_sampled, ipcw_pred_conditional = [], []
     for time_step in time_grid:
         time_step = np.full(y_censored.shape[0], fill_value=time_step)
+
         ipcw_sampled_ = sampler.compute_ipcw_at(time_step)
         ipcw_sampled.append(ipcw_sampled_.mean())
+
+        ipcw_pred_conditional_ = estimator_conditional.compute_ipcw_at(
+            time_step,
+            X=X,
+        )
+        ipcw_pred_conditional.append(ipcw_pred_conditional_.mean())
 
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.plot(time_grid, ipcw_sampled, label="$1/G^*$")
