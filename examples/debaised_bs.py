@@ -6,8 +6,10 @@
 #
 
 # %%
+import seaborn as sns
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 
 from hazardous.data._competing_weibull import (
     make_complex_features_with_sparse_matrix,
@@ -36,99 +38,72 @@ y_uncensored = pd.DataFrame(
 )
 
 # %%
-import seaborn as sns
-from matplotlib import pyplot as plt
-
 from hazardous.data._competing_weibull import _censor
-
-
-def plot_events(y, kind):
-    censoring_rate = int((y["event"] == 0).mean() * 100)
-    ax = sns.histplot(
-        y,
-        x="duration",
-        hue="event",
-        palette="magma",
-        multiple="stack",
-    )
-    title = (
-        f"Duration distributions when censoring is {kind} of X, {censoring_rate=!r}%"
-    )
-    ax.set(title=title)
 
 
 y_censored_indep, shape_censoring_indep, scale_censoring_indep = _censor(
     y_uncensored,
     independent_censoring=True,
     X=X,
-    features_censoring_rate=0.5,
-    censoring_relative_scale=1,
+    features_censoring_rate=0.8,
+    censoring_relative_scale=0.6,
     random_state=seed,
 )
-plot_events(y_censored_indep, kind="independent")
+
+ax = sns.histplot(
+    y_censored_indep,
+    x="duration",
+    hue="event",
+    palette="magma",
+    multiple="stack",
+)
+ax.set(title="Duration distributions when censoring is independent of X")
 
 
 # %%
 from hazardous.data._competing_weibull import _censor
-
+from matplotlib import pyplot as plt
 
 y_censored_dep, shape_censoring_dep, scale_censoring_dep = _censor(
     y_uncensored,
     independent_censoring=False,
     X=X,
-    features_censoring_rate=0.5,
-    censoring_relative_scale=0.5,
+    features_censoring_rate=0.7,
+    censoring_relative_scale=1,
     random_state=seed,
 )
-plot_events(y_censored_dep, kind="dependent")
 
-# %%
-
-from lifelines import AalenJohansenFitter
-
-
-def plot_marginal_incidence(y_censored, y_uncensored, kind):
-    aj = AalenJohansenFitter(calculate_variance=False, seed=seed)
-    n_events = y_uncensored["event"].max()
-
-    censoring_fraction = (y_censored["event"] == 0).mean()
-
-    # Compute the estimate of the CIFs on a coarse grid.
-    _, axes = plt.subplots(figsize=(12, 5), ncols=n_events, sharey=True)
-
-    plt.suptitle(
-        f"Cause-specific cumulative incidence functions, {kind}"
-        f" ({censoring_fraction:.1%} censoring)"
-    )
-
-    for event_id, ax in enumerate(axes, 1):
-        aj.fit(
-            y_uncensored["duration"],
-            y_uncensored["event"],
-            event_of_interest=event_id,
-        )
-        aj.plot(label="Aalen-Johansen_uncensored", ax=ax)
-
-        aj.fit(
-            y_censored["duration"],
-            y_censored["event"],
-            event_of_interest=event_id,
-        )
-        aj.plot(label="Aalen-Johansen_censored", ax=ax)
-
-        ax.set_xlim(0, 8_000)
-        ax.set_ylim(0, 0.5)
-        ax.set_title(f"{event_id=!r}")
-    plt.legend()
-
-
-plot_marginal_incidence(y_censored_indep, y_uncensored, kind="independent")
-# %%
-
-plot_marginal_incidence(y_censored_dep, y_uncensored, kind="dependent")
+ax = sns.histplot(
+    y_censored_dep,
+    x="duration",
+    hue="event",
+    palette="magma",
+    multiple="stack",
+)
+ax.set(title="Duration distributions when censoring is dependent of X")
+plt.show()
 
 # %%
 from hazardous import GradientBoostingIncidence
+
+
+gbi_indep = GradientBoostingIncidence(
+    learning_rate=0.1,
+    n_iter=20,
+    max_leaf_nodes=15,
+    hard_zero_fraction=0.1,
+    min_samples_leaf=5,
+    loss="ibs",
+    show_progressbar=False,
+    random_state=seed,
+    event_of_interest=event_of_interest,
+)
+gbi_indep.fit(X, y_censored_indep)
+
+gbi_dep = clone(gbi_indep)
+gbi_dep.fit(X, y_censored_dep)
+
+# %%
 
 from hazardous.metrics._brier_score import (
     brier_score_incidence,
@@ -136,180 +111,164 @@ from hazardous.metrics._brier_score import (
 )
 
 
-def plot_brier_scores_comparisons(X, y, shape, scale, kind, event_of_interest=1):
-    gbi = GradientBoostingIncidence(
-        learning_rate=0.1,
-        n_iter=20,
-        max_leaf_nodes=15,
-        hard_zero_fraction=0.1,
-        min_samples_leaf=5,
-        loss="ibs",
-        show_progressbar=False,
-        random_state=seed,
-        event_of_interest=event_of_interest,
-    )
-    gbi.fit(X, y)
-    y_pred = gbi.predict_cumulative_incidence(X)
+time_grid = gbi_indep.time_grid_
+y_pred_indep = gbi_indep.predict_cumulative_incidence(X, times=time_grid)
 
-    time_grid = gbi.time_grid_
-    debiased_bs_scores = brier_score_true_probas_incidence(
-        y_train=y,
-        y_test=y,
-        y_pred=y_pred,
-        times=time_grid,
-        shape_censoring=shape,
-        scale_censoring=scale,
-        event_of_interest=event_of_interest,
-    )
-
-    bs_scores = brier_score_incidence(
-        y_train=y,
-        y_test=y,
-        y_pred=y_pred,
-        times=time_grid,
-        event_of_interest=event_of_interest,
-    )
-
-    fig, ax = plt.subplots(figsize=(12, 5))
-    ax.plot(time_grid, debiased_bs_scores, label="from true distrib")
-    ax.plot(time_grid, bs_scores, label="from estimate distrib with km")
-    ax.set(
-        title=f"Time-varying Brier score, {kind} censoring",
-    )
-    ax.legend()
-
-
-plot_brier_scores_comparisons(
-    X,
-    y_censored_indep,
-    shape=shape_censoring_indep,
-    scale=scale_censoring_indep,
-    kind="independent",
-    event_of_interest=event_of_interest,
-)
-
-# %%
-
-plot_brier_scores_comparisons(
-    X,
-    y_censored_dep,
-    shape=shape_censoring_dep,
-    scale=scale_censoring_dep,
-    kind="dependent",
-    event_of_interest=event_of_interest,
-)
-
-# %%
-
-from hazardous._ipcw import IPCWEstimator, IPCWCoxEstimator, IPCWSampler
-
-
-def plot_censoring_survival_proba(
-    X,
-    y_censored,
-    shape_censoring,
-    scale_censoring,
-    kind,
-):
-    t_max = y_uncensored["duration"].max()
-    time_grid = np.linspace(0, t_max, 100)
-
-    estimator_marginal = IPCWEstimator().fit(y_censored)
-    g_hat_marginal = estimator_marginal.compute_censoring_survival_proba(time_grid)
-
-    estimator_conditional = IPCWCoxEstimator().fit(y_censored, X=X)
-    g_hat_conditional = estimator_conditional.compute_censoring_survival_proba(
-        time_grid,
-        X=X,
-    )
-
-    sampler = IPCWSampler(
-        shape=shape_censoring,
-        scale=scale_censoring,
-    ).fit(y_censored)
-
-    g_star = []
-    for time_step in time_grid:
-        time_step = np.full(y_censored.shape[0], fill_value=time_step)
-        g_star_ = sampler.compute_censoring_survival_proba(time_step)
-        g_star.append(g_star_.mean())
-
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(time_grid, g_hat_marginal, label="$\hat{G}$ with KM")
-    ax.plot(time_grid, g_hat_conditional, label="$\hat{G}$ with Cox")
-    ax.plot(time_grid, g_star, label="$G^*$")
-    ax.set_title(f"Censoring survival proba, with {kind} censoring")
-    plt.legend()
-
-
-plot_censoring_survival_proba(
-    X,
-    y_censored_indep,
-    shape_censoring_indep,
-    scale_censoring_indep,
-    kind="independent",
-)
-
-# %%
-
-plot_censoring_survival_proba(
-    X,
-    y_censored_dep,
-    shape_censoring_dep,
-    scale_censoring_dep,
-    kind="dependent",
-)
-
-# %%
-
-
-def plot_ipcw(X, y_uncensored, y_censored, shape_censoring, scale_censoring, kind):
-    t_max = y_uncensored["duration"].max()
-    time_grid = np.linspace(0, t_max, 100)
-
-    estimator_marginal = IPCWEstimator().fit(y_censored)
-    ipcw_pred_marginal = estimator_marginal.compute_ipcw_at(time_grid)
-
-    estimator_conditional = IPCWCoxEstimator().fit(y_censored, X=X)
-    ipcw_pred_conditional = estimator_conditional.compute_ipcw_at(time_grid, X=X)
-
-    sampler = IPCWSampler(
-        shape=shape_censoring,
-        scale=scale_censoring,
-    ).fit(y_censored)
-
-    ipcw_sampled = []
-    for time_step in time_grid:
-        time_step = np.full(y_censored.shape[0], fill_value=time_step)
-        ipcw_sampled_ = sampler.compute_ipcw_at(time_step)
-        ipcw_sampled.append(ipcw_sampled_.mean())
-
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(time_grid, ipcw_sampled, label="$1/G^*$")
-    ax.plot(time_grid, ipcw_pred_marginal, label="$1/\hat{G}$, using KM")
-    ax.plot(time_grid, ipcw_pred_conditional, label="$1/\hat{G}$, using Cox")
-    ax.set_title(f"IPCW, with {kind} censoring")
-    plt.legend()
-
-
-plot_ipcw(
-    X,
-    y_uncensored,
-    y_censored_indep,
+scores_indep = brier_score_true_probas_incidence(
+    y_train=y_censored_indep,
+    y_test=y_censored_indep,
+    y_pred=y_pred_indep,
+    times=time_grid,
     shape_censoring=shape_censoring_indep,
     scale_censoring=scale_censoring_indep,
-    kind="independent",
+    event_of_interest=event_of_interest,
 )
+
+y_pred_dep = gbi_dep.predict_cumulative_incidence(X, times=time_grid)
+
+scores_dep = brier_score_true_probas_incidence(
+    y_train=y_censored_dep,
+    y_test=y_censored_dep,
+    y_pred=y_pred_dep,
+    times=time_grid,
+    shape_censoring=shape_censoring_dep,
+    scale_censoring=scale_censoring_dep,
+    event_of_interest=event_of_interest,
+)
+
+bs_scores_indep = brier_score_incidence(
+    y_train=y_censored_indep,
+    y_test=y_censored_indep,
+    y_pred=y_pred_indep,
+    times=time_grid,
+    event_of_interest=event_of_interest,
+)
+
+bs_scores_dep = brier_score_incidence(
+    y_train=y_censored_dep,
+    y_test=y_censored_dep,
+    y_pred=y_pred_dep,
+    times=time_grid,
+    event_of_interest=event_of_interest,
+)
+
+fig, ax = plt.subplots(figsize=(12, 5))
+ax.plot(time_grid, scores_indep, label="BS with the true distribution of censoring")
+ax.plot(
+    time_grid,
+    bs_scores_indep,
+    label="BS with the estimate distribution of censoring with KM",
+)
+
+ax.set(
+    title="Time-varying Brier score, Independent censoring",
+)
+ax.legend()
+
+fig, ax = plt.subplots(figsize=(12, 5))
+ax.plot(time_grid, scores_dep, label="BS with the true distribution of censoring")
+ax.plot(
+    time_grid,
+    bs_scores_dep,
+    label="BS with the estimate distribution of censoring with KM",
+)
+
+ax.set(
+    title="Time-varying Brier score, Dependent censoring",
+)
+ax.legend()
 
 # %%
 
-plot_ipcw(
-    X,
-    y_uncensored,
-    y_censored_dep,
-    shape_censoring=shape_censoring_dep,
-    scale_censoring=scale_censoring_dep,
-    kind="dependent",
-)
+from lifelines import AalenJohansenFitter
+
+
+aj = AalenJohansenFitter(calculate_variance=False, seed=seed)
+n_events = y_uncensored["event"].max()
+t_max = y_uncensored["duration"].max()
+
+coarse_timegrid = np.linspace(0, t_max, num=100)
+
+
+# Compute the estimate of the CIFs on a coarse grid.
+for y, censor_dep in zip(
+    [y_censored_indep, y_censored_dep], ["Inpedendant", "Dependant"]
+):
+    censoring_fraction = (y["event"] == 0).mean()
+    _, axes = plt.subplots(figsize=(12, 4), ncols=n_events, sharey=True)
+
+    plt.suptitle(
+        f"Cause-specific cumulative incidence functions, {censor_dep}"
+        f" ({censoring_fraction:.1%} censoring)"
+    )
+
+    for event_id, ax in enumerate(axes, 1):
+        aj.fit(
+            y_uncensored["duration"], y_uncensored["event"], event_of_interest=event_id
+        )
+        aj.plot(label="AJ with uncensored data", ax=ax)
+
+        aj.fit(
+            y["duration"],
+            y["event"],
+            event_of_interest=event_id,
+        )
+        aj.plot(label="AJ with censored data", ax=ax)
+
+        ax.set_xlim(0, 8_000)
+        ax.set_ylim(0, 0.5)
+
+# %%
+
+from hazardous._ipcw import IPCWEstimator, IPCWSampler
+
+for y, (shape, scale), censor_dep in zip(
+    [y_censored_indep, y_censored_dep],
+    [
+        (shape_censoring_indep, scale_censoring_indep),
+        (shape_censoring_dep, scale_censoring_dep),
+    ],
+    ["Independent", "Dependent"],
+):
+    ipcw_est = IPCWEstimator().fit(y)
+    ipcw_y_est = ipcw_est.compute_ipcw_at(time_grid)
+
+    ipcw_true_distrib = IPCWSampler(
+        shape=shape,
+        scale=scale,
+    ).fit(y)
+
+    if censor_dep == "Independent":
+        ipcw_y_true_distrib = ipcw_true_distrib.compute_ipcw_at(time_grid)
+    else:
+        ipcw_y_true_distribs = []
+        for t in time_grid:
+            ipcw_y_true_distrib = ipcw_true_distrib.compute_ipcw_at(
+                times=np.full(shape=n_samples, fill_value=t)
+            )
+            ipcw_y_true_distribs.append(ipcw_y_true_distrib)
+        fig, ax = plt.subplots(figsize=(8, 4))
+        ipcw_y_true_distribs = np.array(ipcw_y_true_distribs)
+        for i in range(ipcw_y_true_distribs.shape[1]):
+            ax.plot(time_grid, ipcw_y_true_distribs[:, i])
+        ipcw_y_true_distrib = ipcw_y_true_distribs.mean(axis=1)
+        ax.set_title(f"Weights for each sample, {censor_dep} censoring")
+        ax.plot()
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(time_grid, ipcw_y_est, label="Estimated weights (KM)")
+    ax.plot(time_grid, ipcw_y_true_distrib, label="True weights (mean)")
+    plt.legend()
+    ax.set_title(f"Weights, {censor_dep} censoring")
+    ax.plot()
+
+
+# %%
+
+
+# ipcw_sample_dep = IPCWSampler(
+#     shape=shape_censoring_dep,
+#     scale=scale_censoring_dep,
+# ).fit(y_censored_dep)
+# ipcw_y_sample_dep = ipcw_sample_dep.compute_ipcw_at(time_grid_rescale)
 
 # %%
