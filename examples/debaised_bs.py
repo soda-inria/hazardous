@@ -16,7 +16,7 @@ from hazardous.data._competing_weibull import (
 
 event_of_interest = 1
 seed = 0
-n_samples = 30_000
+n_samples = 3_000
 
 X, event_durations, duration_argmin = make_complex_features_with_sparse_matrix(
     n_events=3,
@@ -237,7 +237,7 @@ def plot_censoring_survival_proba(
         )
         g_hat_conditional.append(g_hat_conditional_.mean())
 
-    fig, ax = plt.subplots(figsize=(8, 4))
+    _, ax = plt.subplots(figsize=(8, 4))
     ax.plot(time_grid, g_hat_marginal, label="$\hat{G}$ with KM")
     ax.plot(time_grid, g_hat_conditional, label="$\hat{G}$ with Cox")
     ax.plot(time_grid, g_star, label="$G^*$")
@@ -293,7 +293,7 @@ def plot_ipcw(X, y_uncensored, y_censored, shape_censoring, scale_censoring, kin
         )
         ipcw_pred_conditional.append(ipcw_pred_conditional_.mean())
 
-    fig, ax = plt.subplots(figsize=(8, 4))
+    _, ax = plt.subplots(figsize=(8, 4))
     ax.plot(time_grid, ipcw_sampled, label="$1/G^*$")
     ax.plot(time_grid, ipcw_pred_marginal, label="$1/\hat{G}$, using KM")
     ax.plot(time_grid, ipcw_pred_conditional, label="$1/\hat{G}$, using Cox")
@@ -321,4 +321,60 @@ plot_ipcw(
     kind="dependent",
 )
 
+# %%
+
+
+def plot_weights(y_censored, shape, scale, kind="dependent"):
+    t_max = y_censored["duration"].max()
+    time_grid = np.linspace(0, t_max, 100)
+    n_samples = y_censored.shape[0]
+
+    ipcw_est = IPCWEstimator().fit(y_censored)
+    ipcw_y_est = ipcw_est.compute_ipcw_at(time_grid)
+
+    ipcw_true_distrib = IPCWSampler(
+        shape=shape,
+        scale=scale,
+    ).fit(y_censored)
+
+    ipcw_y_true_distribs = []
+    for t in time_grid:
+        ipcw_y_true_distrib = ipcw_true_distrib.compute_ipcw_at(
+            times=np.full(shape=n_samples, fill_value=t)
+        )
+        ipcw_y_true_distribs.append(ipcw_y_true_distrib)
+
+    ipcw_y_true_distribs = np.array(ipcw_y_true_distribs)
+
+    _, ax = plt.subplots(figsize=(8, 4))
+
+    for i in range(min(n_samples, 100)):
+        ax.plot(time_grid, ipcw_y_true_distribs[:, i])
+
+    ax.set_title(f"Weights for each sample, {kind} censoring")
+    ax.plot()
+
+    ipcw_y_true_distrib = ipcw_y_true_distribs.mean(axis=1)
+    _, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(time_grid, ipcw_y_est, label="Estimated weights (KM)")
+    ax.plot(time_grid, ipcw_y_true_distrib, label="True weights (mean)")
+    ax.legend()
+    ax.set_title(f"Weights, {kind} censoring")
+    ax.plot()
+
+
+# %%
+plot_weights(
+    y_censored_dep,
+    shape=shape_censoring_dep,
+    scale=scale_censoring_dep,
+    kind="dependent",
+)
+# %%
+plot_weights(
+    y_censored_indep,
+    shape=shape_censoring_indep,
+    scale=scale_censoring_indep,
+    kind="independent",
+)
 # %%
