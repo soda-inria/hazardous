@@ -45,7 +45,7 @@ y_censored_indep, shape_censoring_indep, scale_censoring_indep = _censor(
     y_uncensored,
     independent_censoring=True,
     X=X,
-    features_censoring_rate=0.8,
+    features_censoring_rate=0.1,
     censoring_relative_scale=0.6,
     random_state=seed,
 )
