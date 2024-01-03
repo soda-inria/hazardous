@@ -27,21 +27,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
     ):
         self.rng = check_random_state(random_state)
         self.hard_zero_fraction = hard_zero_fraction
-        super().__init__(y_train)
-
-    def _weighted_binary_targets(self, y_event, y_duration, times, ipcw_y_duration):
-        """Compute the weighted targets for the given time horizons."""
-        event_before_horizon = y_duration <= times
-        y_before_horizon = np.where(event_before_horizon, y_event, 0)
-
-        ipcw_times = self.ipcw_est.compute_ipcw_at(times)
-        any_event_or_censoring_after_horizon = y_duration > times
-        weights = np.where(any_event_or_censoring_after_horizon, ipcw_times, 0)
-
-        any_observed_event_before_horizon = (y_event > 0) & (y_duration <= times)
-        weights = np.where(any_observed_event_before_horizon, ipcw_y_duration, weights)
-
-        return y_before_horizon, weights
+        super().__init__(y_train, event_of_interest="any")
 
     def draw(self):
         # Sample time horizons uniformly on the observed time range:
@@ -57,23 +43,20 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 
         # Add some some hard zeros to make sure that the model learns to
         # predict 0 incidence at t=0.
-        #
-        # TODO: theoretically or empirically study what kind of bias
-        # oversampling exact zeros introduces, w.r.t. the stochastically
-        # time-integrated Brier score objective.
+
         n_hard_zeros = max(int(self.hard_zero_fraction * n_samples), 1)
         hard_zero_indices = self.rng.choice(n_samples, n_hard_zeros, replace=False)
         times[hard_zero_indices] = 0.0
 
-        event = self.event_train
-
         y_binary, sample_weight = self._weighted_binary_targets(
-            event,
+            self.any_event_train,
             duration,
             times,
             ipcw_y_duration=self.ipcw_train,
         )
-        return times.reshape(-1, 1), y_binary, sample_weight
+        y_before_horizon = y_binary * self.event_train
+
+        return times.reshape(-1, 1), y_before_horizon, sample_weight
 
 
 class GBMultiIncidence(BaseEstimator, ClassifierMixin):
@@ -183,6 +166,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 y_targets,
                 sample_weight,
             ) = self.weighted_targets_.draw()
+
             X_with_time = np.hstack([sampled_times, X])
             self.estimator_.max_iter += 1
             self.estimator_.fit(X_with_time, y_targets, sample_weight=sample_weight)
@@ -191,8 +175,8 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
             # can handle competing risks.
 
         # To be use at a fixed horizon classifier when setting time_horizon.
-
-        self.classes_ = np.array(["no_event"] + [f"event_{i}" for i in self.event_ids_])
+        events_names = [f"event_{i}" for i in range(1, len(self.event_ids_))]
+        self.classes_ = np.array(["no_event"] + events_names)
         return self
 
     def predict_proba(self, X, time_horizon=None):
@@ -227,6 +211,18 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         return cif
 
     def predict_cumulative_incidence(self, X, times=None):
+        """Estimate the cumulative incidence function for all events.
+
+        .. math::
+
+        \sum_{k=1}^K \mathbb{P}(T^* \leq t \cap \Delta = k) + \mathbb{P}(T^* > t) = 1
+
+        Returns
+        -------
+        predicted_curves : array-like of shape (n_samples, n_events + 1)
+            The first column holds the survival probability to any event and others the
+            incicence probabilities for each event.
+        """
         if times is None:
             times = self.time_grid_
 
@@ -241,17 +237,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
             predictions_at_t = self.estimator_.predict_proba(X_with_time)
             predictions_at_all_times.append(predictions_at_t)
 
-        # HistGradientBoostingClassifier does not guarantee that the
-        # predictions are in [0, 1].
-        #
-        #
-        # .. math::
-        #
-        # \sum_{k=1}^K \mathbb{P}(T^* \leq t \cap \Delta = k) + \mathbb{P}(T^* > t) = 1
-        #
-        predicted_curves = np.array(predictions_at_all_times)
-        predicted_curves = np.swapaxes(predicted_curves, 2, 0)
-        predicted_curves = np.clip(predicted_curves, 0, 1)
+        predicted_curves = np.array(predictions_at_all_times).swapaxes(2, 0)
 
         return predicted_curves
 
@@ -312,6 +298,8 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         -------
         score : float
             The time-integrated Brier score (IBS) or INLL.
+
+        #TODO: implement time integrated NLL.
         """
 
         if self.loss == "inll":
