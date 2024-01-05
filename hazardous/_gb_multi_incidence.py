@@ -6,6 +6,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
+from ._comp_risks_loss import MultinomialBinaryLoss
 from .metrics._brier_score import IncidenceScoreComputer
 from .utils import check_y_survival
 
@@ -60,7 +61,6 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 
 
 class GBMultiIncidence(BaseEstimator, ClassifierMixin):
-
     """Cause-specific Cumulative Incidence Function (CIF) with GBDT.
 
     This model returns the cause-specific CIFs for each event type as well as
@@ -125,8 +125,8 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         X = check_array(X)
         event, duration = check_y_survival(y)
 
-        self.event_ids_ = np.unique(event)
-
+        # Add 0 as a special event id for the survival function.
+        self.event_ids_ = np.array(list(set([0]) | set(event)))
         # The time horizon is concatenated as an additional input feature
         # before the features of X
 
@@ -269,11 +269,27 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 max_depth=self.max_depth,
                 min_samples_leaf=self.min_samples_leaf,
             )
+        elif self.loss == "competing_risks":
+            loss = MultinomialBinaryLoss(n_classes=len(self.event_ids_))
+            # class_weight = {0: 0, **{event: 1 for event in self.event_ids_[1:]}}
+            return HistGradientBoostingClassifier(
+                loss=loss,
+                class_weight=None,
+                max_iter=1,
+                warm_start=True,
+                learning_rate=self.learning_rate,
+                max_leaf_nodes=self.max_leaf_nodes,
+                max_depth=self.max_depth,
+                min_samples_leaf=self.min_samples_leaf,
+            )
         else:
-            raise ValueError(f"Parameter 'loss' must be 'inll', got {self.loss}.")
+            raise ValueError(
+                "Parameter 'loss' must be 'inll' or 'competing_risks', got"
+                f" {self.loss}."
+            )
 
     def score(self, X, y):
-        """Return INLL.
+        """Return INLL or competing_risks loss (proper scoring rule).
 
         This returns the negative of a proper scoring rule, so that the higher
         the value, the better the model to be consistent with the scoring
