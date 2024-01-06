@@ -64,7 +64,6 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
             # * 1 when the censoring event has happened
             # * 0 when the censoring hasn't happened yet
             # * 0 when an any event has happened (the sample weight is zero).
-            # y_binary is the any event incidence.
 
             if not hasattr(self, "inv_any_survival_train"):
                 self.inv_any_survival_train = self.ipcw_est.compute_ipcw_at(
