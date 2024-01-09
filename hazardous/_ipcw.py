@@ -21,13 +21,13 @@ class BaseIPCW(BaseEstimator):
         event, duration = check_y_survival(y)
         censoring = event == 0
 
-        self.km_ = KaplanMeierFitter()
-        self.km_.fit(
+        km = KaplanMeierFitter()
+        km.fit(
             durations=duration,
             event_observed=censoring,
         )
 
-        df = self.km_.survival_function_
+        df = km.survival_function_
         self.unique_times_ = df.index
         self.censoring_survival_probs_ = df.values[:, 0]
 
@@ -165,6 +165,7 @@ class IPCWSampler(BaseIPCW):
     def __init__(self, shape, scale):
         self.shape = shape
         self.scale = scale
+        super().__init__()
 
     def compute_censoring_survival_proba(self, times, X=None, ipcw_training=False):
         """Compute the censoring survival proba G for a given array of time.
@@ -195,6 +196,7 @@ class IPCWCoxEstimator(BaseIPCW):
         self.transformer = transformer
         self.cox_estimator = cox_estimator
         self.n_time_grid_steps = n_time_grid_steps
+        super().__init__()
 
     def fit(self, y, X=None):
         """Fit a nonlinear transformer and a CoxPHFitter estimator.

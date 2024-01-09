@@ -36,6 +36,9 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
             event_of_interest="any",
             ipcw_est=ipcw_est,
         )
+        # Precompute the censoring probabilities at the time of the events on the
+        # training set:
+        self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
 
     def draw(self, ipcw_training=False, X=None):
         # Sample time horizons uniformly on the observed time range:
@@ -170,6 +173,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         n_time_grid_steps=100,
         time_horizon=None,
         n_iter_before_feedback=20,
+        ipcw_est=None,
         random_state=None,
     ):
         self.loss = loss
@@ -184,6 +188,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         self.n_time_grid_steps = n_time_grid_steps
         self.time_horizon = time_horizon
         self.n_iter_before_feedback = n_iter_before_feedback
+        self.ipcw_est = ipcw_est
         self.random_state = random_state
 
     def fit(self, X, y, times=None):
@@ -191,9 +196,6 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         event, duration = check_y_survival(y)
 
         self.event_ids_ = np.unique(event)
-
-        # The time horizon is concatenated as an additional input feature
-        # before the features of X
 
         self.estimator_ = self._build_base_estimator()
 
@@ -215,12 +217,17 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
             self.time_grid_ = times.copy()
             self.time_grid_.sort()
 
-        ipcw_feedback_est = AlternatingCensoringEst(incidence_est=self.estimator_)
+        if self.ipcw_est is None:
+            ipcw_est = AlternatingCensoringEst(incidence_est=self.estimator_)
+        else:
+            ipcw_est = self.ipcw_est
+
         self.weighted_targets_ = WeightedMultiClassTargetSampler(
             y,
             hard_zero_fraction=self.hard_zero_fraction,
             random_state=self.random_state,
-            ipcw_est=ipcw_feedback_est,
+            ipcw_est=ipcw_est,
+            n_iter_before_feedback=self.n_iter_before_feedback,
         )
 
         iterator = range(self.n_iter)
@@ -238,7 +245,9 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
             self.estimator_.max_iter += 1
             self.estimator_.fit(X_with_time, y_targets, sample_weight=sample_weight)
 
-            if idx_iter % self.n_iter_before_feedback == 0:
+            if (idx_iter % self.n_iter_before_feedback == 0) and isinstance(
+                ipcw_est, AlternatingCensoringEst
+            ):
                 self.weighted_targets_.fit(X)
 
             # XXX: implement verbose logging with a version of IBS that

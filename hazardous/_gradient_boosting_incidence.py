@@ -43,6 +43,9 @@ class WeightedBinaryTargetSampler(IncidenceScoreComputer):
         self.rng = check_random_state(random_state)
         self.hard_zero_fraction = hard_zero_fraction
         super().__init__(y_train, event_of_interest)
+        # Precompute the censoring probabilities at the time of the events on the
+        # training set:
+        self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
 
     def draw(self):
         # Sample time horizons uniformly on the observed time range:

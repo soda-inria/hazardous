@@ -3,53 +3,16 @@ The Alternating Censoring Estimator (ACE) should be equivalent to
 using the Gradient Boosting Incidence (GBI) to predict survival to censoring,
 both with a marginal IPCW estimator.
 """
-# %%
 
+# %%
 import numpy as np
 from matplotlib import pyplot as plt
-from lifelines import KaplanMeierFitter
-from scipy.interpolate import interp1d
-
-
-# This estimator emulates the any event survival estimator provided
-# by the GBI.
-class KaplanMeierEstimator:
-    def fit(self, y):
-        self.km_ = KaplanMeierFitter()
-        self.km_.fit(
-            durations=y["duration"],
-            event_observed=y["event"] > 0,
-        )
-
-        df = self.km_.cumulative_density_
-        self.cumulative_density_ = df.values[:, 0]
-        self.unique_times_ = df.index
-
-        self.cumulative_density_func_ = interp1d(
-            self.unique_times_,
-            self.cumulative_density_,
-            kind="previous",
-            bounds_error=False,
-            fill_value="extrapolate",
-        )
-        return self
-
-    def predict_proba(self, times):
-        if times.ndim == 2:
-            times = times[:, 0]
-        any_event = self.cumulative_density_func_(times).reshape(-1, 1)
-        # The class 0 is the survival to any event S(t).
-        # The class 1 is the any event incidence.
-        return np.hstack([1 - any_event, any_event])
-
-
-# %%
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
 
 seed = 0
 X, y = make_synthetic_competing_weibull(
     n_events=3,
-    n_samples=30_000,
+    n_samples=3_000,
     n_features=5,
     independent_censoring=False,
     complex_features=False,
@@ -60,6 +23,7 @@ X, y = make_synthetic_competing_weibull(
 X.shape
 
 # %%
+from hazardous._kaplan_meier import KaplanMeierEstimator
 from hazardous._gb_multi_incidence import WeightedMultiClassTargetSampler
 from hazardous._ipcw import AlternatingCensoringEst
 
@@ -69,7 +33,7 @@ ace_est = AlternatingCensoringEst(
     incidence_est=incidence_est,
     max_leaf_nodes=5,
     min_samples_leaf=50,
-    monotonic_cst=None,  # [1] + [0] * 6,
+    monotonic_cst=None,
 )
 ws = WeightedMultiClassTargetSampler(
     y,
@@ -100,11 +64,11 @@ y_pred_ace.shape
 # %%
 from hazardous._gradient_boosting_incidence import GradientBoostingIncidence
 
-y_censored = y.copy()
-y_censored["event"] = y_censored["event"] == 0
+y_censoring = y.copy()
+y_censoring["event"] = y_censoring["event"] == 0
 
 gbi = GradientBoostingIncidence(n_iter=100)
-gbi.fit(X, y_censored)
+gbi.fit(X, y_censoring)
 y_pred_gbi = gbi.predict_survival_function(X, times=time_grid)
 y_pred_gbi.shape
 
@@ -130,9 +94,47 @@ n_samples = 3
 fig, axes = plt.subplots(figsize=(12, 5), ncols=n_samples)
 
 for sample_id in range(n_samples):
-    axes[sample_id].plot(time_grid, y_pred_gbi[sample_id], label=f"GBI {sample_id}")
-    axes[sample_id].plot(time_grid, y_pred_ace[sample_id], label=f"ACE {sample_id}")
-    axes[sample_id].legend()
+    ax = axes[sample_id]
+    ax.plot(time_grid, y_pred_gbi[sample_id], label=f"GBI {sample_id}")
+    ax.plot(time_grid, y_pred_ace[sample_id], label=f"ACE {sample_id}")
+    ax.set_title(f"sample {sample_id}")
+    ax.legend()
 fig.suptitle("Individual survival to censoring probabilities G(t|x)")
+plt.grid()
+
+# %%
+from tqdm import tqdm
+import seaborn
+
+seaborn.set_context("paper")
+
+
+n_iters = [1, 5, 10, 20, 50, 100]
+palette = plt.colormaps["cool"]
+
+fig, ax = plt.subplots()
+ax.plot(
+    time_grid,
+    y_pred_marginal,
+    label="Kaplan Meier",
+    color="k",
+    linestyle="--",
+)
+for idx_iter, n_iter in enumerate(tqdm(n_iters), 1):
+    gbi = GradientBoostingIncidence(n_iter=n_iter, show_progressbar=False)
+    gbi.fit(X, y_censoring)
+    y_pred_gbi = gbi.predict_survival_function(X, times=time_grid)
+    ax.plot(
+        time_grid,
+        y_pred_gbi.mean(axis=0),
+        label=f"GBI {n_iter=}",
+        color=palette(idx_iter / len(n_iters)),
+    )
+ax.legend()
+ax.set_xlabel("Time grid")
+ax.set_ylabel("Survival probability of censoring")
+fig.suptitle(
+    "The impact of the number of trees of the GBI on the marginal survival probability."
+)
 plt.grid()
 # %%

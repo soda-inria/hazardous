@@ -1,12 +1,11 @@
 import numpy as np
 import pandas as pd
 import pytest
-from lifelines import KaplanMeierFitter
 from numpy.testing import assert_almost_equal, assert_array_equal
-from scipy.interpolate import interp1d
 
 from hazardous._gb_multi_incidence import WeightedMultiClassTargetSampler
 from hazardous._ipcw import AlternatingCensoringEst
+from hazardous._kaplan_meier import KaplanMeierEstimator
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
 
 SEED_RANGE = range(3)
@@ -14,14 +13,13 @@ SEED_RANGE = range(3)
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
 def test_simple_weight_sampler_draw(seed):
-    _, y = make_synthetic_competing_weibull(
+    bunch = make_synthetic_competing_weibull(
         independent_censoring=False,
         complex_features=True,
-        return_X_y=True,
         target_rounding=None,
         random_state=seed,
     )
-    y_sample = y.head(10)
+    y_sample = bunch.y.head(10)
     event, duration = y_sample["event"].to_numpy(), y_sample["duration"].to_numpy()
 
     ws = WeightedMultiClassTargetSampler(y_sample, random_state=seed)
@@ -39,36 +37,6 @@ def test_simple_weight_sampler_draw(seed):
     previous_censoring = before_horizon & (event == 0)
     assert all(sample_weight[previous_censoring] == 0)
     assert all(sample_weight[~previous_censoring] > 0)
-
-
-class KaplanMeierEstimator:
-    def fit(self, y):
-        self.km_ = KaplanMeierFitter()
-        self.km_.fit(
-            durations=y["duration"],
-            event_observed=y["event"] > 0,
-        )
-
-        df = self.km_.cumulative_density_
-        self.cumulative_density_ = df.values[:, 0]
-        self.unique_times_ = df.index
-
-        self.cumulative_density_func_ = interp1d(
-            self.unique_times_,
-            self.cumulative_density_,
-            kind="previous",
-            bounds_error=False,
-            fill_value="extrapolate",
-        )
-        return self
-
-    def predict_proba(self, times):
-        if times.ndim == 2:
-            times = times[:, 0]
-        any_event = self.cumulative_density_func_(times).reshape(-1, 1)
-        # The class 0 is the survival to any event S(t).
-        # The class 1 is the any event incidence.
-        return np.hstack([1 - any_event, any_event])
 
 
 def test_weighted_binary_targets():
@@ -132,16 +100,16 @@ def test_weighted_binary_targets():
 
 
 def test_weight_sampler_fit(seed=0):
-    X, y = make_synthetic_competing_weibull(
+    bunch = make_synthetic_competing_weibull(
         n_events=3,
         n_samples=3000,
         n_features=2,
         independent_censoring=False,
         complex_features=True,
-        return_X_y=True,
         target_rounding=None,
         random_state=seed,
     )
+    X, y = bunch.X, bunch.y
 
     incidence_est = KaplanMeierEstimator()
     ipcw_est = AlternatingCensoringEst(incidence_est=incidence_est)
