@@ -50,9 +50,8 @@ class IncidenceScoreComputer:
         # Estimate the censoring distribution from the training set
         # using Kaplan-Meier.
         if ipcw_est is None:
-            self.ipcw_est = IPCWEstimator().fit(y)
-        else:
-            self.ipcw_est = ipcw_est.fit(y)
+            ipcw_est = IPCWEstimator()
+        self.ipcw_est = ipcw_est.fit(y)
 
     def brier_score_survival(self, y_true, y_pred, times):
         """Time-dependent Brier score of a survival function estimate.
@@ -195,7 +194,15 @@ class IncidenceScoreComputer:
         time_span = sorted_times[-1] - sorted_times[0]
         return np.trapz(sorted_scores, sorted_times) / time_span
 
-    def _weighted_binary_targets(self, y_event, y_duration, times, ipcw_y_duration):
+    def _weighted_binary_targets(
+        self,
+        y_event,
+        y_duration,
+        times,
+        ipcw_y_duration,
+        ipcw_training=False,
+        X=None,
+    ):
         if self.event_of_interest == "any":
             # y should already be provided as binary indicator
             k = 1
@@ -227,7 +234,11 @@ class IncidenceScoreComputer:
         event_k_before_horizon = (y_event == k) & (y_duration <= times)
         y_binary = event_k_before_horizon.astype(np.int32)
 
-        ipcw_times = self.ipcw_est.compute_ipcw_at(times)
+        ipcw_times = self.ipcw_est.compute_ipcw_at(
+            times,
+            X=X,
+            ipcw_training=ipcw_training,
+        )
         any_event_or_censoring_after_horizon = y_duration > times
         weights = np.where(any_event_or_censoring_after_horizon, ipcw_times, 0)
 
@@ -562,7 +573,7 @@ def integrated_brier_score_incidence(
     return computer.integrated_brier_score_incidence(y_test, y_pred, times)
 
 
-def brier_score_oracle_probas_incidence(
+def brier_score_incidence_oracle(
     y_train,
     y_test,
     y_pred,
@@ -578,7 +589,7 @@ def brier_score_oracle_probas_incidence(
     return computer.brier_score_incidence(y_test, y_pred, times)
 
 
-def integrated_brier_score_oracle_probas_incidence(
+def integrated_brier_score_incidence_oracle(
     y_train,
     y_test,
     y_pred,

@@ -57,7 +57,7 @@ def plot_events(y, kind):
     ax.set(title=title)
 
 
-y_censored_indep, shape_censoring_indep, scale_censoring_indep = _censor(
+bunch = _censor(
     y_uncensored,
     independent_censoring=True,
     X=X,
@@ -65,6 +65,9 @@ y_censored_indep, shape_censoring_indep, scale_censoring_indep = _censor(
     censoring_relative_scale=1,
     random_state=seed,
 )
+y_censored_indep = bunch.y_censored
+shape_censoring_indep = bunch.shape_censoring
+scale_censoring_indep = bunch.scale_censoring
 plot_events(y_censored_indep, kind="independent")
 
 
@@ -72,14 +75,17 @@ plot_events(y_censored_indep, kind="independent")
 from hazardous.data._competing_weibull import _censor
 
 
-y_censored_dep, shape_censoring_dep, scale_censoring_dep = _censor(
+bunch = _censor(
     y_uncensored,
     independent_censoring=False,
     X=X,
     features_censoring_rate=0.5,
-    censoring_relative_scale=0.5,
+    censoring_relative_scale=1,
     random_state=seed,
 )
+y_censored_dep = bunch.y_censored
+shape_censoring_dep = bunch.shape_censoring
+scale_censoring_dep = bunch.scale_censoring
 plot_events(y_censored_dep, kind="dependent")
 
 # %%
@@ -132,7 +138,7 @@ from hazardous import GradientBoostingIncidence
 
 from hazardous.metrics._brier_score import (
     brier_score_incidence,
-    brier_score_oracle_probas_incidence,
+    brier_score_incidence_oracle,
 )
 
 
@@ -152,7 +158,7 @@ def plot_brier_scores_comparisons(X, y, shape, scale, kind, event_of_interest=1)
     y_pred = gbi.predict_cumulative_incidence(X)
 
     time_grid = gbi.time_grid_
-    debiased_bs_scores = brier_score_oracle_probas_incidence(
+    debiased_bs_scores = brier_score_incidence_oracle(
         y_train=y,
         y_test=y,
         y_pred=y_pred,
@@ -267,6 +273,7 @@ plot_censoring_survival_proba(
 
 
 def plot_ipcw(X, y_uncensored, y_censored, shape_censoring, scale_censoring, kind):
+    n_samples = y_censored.shape[0]
     t_max = y_uncensored["duration"].max()
     time_grid = np.linspace(0, t_max, 100)
 
@@ -280,18 +287,21 @@ def plot_ipcw(X, y_uncensored, y_censored, shape_censoring, scale_censoring, kin
         scale=scale_censoring,
     ).fit(y_censored)
 
-    ipcw_sampled, ipcw_pred_conditional = [], []
-    for time_step in time_grid:
-        time_step = np.full(y_censored.shape[0], fill_value=time_step)
+    individual_ipcw_sampled, ipcw_sampled, ipcw_pred_conditional = [], [], []
+    n_indiv = min(100, n_samples)
+    for t in time_grid:
+        t = np.full(n_samples, fill_value=t)
 
-        ipcw_sampled_ = sampler.compute_ipcw_at(time_step)
+        ipcw_sampled_ = sampler.compute_ipcw_at(t)
         ipcw_sampled.append(ipcw_sampled_.mean())
+        individual_ipcw_sampled.append(ipcw_sampled_[:n_indiv])
 
         ipcw_pred_conditional_ = estimator_conditional.compute_ipcw_at(
-            time_step,
+            t,
             X=X,
         )
         ipcw_pred_conditional.append(ipcw_pred_conditional_.mean())
+    individual_ipcw_sampled = np.vstack(individual_ipcw_sampled).T
 
     _, ax = plt.subplots(figsize=(8, 4))
     ax.plot(time_grid, ipcw_sampled, label="$1/G^*$")
@@ -299,6 +309,12 @@ def plot_ipcw(X, y_uncensored, y_censored, shape_censoring, scale_censoring, kin
     ax.plot(time_grid, ipcw_pred_conditional, label="$1/\hat{G}$, using Cox")
     ax.set_title(f"IPCW, with {kind} censoring")
     plt.legend()
+
+    _, ax = plt.subplots(figsize=(8, 4))
+
+    for idx in range(n_indiv):
+        ax.plot(time_grid, individual_ipcw_sampled[idx])
+    ax.set_title(f"Weights for each sample, {kind} censoring")
 
 
 plot_ipcw(

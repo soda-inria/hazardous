@@ -51,11 +51,11 @@ from lifelines import AalenJohansenFitter
 
 gb_multi_incidence = GBMultiIncidence(
     learning_rate=0.03,
-    n_iter=300,
+    n_iter=100,
     max_leaf_nodes=5,
     hard_zero_fraction=0.1,
     min_samples_leaf=50,
-    loss="competing_risks",
+    loss="inll",
     show_progressbar=False,
     random_state=0,
 )
@@ -71,7 +71,7 @@ gb_incidence = GradientBoostingIncidence(
     random_state=0,
 )
 
-aj = AalenJohansenFitter(calculate_variance=True, seed=0)
+aj = AalenJohansenFitter(calculate_variance=False, seed=0)
 
 # %%
 
@@ -197,7 +197,7 @@ plot_cumulative_incidence_functions(
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
 
 
-X, y_censored, y_uncensored = make_synthetic_competing_weibull(
+bunch = make_synthetic_competing_weibull(
     n_samples=3_000,
     base_scale=1_000,
     n_features=10,
@@ -205,25 +205,25 @@ X, y_censored, y_uncensored = make_synthetic_competing_weibull(
     degree_interaction=2,
     independent_censoring=True,
     features_censoring_rate=0.2,
-    return_uncensored_data=True,
     feature_rounding=3,
     target_rounding=None,
     censoring_relative_scale=1.0,
     complex_features=True,
-    return_X_y=True,
     random_state=seed,
 )
+X, y_censored, y_uncensored = bunch.X, bunch.y, bunch.y_uncensored
+X.shape, y_censored.shape
 
 # %%
 from sklearn.model_selection import train_test_split
 
 gb_multi_incidence = GBMultiIncidence(
     learning_rate=0.03,
-    n_iter=150,
+    n_iter=100,
     max_leaf_nodes=5,
     hard_zero_fraction=0.1,
     min_samples_leaf=50,
-    loss="competing_risks",
+    loss="inll",
     show_progressbar=False,
     random_state=0,
 )
@@ -294,12 +294,12 @@ def plot_cifs(
 
     if gb_multi_incidence is not None:
         gb_multi_incidence = GBMultiIncidence(
-            learning_rate=0.05,
-            n_iter=200,
-            max_leaf_nodes=10,
+            learning_rate=0.03,
+            n_iter=100,
+            max_leaf_nodes=5,
             hard_zero_fraction=0.1,
             min_samples_leaf=50,
-            loss="competing_risks",
+            loss="inll",
             show_progressbar=False,
             random_state=0,
         )

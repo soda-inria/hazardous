@@ -16,8 +16,6 @@ bunch = make_synthetic_competing_weibull(
     n_features=5,
     independent_censoring=independent_censoring,
     complex_features=True,
-    return_censoring_shape_scale=True,
-    return_X_y=False,
     target_rounding=None,
     censoring_relative_scale=1,
     random_state=seed,
@@ -69,8 +67,8 @@ plt.grid()
 
 # %%
 from hazardous.metrics._brier_score import (
-    brier_score_true_probas_incidence,
-    integrated_brier_score_true_probas_incidence,
+    brier_score_incidence_oracle,
+    integrated_brier_score_incidence_oracle,
 )
 
 fig, ax = plt.subplots()
@@ -86,7 +84,7 @@ models = {
 }
 
 for name, y_pred in models.items():
-    debiased_brier_score = brier_score_true_probas_incidence(
+    debiased_brier_score = brier_score_incidence_oracle(
         y_train=y_train,
         y_test=y_test,
         y_pred=y_pred,
@@ -95,7 +93,7 @@ for name, y_pred in models.items():
         scale_censoring=scale_censoring,
     )
 
-    idbs = integrated_brier_score_true_probas_incidence(
+    idbs = integrated_brier_score_incidence_oracle(
         y_train=y_train,
         y_test=y_test,
         y_pred=y_pred,

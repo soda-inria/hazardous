@@ -78,7 +78,7 @@ def _censor(
         The Weibull scale parameter used to generate the censoring distribution.
     """
     rng = check_random_state(random_state)
-    if censoring_relative_scale == 0 or censoring_relative_scale is None:
+    if censoring_relative_scale is None:
         return Bunch(
             y_censored=y_uncensored,
             shape_censoring=None,
@@ -102,7 +102,7 @@ def _censor(
             random_state=random_state,
         )
         SS_star.columns = ["shape_0", "scale_0"]
-        SS_star["scale_0"] *= mean_duration
+        SS_star["scale_0"] *= mean_duration * censoring_relative_scale
         scale_censoring = SS_star["scale_0"]
         shape_censoring = SS_star["shape_0"]
 
@@ -392,6 +392,7 @@ def make_synthetic_competing_weibull(
     censoring_relative_scale=1.5,
     random_state=0,
     complex_features=False,
+    return_X_y=False,
 ):
     """
     Creating a synthetic dataset to make competing risks.
@@ -434,7 +435,7 @@ def make_synthetic_competing_weibull(
             duration=event_durations[duration_argmin, np.arange(n_samples)],
         )
     )
-    bunch = _censor(
+    censor_bunch = _censor(
         y_uncensored,
         independent_censoring=independent_censoring,
         X=X,
@@ -442,7 +443,9 @@ def make_synthetic_competing_weibull(
         censoring_relative_scale=censoring_relative_scale,
         random_state=random_state,
     )
-    y_censored = bunch.y_censored
+    y_censored = censor_bunch.y_censored
+    shape_censoring = censor_bunch.shape_censoring
+    scale_censoring = censor_bunch.scale_censoring
 
     if feature_rounding is not None:
         X = X.round(feature_rounding)
@@ -451,13 +454,13 @@ def make_synthetic_competing_weibull(
         y_censored["duration"] = y_censored["duration"].round(target_rounding)
         y_uncensored = y_uncensored.round(target_rounding)
 
-    frame = pd.concat([X, y_censored], axis=1)
+    if return_X_y:
+        return X, y_censored
 
     return Bunch(
-        data=frame[X.columns],
-        target=frame[y_censored.columns],
-        target_uncensored=y_uncensored,
-        shape_censoring=bunch.shape_censoring,
-        scale_censoring=bunch.scale_censoring,
-        frame=frame,
+        X=X,
+        y=y_censored,
+        y_uncensored=y_uncensored,
+        shape_censoring=shape_censoring,
+        scale_censoring=scale_censoring,
     )

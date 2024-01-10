@@ -7,6 +7,7 @@ from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
 from ._comp_risks_loss import MultinomialBinaryLoss
+from ._ipcw import AlternatingCensoringEst
 from .metrics._brier_score import IncidenceScoreComputer
 from .utils import check_y_survival
 
@@ -25,16 +26,22 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         y_train,
         hard_zero_fraction=0.01,
         random_state=None,
+        ipcw_est=None,
+        n_iter_before_feedback=20,
     ):
         self.rng = check_random_state(random_state)
         self.hard_zero_fraction = hard_zero_fraction
-        super().__init__(y_train, event_of_interest="any")
-
+        self.n_iter_before_feedback = n_iter_before_feedback
+        super().__init__(
+            y_train,
+            event_of_interest="any",
+            ipcw_est=ipcw_est,
+        )
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
         self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
 
-    def draw(self):
+    def draw(self, ipcw_training=False, X=None):
         # Sample time horizons uniformly on the observed time range:
         duration = self.duration_train
         n_samples = duration.shape[0]
@@ -53,15 +60,71 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         hard_zero_indices = self.rng.choice(n_samples, n_hard_zeros, replace=False)
         times[hard_zero_indices] = 0.0
 
-        y_binary, sample_weight = self._weighted_binary_targets(
-            self.any_event_train,
-            duration,
-            times,
-            ipcw_y_duration=self.ipcw_train,
-        )
-        y_before_horizon = y_binary * self.event_train
+        if ipcw_training:
+            # During the training of the ICPW, we estimate G(t) = P(C > t)
+            # 1 / S(t) = 1 / P(T^* > t) as sample weight.
+            # Since 1 = P(C <= t) + P(C > t), our training target is the censoring
+            # incidence, whose value is:
+            # * 1 when the censoring event has happened
+            # * 0 when the censoring hasn't happened yet
+            # * 0 when an any event has happened (the sample weight is zero).
 
-        return times.reshape(-1, 1), y_before_horizon, sample_weight
+            if not hasattr(self, "inv_any_survival_train"):
+                self.inv_any_survival_train = self.ipcw_est.compute_ipcw_at(
+                    self.duration_train, ipcw_training=True, X=X
+                )
+
+            all_time_censoring = self.any_event_train == 0
+            y_targets, sample_weight = self._weighted_binary_targets(
+                all_time_censoring,
+                duration,
+                times,
+                ipcw_y_duration=self.inv_any_survival_train,
+                ipcw_training=True,
+                X=X,
+            )
+        else:
+            # During the training of the multi incidence estimator, we estimate
+            # P(T^* <= t & Delta = k) using 1 / P(C > t) as sample weight.
+            # Since 1 = P(T^* <= t) + P(T^* > t), our training target is the
+            # multi event incidence, whose value is:
+            # * k when the event k has happened first
+            # * 0 when no event has happened yet
+            # * 0 when the censoring has happened first (the sample weight is zero).
+            y_binary, sample_weight = self._weighted_binary_targets(
+                self.any_event_train,
+                duration,
+                times,
+                ipcw_y_duration=self.ipcw_train,
+                ipcw_training=False,
+                X=X,
+            )
+            y_targets = y_binary * self.event_train
+
+        return times.reshape(-1, 1), y_targets, sample_weight
+
+    def fit(self, X):
+        self.inv_any_survival_train = self.ipcw_est.compute_ipcw_at(
+            self.duration_train, ipcw_training=True, X=X
+        )
+
+        for _ in range(self.n_iter_before_feedback):
+            sampled_times, y_targets, sample_weight = self.draw(
+                ipcw_training=True,
+                X=X,
+            )
+            self.ipcw_est.fit_censoring_est(
+                X,
+                y_targets,
+                times=sampled_times,
+                sample_weight=sample_weight,
+            )
+
+        self.ipcw_train = self.ipcw_est.compute_ipcw_at(
+            self.duration_train,
+            ipcw_training=False,
+            X=X,
+        )
 
 
 class GBMultiIncidence(BaseEstimator, ClassifierMixin):
@@ -109,6 +172,8 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         show_progressbar=True,
         n_time_grid_steps=100,
         time_horizon=None,
+        n_iter_before_feedback=20,
+        ipcw_est=None,
         random_state=None,
     ):
         self.loss = loss
@@ -121,6 +186,8 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         self.show_progressbar = show_progressbar
         self.n_time_grid_steps = n_time_grid_steps
         self.time_horizon = time_horizon
+        self.n_iter_before_feedback = n_iter_before_feedback
+        self.ipcw_est = ipcw_est
         self.random_state = random_state
 
     def fit(self, X, y, times=None):
@@ -129,8 +196,6 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
 
         # Add 0 as a special event id for the survival function.
         self.event_ids_ = np.array(list(set([0]) | set(event)))
-        # The time horizon is concatenated as an additional input feature
-        # before the features of X
 
         self.estimator_ = self._build_base_estimator()
 
@@ -152,25 +217,38 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
             self.time_grid_ = times.copy()
             self.time_grid_.sort()
 
+        if self.ipcw_est is None:
+            ipcw_est = AlternatingCensoringEst(incidence_est=self.estimator_)
+        else:
+            ipcw_est = self.ipcw_est
+
         self.weighted_targets_ = WeightedMultiClassTargetSampler(
             y,
             hard_zero_fraction=self.hard_zero_fraction,
             random_state=self.random_state,
+            ipcw_est=ipcw_est,
+            n_iter_before_feedback=self.n_iter_before_feedback,
         )
 
         iterator = range(self.n_iter)
         if self.show_progressbar:
             iterator = tqdm(iterator)
 
-        for _ in iterator:
+        for idx_iter in iterator:
             (
                 sampled_times,
                 y_targets,
                 sample_weight,
-            ) = self.weighted_targets_.draw()
+            ) = self.weighted_targets_.draw(X=X, ipcw_training=False)
+
             X_with_time = np.hstack([sampled_times, X])
             self.estimator_.max_iter += 1
             self.estimator_.fit(X_with_time, y_targets, sample_weight=sample_weight)
+
+            if (idx_iter % self.n_iter_before_feedback == 0) and isinstance(
+                ipcw_est, AlternatingCensoringEst
+            ):
+                self.weighted_targets_.fit(X)
 
             # XXX: implement verbose logging with a version of IBS that
             # can handle competing risks.
@@ -291,7 +369,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
             )
 
     def score(self, X, y):
-        """Return INLL or competing_risks loss (proper scoring rule).
+        """Return IBS or competing_risks loss (proper scoring rule).
 
         This returns the negative of a proper scoring rule, so that the higher
         the value, the better the model to be consistent with the scoring
@@ -319,8 +397,16 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
 
         #TODO: implement time integrated NLL.
         """
+        predicted_curves = self.predict_cumulative_incidence(X)
 
-        if self.loss == "inll":
-            return -self.estimator_.score(X, y)
-        else:
-            raise ValueError(f"Parameter 'loss' must be 'inll', got {self.loss}.")
+        ibs_events = []
+        for event in range(len(self.event_ids_[1:])):
+            predicted_curves_for_event = predicted_curves[:, event]
+            ibs_events.append(
+                -self.weighted_targets_.integrated_brier_score_incidence(
+                    y,
+                    predicted_curves_for_event,
+                    times=self.time_grid_,
+                )
+            )
+        return np.mean(ibs_events)
