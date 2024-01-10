@@ -54,10 +54,6 @@ class IncidenceScoreComputer:
         else:
             self.ipcw_est = ipcw_est.fit(y)
 
-        # Precompute the censoring probabilities at the time of the events on the
-        # training set:
-        self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
-
     def brier_score_survival(self, y_true, y_pred, times):
         """Time-dependent Brier score of a survival function estimate.
 
@@ -566,7 +562,7 @@ def integrated_brier_score_incidence(
     return computer.integrated_brier_score_incidence(y_test, y_pred, times)
 
 
-def brier_score_true_probas_incidence(
+def brier_score_oracle_probas_incidence(
     y_train,
     y_test,
     y_pred,
@@ -582,7 +578,7 @@ def brier_score_true_probas_incidence(
     return computer.brier_score_incidence(y_test, y_pred, times)
 
 
-def integrated_brier_score_true_probas_incidence(
+def integrated_brier_score_oracle_probas_incidence(
     y_train,
     y_test,
     y_pred,

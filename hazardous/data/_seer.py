@@ -180,11 +180,14 @@ def load_seer(
     categorical_dtypes = {col: "category" for col in CATEGORICAL_COLUMN_NAMES}
 
     # There are no decimal values in the numerical columns so let's use int64.
-    numerical_dtypes = {col: "int64" for col in NUMERIC_COLUMN_NAMES}
+    numerical_dtypes = {col: "float64" for col in NUMERIC_COLUMN_NAMES}
 
     # Encode missing values with None so that astype will convert missing
     # numerical values to nan and categorical values to pd.NA.
-    data.replace("Unknown", None, inplace=True)
+    data[CATEGORICAL_COLUMN_NAMES] = data[CATEGORICAL_COLUMN_NAMES].replace(
+        "Unknown", None
+    )
+    data[NUMERIC_COLUMN_NAMES] = data[NUMERIC_COLUMN_NAMES].replace("Unknown", np.nan)
     data = data.astype({**numerical_dtypes, **categorical_dtypes})
 
     if return_X_y:

@@ -79,7 +79,11 @@ def _censor(
     """
     rng = check_random_state(random_state)
     if censoring_relative_scale == 0 or censoring_relative_scale is None:
-        return (y_uncensored, None, None)
+        return Bunch(
+            y_censored=y_uncensored,
+            shape_censoring=None,
+            scale_censoring=None,
+        )
 
     mean_duration = y_uncensored["duration"].mean()
 
@@ -114,7 +118,11 @@ def _censor(
     )
     y_censored["duration"] = np.minimum(y_censored["duration"], censoring)
 
-    return (y_censored, shape_censoring, scale_censoring)
+    return Bunch(
+        y_censored=y_censored,
+        shape_censoring=shape_censoring,
+        scale_censoring=scale_censoring,
+    )
 
 
 def compute_shape_and_scale(
@@ -377,8 +385,6 @@ def make_synthetic_competing_weibull(
     degree_interaction=2,
     independent_censoring=True,
     features_censoring_rate=0.2,
-    return_uncensored_data=False,
-    return_X_y=True,
     feature_rounding=2,
     target_rounding=4,
     shape_ranges=DEFAULT_SHAPE_RANGES,
@@ -428,7 +434,7 @@ def make_synthetic_competing_weibull(
             duration=event_durations[duration_argmin, np.arange(n_samples)],
         )
     )
-    y_censored, _, _ = _censor(
+    bunch = _censor(
         y_uncensored,
         independent_censoring=independent_censoring,
         X=X,
@@ -436,6 +442,8 @@ def make_synthetic_competing_weibull(
         censoring_relative_scale=censoring_relative_scale,
         random_state=random_state,
     )
+    y_censored = bunch.y_censored
+
     if feature_rounding is not None:
         X = X.round(feature_rounding)
 
@@ -443,10 +451,13 @@ def make_synthetic_competing_weibull(
         y_censored["duration"] = y_censored["duration"].round(target_rounding)
         y_uncensored = y_uncensored.round(target_rounding)
 
-    if return_X_y:
-        if return_uncensored_data:
-            return X, y_censored, y_uncensored
-        return X, y_censored
-
     frame = pd.concat([X, y_censored], axis=1)
-    return Bunch(data=frame[X.columns], target=frame[y_censored.columns], frame=frame)
+
+    return Bunch(
+        data=frame[X.columns],
+        target=frame[y_censored.columns],
+        target_uncensored=y_uncensored,
+        shape_censoring=bunch.shape_censoring,
+        scale_censoring=bunch.scale_censoring,
+        frame=frame,
+    )

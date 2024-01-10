@@ -1,7 +1,7 @@
 # Here, we create a synthetic dataset, either with a censoring independant
 # of the covariates of dependant with a rate given by the user.
 # We train a GBI to obtain some prediction. Givent a time grid, we compute
-# the true Brier score (with the real distribution of the censoring) and the BS
+# the oracle Brier score (with the real distribution of the censoring) and the BS
 # with an estimate of the proba of censoring (Kapplan Meier).
 #
 
@@ -132,7 +132,7 @@ from hazardous import GradientBoostingIncidence
 
 from hazardous.metrics._brier_score import (
     brier_score_incidence,
-    brier_score_true_probas_incidence,
+    brier_score_oracle_probas_incidence,
 )
 
 
@@ -152,7 +152,7 @@ def plot_brier_scores_comparisons(X, y, shape, scale, kind, event_of_interest=1)
     y_pred = gbi.predict_cumulative_incidence(X)
 
     time_grid = gbi.time_grid_
-    debiased_bs_scores = brier_score_true_probas_incidence(
+    debiased_bs_scores = brier_score_oracle_probas_incidence(
         y_train=y,
         y_test=y,
         y_pred=y_pred,
@@ -171,7 +171,7 @@ def plot_brier_scores_comparisons(X, y, shape, scale, kind, event_of_interest=1)
     )
 
     fig, ax = plt.subplots(figsize=(12, 5))
-    ax.plot(time_grid, debiased_bs_scores, label="from true distrib")
+    ax.plot(time_grid, debiased_bs_scores, label="from oracle distrib")
     ax.plot(time_grid, bs_scores, label="from estimate distrib with km")
     ax.set(
         title=f"Time-varying Brier score, {kind} censoring",
@@ -332,32 +332,32 @@ def plot_weights(y_censored, shape, scale, kind="dependent"):
     ipcw_est = IPCWEstimator().fit(y_censored)
     ipcw_y_est = ipcw_est.compute_ipcw_at(time_grid)
 
-    ipcw_true_distrib = IPCWSampler(
+    ipcw_oracle_distrib = IPCWSampler(
         shape=shape,
         scale=scale,
     ).fit(y_censored)
 
-    ipcw_y_true_distribs = []
+    ipcw_y_oracle_distribs = []
     for t in time_grid:
-        ipcw_y_true_distrib = ipcw_true_distrib.compute_ipcw_at(
+        ipcw_y_oracle_distrib = ipcw_oracle_distrib.compute_ipcw_at(
             times=np.full(shape=n_samples, fill_value=t)
         )
-        ipcw_y_true_distribs.append(ipcw_y_true_distrib)
+        ipcw_y_oracle_distribs.append(ipcw_y_oracle_distrib)
 
-    ipcw_y_true_distribs = np.array(ipcw_y_true_distribs)
+    ipcw_y_oracle_distribs = np.array(ipcw_y_oracle_distribs)
 
     _, ax = plt.subplots(figsize=(8, 4))
 
     for i in range(min(n_samples, 100)):
-        ax.plot(time_grid, ipcw_y_true_distribs[:, i])
+        ax.plot(time_grid, ipcw_y_oracle_distribs[:, i])
 
     ax.set_title(f"Weights for each sample, {kind} censoring")
     ax.plot()
 
-    ipcw_y_true_distrib = ipcw_y_true_distribs.mean(axis=1)
+    ipcw_y_oracle_distrib = ipcw_y_oracle_distribs.mean(axis=1)
     _, ax = plt.subplots(figsize=(8, 4))
     ax.plot(time_grid, ipcw_y_est, label="Estimated weights (KM)")
-    ax.plot(time_grid, ipcw_y_true_distrib, label="True weights (mean)")
+    ax.plot(time_grid, ipcw_y_oracle_distrib, label="Oracle weights (mean)")
     ax.legend()
     ax.set_title(f"Weights, {kind} censoring")
     ax.plot()

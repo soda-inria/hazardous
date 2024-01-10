@@ -1,5 +1,7 @@
 import numpy as np
-from sklearn._loss.link import Interval, MultinomialLogit
+from scipy.special import xlogy
+from sklearn._loss._loss import CyHalfBinomialLoss
+from sklearn._loss.link import Interval, LogitLink, MultinomialLogit
 from sklearn._loss.loss import BaseLoss
 
 
@@ -58,8 +60,8 @@ class _MultinomialBinaryLoss:
                     loss_out[i] -= raw_prediction[i, k]
                 else:
                     loss_out[i] -= np.log(sum_exps - p[k])
-
-            loss_out[i] *= sample_weight[i]
+            if sample_weight is not None:
+                loss_out[i] *= sample_weight[i]
 
         return np.asarray(loss_out)
 
@@ -75,7 +77,6 @@ class _MultinomialBinaryLoss:
         y_true = y_true.astype(int)
         n_samples = y_true.shape[0]
         n_classes = raw_prediction.shape[1]
-
         for i in range(n_samples):
             p, max_value, sum_exps = sum_exp_minus(i, raw_prediction)
             log_sum_exps = np.log(sum_exps)
@@ -91,7 +92,8 @@ class _MultinomialBinaryLoss:
                 # gradient_k = (p_k - (y_true == k)) * sw
 
                 gradient_out[i, k] = (p[k] - 1 * (y_true[i] == k)) * sample_weight[i]
-            loss_out[i] *= sample_weight[i]
+            if sample_weight is not None:
+                loss_out[i] *= sample_weight[i]
         gradient_out[:, 0] = 0.0
         return np.asarray(loss_out), np.asarray(gradient_out)
 
@@ -105,12 +107,13 @@ class _MultinomialBinaryLoss:
     ):
         n_samples = y_true.shape[0]
         n_classes = raw_prediction.shape[1]
-
         for i in range(n_samples):
             p, _, sum_exps = sum_exp_minus(i, raw_prediction)
             p /= sum_exps  # p_k = y_pred_k = prob of class k
             for k in range(1, n_classes):
-                gradient_out[i, k] = (p[k] - 1 * (y_true[i] == k)) * sample_weight[i]
+                gradient_out[i, k] = p[k] - 1 * (y_true[i] == k)
+                if sample_weight is not None:
+                    gradient_out[i] *= sample_weight[i]
 
         gradient_out[:, 0] = 0.0
         return np.asarray(gradient_out)
@@ -127,6 +130,8 @@ class _MultinomialBinaryLoss:
         y_true = y_true.astype(int)
         n_samples = y_true.shape[0]
         n_classes = raw_prediction.shape[1]
+        if sample_weight is None:
+            sample_weight = np.ones(n_samples)
         for i in range(n_samples):
             p, _, sum_exps = sum_exp_minus(i, raw_prediction)
             p /= sum_exps
@@ -157,7 +162,8 @@ class _MultinomialBinaryLoss:
         y_true = y_true.astype(int)
         n_samples = y_true.shape[0]
         n_classes = raw_prediction.shape[1]
-
+        if sample_weight is None:
+            sample_weight = np.ones(n_samples)
         for i in range(n_samples):
             p, _, sum_exps = sum_exp_minus(i, raw_prediction)
             p /= sum_exps
@@ -207,13 +213,25 @@ class MultinomialBinaryLoss(BaseLoss):
     is_multiclass = True
 
     def __init__(self, sample_weight=None, n_classes=3):
-        super().__init__(
-            closs=_MultinomialBinaryLoss(),
-            link=MultinomialLogit(),
-            n_classes=n_classes,
-        )
-        self.interval_y_true = Interval(0, np.inf, True, False)
+        self.n_classes = n_classes
+
         self.interval_y_pred = Interval(0, 1, False, False)
+
+        if n_classes == 1:
+            self.interval_y_true = Interval(0, 1, True, True)
+            super().__init__(
+                closs=CyHalfBinomialLoss(),
+                link=LogitLink(),
+                n_classes=1,
+            )
+
+        else:
+            self.interval_y_true = Interval(0, n_classes, True, False)
+            super().__init__(
+                closs=_MultinomialBinaryLoss(),
+                link=MultinomialLogit(),
+                n_classes=n_classes,
+            )
 
     def in_y_true_range(self, y):
         """Return True if y is in the valid range of y_true.
@@ -230,12 +248,15 @@ class MultinomialBinaryLoss(BaseLoss):
         This is the softmax of the weighted average of the target, i.e. over
         the samples axis=0.
         """
-        out = np.zeros(self.n_classes, dtype=y_true.dtype)
-        eps = np.finfo(y_true.dtype).eps
-        for k in range(self.n_classes):
-            out[k] = np.average(y_true == k, weights=sample_weight, axis=0)
-            out[k] = np.clip(out[k], eps, 1 - eps)
-        return self.link.link(out[None, :]).reshape(-1)
+        if self.n_classes > 1:
+            out = np.zeros(self.n_classes, dtype=y_true.dtype)
+            eps = np.finfo(y_true.dtype).eps
+            for k in range(self.n_classes):
+                out[k] = np.average(y_true == k, weights=sample_weight, axis=0)
+                out[k] = np.clip(out[k], eps, 1 - eps)
+            return self.link.link(out[None, :]).reshape(-1)
+
+        return self.fit_intercept_only(y_true, sample_weight=sample_weight)
 
     def predict_proba(self, raw_prediction):
         """Predict probabilities.
@@ -250,7 +271,23 @@ class MultinomialBinaryLoss(BaseLoss):
         proba : array of shape (n_samples, n_classes)
             Element-wise class probabilities.
         """
+        if self.n_classes == 1:
+            if raw_prediction.ndim == 2 and raw_prediction.shape[1] == 1:
+                raw_prediction = raw_prediction.squeeze(1)
+                proba = np.empty(
+                    (raw_prediction.shape[0], 2), dtype=raw_prediction.dtype
+                )
+                proba[:, 1] = self.link.inverse(raw_prediction)
+                proba[:, 0] = 1 - proba[:, 1]
+                return proba
         return self.link.inverse(raw_prediction)
+
+    def constant_to_optimal_zero(self, y_true, sample_weight=None):
+        # This is non-zero only if y_true is neither 0 nor 1.
+        term = xlogy(y_true, y_true) + xlogy(1 - y_true, 1 - y_true)
+        if sample_weight is not None:
+            term *= sample_weight
+        return term
 
     def gradient_proba(
         self,
@@ -288,6 +325,16 @@ class MultinomialBinaryLoss(BaseLoss):
         proba : array of shape (n_samples, n_classes)
             Element-wise class probabilities.
         """
+        if self.n_classes == 1:
+            return self.gradient_proba(
+                y_true,
+                raw_prediction,
+                sample_weight=sample_weight,
+                gradient_out=gradient_out,
+                proba_out=proba_out,
+                n_threads=n_threads,
+            )
+
         if gradient_out is None:
             if proba_out is None:
                 gradient_out = np.empty_like(raw_prediction)
@@ -305,3 +352,14 @@ class MultinomialBinaryLoss(BaseLoss):
             proba_out=proba_out,
             n_threads=n_threads,
         )
+
+
+# class MultinomialBinaryLoss(BaseLoss):
+#    def __init__(self, sample_weight=None, n_classes=3):
+#        self.n_classes=n_classes
+#        self.interval_y_true = Interval(0, n_classes, True, False)
+#        self.interval_y_pred = Interval(0, 1, False, False)
+#        if n_classes==1:
+#            HalfBinomialLoss(sample_weight=sample_weight)
+#        else:
+#            MultiBinLoss(sample_weight=sample_weight, n_classes=n_classes)

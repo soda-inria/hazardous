@@ -30,6 +30,10 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         self.hard_zero_fraction = hard_zero_fraction
         super().__init__(y_train, event_of_interest="any")
 
+        # Precompute the censoring probabilities at the time of the events on the
+        # training set:
+        self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
+
     def draw(self):
         # Sample time horizons uniformly on the observed time range:
         duration = self.duration_train
@@ -94,7 +98,6 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         # TODO: run a grid search on a few datasets to find good defaults.
         self,
         loss="inll",
-        monotonic_incidence=False,
         hard_zero_fraction=0.1,
         # TODO: implement convergence criterion and use max_iter instead of
         # n_iter.
@@ -109,7 +112,6 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         random_state=None,
     ):
         self.loss = loss
-        self.monotonic_incidence = monotonic_incidence
         self.hard_zero_fraction = hard_zero_fraction
         self.n_iter = n_iter
         self.learning_rate = learning_rate
@@ -122,7 +124,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         self.random_state = random_state
 
     def fit(self, X, y, times=None):
-        X = check_array(X)
+        X = check_array(X, force_all_finite="allow-nan")
         event, duration = check_y_survival(y)
 
         # Add 0 as a special event id for the survival function.
@@ -166,7 +168,6 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 y_targets,
                 sample_weight,
             ) = self.weighted_targets_.draw()
-
             X_with_time = np.hstack([sampled_times, X])
             self.estimator_.max_iter += 1
             self.estimator_.fit(X_with_time, y_targets, sample_weight=sample_weight)
@@ -270,7 +271,8 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 min_samples_leaf=self.min_samples_leaf,
             )
         elif self.loss == "competing_risks":
-            loss = MultinomialBinaryLoss(n_classes=len(self.event_ids_))
+            n_classes = len(self.event_ids_) - 1 * (len(self.event_ids_) == 2)
+            loss = MultinomialBinaryLoss(n_classes=n_classes)
             # class_weight = {0: 0, **{event: 1 for event in self.event_ids_[1:]}}
             return HistGradientBoostingClassifier(
                 loss=loss,

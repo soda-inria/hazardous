@@ -51,7 +51,7 @@ from lifelines import AalenJohansenFitter
 
 gb_multi_incidence = GBMultiIncidence(
     learning_rate=0.03,
-    n_iter=100,
+    n_iter=300,
     max_leaf_nodes=5,
     hard_zero_fraction=0.1,
     min_samples_leaf=50,
@@ -219,11 +219,11 @@ from sklearn.model_selection import train_test_split
 
 gb_multi_incidence = GBMultiIncidence(
     learning_rate=0.03,
-    n_iter=100,
+    n_iter=150,
     max_leaf_nodes=5,
     hard_zero_fraction=0.1,
     min_samples_leaf=50,
-    loss="inll",
+    loss="competing_risks",
     show_progressbar=False,
     random_state=0,
 )
@@ -294,12 +294,12 @@ def plot_cifs(
 
     if gb_multi_incidence is not None:
         gb_multi_incidence = GBMultiIncidence(
-            learning_rate=0.03,
-            n_iter=100,
-            max_leaf_nodes=5,
+            learning_rate=0.05,
+            n_iter=200,
+            max_leaf_nodes=10,
             hard_zero_fraction=0.1,
             min_samples_leaf=50,
-            loss="inll",
+            loss="competing_risks",
             show_progressbar=False,
             random_state=0,
         )
