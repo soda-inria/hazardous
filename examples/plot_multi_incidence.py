@@ -71,7 +71,7 @@ gb_incidence = GradientBoostingIncidence(
     random_state=0,
 )
 
-aj = AalenJohansenFitter(calculate_variance=True, seed=0)
+aj = AalenJohansenFitter(calculate_variance=False, seed=0)
 
 # %%
 
@@ -197,7 +197,7 @@ plot_cumulative_incidence_functions(
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
 
 
-X, y_censored, y_uncensored = make_synthetic_competing_weibull(
+bunch = make_synthetic_competing_weibull(
     n_samples=3_000,
     base_scale=1_000,
     n_features=10,
@@ -205,14 +205,14 @@ X, y_censored, y_uncensored = make_synthetic_competing_weibull(
     degree_interaction=2,
     independent_censoring=True,
     features_censoring_rate=0.2,
-    return_uncensored_data=True,
     feature_rounding=3,
     target_rounding=None,
     censoring_relative_scale=1.0,
     complex_features=True,
-    return_X_y=True,
     random_state=seed,
 )
+X, y_censored, y_uncensored = bunch.X, bunch.y, bunch.y_uncensored
+X.shape, y_censored.shape
 
 # %%
 from sklearn.model_selection import train_test_split
