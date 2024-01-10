@@ -6,9 +6,13 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
-from ._comp_risks_loss import MultinomialBinaryLoss
 from ._ipcw import AlternatingCensoringEst
-from .metrics._brier_score import IncidenceScoreComputer
+from ._kaplan_meier import KaplanMeierEstimator
+from .metrics._brier_score import (
+    IncidenceScoreComputer,
+    integrated_brier_score_incidence,
+    integrated_brier_score_incidence_oracle,
+)
 from .utils import check_y_survival
 
 
@@ -28,6 +32,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         random_state=None,
         ipcw_est=None,
         n_iter_before_feedback=20,
+        uniform_sampling=True,
     ):
         self.rng = check_random_state(random_state)
         self.hard_zero_fraction = hard_zero_fraction
@@ -40,6 +45,8 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
         self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
+        if not uniform_sampling:
+            self.time_sampler = KaplanMeierEstimator().fit(self.y_train)
 
     def draw(self, ipcw_training=False, X=None):
         # Sample time horizons uniformly on the observed time range:
@@ -49,9 +56,14 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         # Sample from t_min=0 event if never observed in the training set
         # because we want to make sure that the model learns to predict a 0
         # incidence at t=0.
-        t_min = 0.0
-        t_max = duration.max()
-        times = self.rng.uniform(t_min, t_max, n_samples)
+        if self.uniform_sampling:
+            t_min = 0.0
+            t_max = duration.max()
+            times = self.rng.uniform(t_min, t_max, n_samples)
+        else:
+            q_min, q_max = 0.0, 1.0
+            quantiles = self.rng.uniform(q_min, q_max, n_samples)
+            times = self.time_sampler.predict_quantile(quantiles)
 
         # Add some some hard zeros to make sure that the model learns to
         # predict 0 incidence at t=0.
@@ -175,6 +187,8 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         n_iter_before_feedback=20,
         ipcw_est=None,
         random_state=None,
+        shape_censoring=None,
+        scale_censoring=None,
     ):
         self.loss = loss
         self.hard_zero_fraction = hard_zero_fraction
@@ -189,10 +203,13 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         self.n_iter_before_feedback = n_iter_before_feedback
         self.ipcw_est = ipcw_est
         self.random_state = random_state
+        self.shape_censoring = shape_censoring
+        self.scale_censoring = scale_censoring
 
     def fit(self, X, y, times=None):
         X = check_array(X, force_all_finite="allow-nan")
         event, duration = check_y_survival(y)
+        self.y_train = y  # TODO: remove this attribute.
 
         # Add 0 as a special event id for the survival function.
         self.event_ids_ = np.array(list(set([0]) | set(event)))
@@ -349,8 +366,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 min_samples_leaf=self.min_samples_leaf,
             )
         elif self.loss == "competing_risks":
-            n_classes = len(self.event_ids_) - 1 * (len(self.event_ids_) == 2)
-            loss = MultinomialBinaryLoss(n_classes=n_classes)
+            loss = "inll"
             # class_weight = {0: 0, **{event: 1 for event in self.event_ids_[1:]}}
             return HistGradientBoostingClassifier(
                 loss=loss,
@@ -398,15 +414,28 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         #TODO: implement time integrated NLL.
         """
         predicted_curves = self.predict_cumulative_incidence(X)
-
         ibs_events = []
-        for event in range(len(self.event_ids_[1:])):
-            predicted_curves_for_event = predicted_curves[:, event]
-            ibs_events.append(
-                -self.weighted_targets_.integrated_brier_score_incidence(
+        for idx, event in enumerate(self.event_ids_[1:]):
+            predicted_curves_for_event = predicted_curves[:, idx + 1]
+            if self.scale_censoring is not None:
+                ibs_event = integrated_brier_score_incidence_oracle(
+                    self.y_train,
                     y,
                     predicted_curves_for_event,
-                    times=self.time_grid_,
+                    self.time_grid_,
+                    self.shape_censoring,
+                    self.scale_censoring,
+                    event_of_interest=event,
                 )
-            )
+
+            else:
+                integrated_brier_score_incidence(
+                    self.y_train,
+                    y,
+                    predicted_curves_for_event,
+                    self.time_grid_,
+                    event_of_interest=event,
+                )
+
+            ibs_events.append(ibs_event)
         return np.mean(ibs_events)
