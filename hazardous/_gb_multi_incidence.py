@@ -45,6 +45,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
         self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
+        self.uniform_sampling = uniform_sampling
         if not uniform_sampling:
             self.time_sampler = KaplanMeierEstimator().fit(self.y_train)
 
