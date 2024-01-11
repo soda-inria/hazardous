@@ -9,6 +9,7 @@ from sklearn.ensemble import (
 from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
+from ._kaplan_meier import KaplanMeierEstimator
 from .metrics._brier_score import IncidenceScoreComputer
 from .utils import check_y_survival
 
@@ -39,13 +40,17 @@ class WeightedBinaryTargetSampler(IncidenceScoreComputer):
         event_of_interest="any",
         hard_zero_fraction=0.01,
         random_state=None,
+        uniform_sampling=True,
     ):
         self.rng = check_random_state(random_state)
         self.hard_zero_fraction = hard_zero_fraction
         super().__init__(y_train, event_of_interest)
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
+        self.uniform_sampling = uniform_sampling
         self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
+        if not uniform_sampling:
+            self.time_sampler = KaplanMeierEstimator().fit(self.y_train)
 
     def draw(self):
         # Sample time horizons uniformly on the observed time range:
@@ -55,9 +60,14 @@ class WeightedBinaryTargetSampler(IncidenceScoreComputer):
         # Sample from t_min=0 event if never observed in the training set
         # because we want to make sure that the model learns to predict a 0
         # incidence at t=0.
-        t_min = 0.0
-        t_max = duration.max()
-        times = self.rng.uniform(t_min, t_max, n_samples)
+        if self.uniform_sampling:
+            t_min = 0.0
+            t_max = duration.max()
+            times = self.rng.uniform(t_min, t_max, n_samples)
+        else:
+            q_min, q_max = 0.0, 1.0
+            quantiles = self.rng.uniform(q_min, q_max, n_samples)
+            times = self.time_sampler.predict_quantile(quantiles)
 
         # Add some some hard zeros to make sure that the model learns to
         # predict 0 incidence at t=0.
@@ -215,6 +225,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         n_time_grid_steps=100,
         time_horizon=None,
         random_state=None,
+        uniform_sampling=True,
     ):
         self.event_of_interest = event_of_interest
         self.loss = loss
@@ -229,9 +240,10 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
         self.n_time_grid_steps = n_time_grid_steps
         self.time_horizon = time_horizon
         self.random_state = random_state
+        self.uniform_sampling = uniform_sampling
 
     def fit(self, X, y, times=None):
-        X = check_array(X)
+        X = check_array(X, force_all_finite="allow-nan")
         event, duration = check_y_survival(y)
 
         self.event_ids_ = np.unique(event)
@@ -276,6 +288,7 @@ class GradientBoostingIncidence(BaseEstimator, ClassifierMixin):
             event_of_interest=self.event_of_interest,
             hard_zero_fraction=self.hard_zero_fraction,
             random_state=self.random_state,
+            uniform_sampling=self.uniform_sampling,
         )
 
         iterator = range(self.n_iter)

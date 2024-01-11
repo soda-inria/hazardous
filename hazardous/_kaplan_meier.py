@@ -25,6 +25,14 @@ class KaplanMeierEstimator:
             fill_value="extrapolate",
         )
 
+        self.inverse_surv_func_ = interp1d(
+            1 - self.cumulative_density_,
+            self.unique_times_,
+            kind="previous",
+            bounds_error=False,
+            fill_value="extrapolate",
+        )
+
         return self
 
     def predict_proba(self, times):
@@ -34,3 +42,6 @@ class KaplanMeierEstimator:
         # The class 0 is the survival to any event S(t).
         # The class 1 is the any event incidence.
         return np.hstack([1 - any_event, any_event])
+
+    def predict_quantile(self, quantiles):
+        return self.inverse_surv_func_(quantiles)

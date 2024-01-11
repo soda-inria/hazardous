@@ -410,3 +410,35 @@ plot_cifs(
 )
 
 # %%
+# We study the effect of the Time Sampler.
+# The KM estimator allows us to sample times according to the
+# distribution of any events.
+
+from hazardous._gb_multi_incidence import WeightedMultiClassTargetSampler
+
+
+for uniform_sampling in [True, False]:
+    sampler = WeightedMultiClassTargetSampler(
+        y_train_c,
+        hard_zero_fraction=0.01,
+        random_state=None,
+        ipcw_est=None,
+        n_iter_before_feedback=20,
+        uniform_sampling=uniform_sampling,
+    )
+
+    all_times = []
+    for iter in range(100):
+        times, _, _ = sampler.draw()
+        all_times.append(times)
+    all_times = np.array(all_times).flatten()
+
+    fig, ax = plt.subplots(1, 1, figsize=(12, 5))
+
+    if uniform_sampling:
+        ax.set_title("Uniform sampling")
+    else:
+        ax.set_title("Time sampling using KM")
+
+    ax.hist(all_times)
+# %%

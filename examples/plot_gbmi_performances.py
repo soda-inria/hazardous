@@ -108,3 +108,24 @@ ax.set_title("Debiased brier score")
 ax.legend()
 plt.grid()
 # %%
+# Comparison of scores (using true incidence probabilities or estimated with KM)
+# The scores are both representing Integrated Brier Score (IBS) over time.
+
+ibs_km = gbmi.score(X_test, y_test)
+print("Score on Test set (IBS using KM incidence probabilities)", ibs_km.round(3))
+
+shape_censoring = bunch.shape_censoring
+scale_censoring = bunch.scale_censoring
+
+gbmi_scale_shape = GBMultiIncidence(
+    n_iter=100,
+    shape_censoring=shape_censoring,
+    scale_censoring=scale_censoring,
+    show_progressbar=False,
+).fit(X_train, y_train)
+
+ibs_oracle = gbmi_scale_shape.score(X_test, y_test)
+print(
+    "Score on Test set (IBS using oracle incidence probabilities)", ibs_oracle.round(3)
+)
+# %%

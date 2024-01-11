@@ -1,7 +1,7 @@
 # Here, we create a synthetic dataset, either with a censoring independant
 # of the covariates of dependant with a rate given by the user.
 # We train a GBI to obtain some prediction. Givent a time grid, we compute
-# the true Brier score (with the real distribution of the censoring) and the BS
+# the oracle Brier score (with the real distribution of the censoring) and the BS
 # with an estimate of the proba of censoring (Kapplan Meier).
 #
 
@@ -177,7 +177,7 @@ def plot_brier_scores_comparisons(X, y, shape, scale, kind, event_of_interest=1)
     )
 
     fig, ax = plt.subplots(figsize=(12, 5))
-    ax.plot(time_grid, debiased_bs_scores, label="from true distrib")
+    ax.plot(time_grid, debiased_bs_scores, label="from oracle distrib")
     ax.plot(time_grid, bs_scores, label="from estimate distrib with km")
     ax.set(
         title=f"Time-varying Brier score, {kind} censoring",
@@ -337,4 +337,60 @@ plot_ipcw(
     kind="dependent",
 )
 
+# %%
+
+
+def plot_weights(y_censored, shape, scale, kind="dependent"):
+    t_max = y_censored["duration"].max()
+    time_grid = np.linspace(0, t_max, 100)
+    n_samples = y_censored.shape[0]
+
+    ipcw_est = IPCWEstimator().fit(y_censored)
+    ipcw_y_est = ipcw_est.compute_ipcw_at(time_grid)
+
+    ipcw_oracle_distrib = IPCWSampler(
+        shape=shape,
+        scale=scale,
+    ).fit(y_censored)
+
+    ipcw_y_oracle_distribs = []
+    for t in time_grid:
+        ipcw_y_oracle_distrib = ipcw_oracle_distrib.compute_ipcw_at(
+            times=np.full(shape=n_samples, fill_value=t)
+        )
+        ipcw_y_oracle_distribs.append(ipcw_y_oracle_distrib)
+
+    ipcw_y_oracle_distribs = np.array(ipcw_y_oracle_distribs)
+
+    _, ax = plt.subplots(figsize=(8, 4))
+
+    for i in range(min(n_samples, 100)):
+        ax.plot(time_grid, ipcw_y_oracle_distribs[:, i])
+
+    ax.set_title(f"Weights for each sample, {kind} censoring")
+    ax.plot()
+
+    ipcw_y_oracle_distrib = ipcw_y_oracle_distribs.mean(axis=1)
+    _, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(time_grid, ipcw_y_est, label="Estimated weights (KM)")
+    ax.plot(time_grid, ipcw_y_oracle_distrib, label="Oracle weights (mean)")
+    ax.legend()
+    ax.set_title(f"Weights, {kind} censoring")
+    ax.plot()
+
+
+# %%
+plot_weights(
+    y_censored_dep,
+    shape=shape_censoring_dep,
+    scale=scale_censoring_dep,
+    kind="dependent",
+)
+# %%
+plot_weights(
+    y_censored_indep,
+    shape=shape_censoring_indep,
+    scale=scale_censoring_indep,
+    kind="independent",
+)
 # %%

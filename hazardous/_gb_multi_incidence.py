@@ -7,7 +7,12 @@ from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
 from ._ipcw import AlternatingCensoringEst
-from .metrics._brier_score import IncidenceScoreComputer
+from ._kaplan_meier import KaplanMeierEstimator
+from .metrics._brier_score import (
+    IncidenceScoreComputer,
+    integrated_brier_score_incidence,
+    integrated_brier_score_incidence_oracle,
+)
 from .utils import check_y_survival
 
 
@@ -27,6 +32,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         random_state=None,
         ipcw_est=None,
         n_iter_before_feedback=20,
+        uniform_sampling=True,
     ):
         self.rng = check_random_state(random_state)
         self.hard_zero_fraction = hard_zero_fraction
@@ -39,6 +45,9 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
         self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
+        self.uniform_sampling = uniform_sampling
+        if not uniform_sampling:
+            self.time_sampler = KaplanMeierEstimator().fit(self.y_train)
 
     def draw(self, ipcw_training=False, X=None):
         # Sample time horizons uniformly on the observed time range:
@@ -48,9 +57,14 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         # Sample from t_min=0 event if never observed in the training set
         # because we want to make sure that the model learns to predict a 0
         # incidence at t=0.
-        t_min = 0.0
-        t_max = duration.max()
-        times = self.rng.uniform(t_min, t_max, n_samples)
+        if self.uniform_sampling:
+            t_min = 0.0
+            t_max = duration.max()
+            times = self.rng.uniform(t_min, t_max, n_samples)
+        else:
+            q_min, q_max = 0.0, 1.0
+            quantiles = self.rng.uniform(q_min, q_max, n_samples)
+            times = self.time_sampler.predict_quantile(quantiles)
 
         # Add some some hard zeros to make sure that the model learns to
         # predict 0 incidence at t=0.
@@ -160,7 +174,6 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         # TODO: run a grid search on a few datasets to find good defaults.
         self,
         loss="inll",
-        monotonic_incidence=False,
         hard_zero_fraction=0.1,
         # TODO: implement convergence criterion and use max_iter instead of
         # n_iter.
@@ -177,7 +190,6 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         random_state=None,
     ):
         self.loss = loss
-        self.monotonic_incidence = monotonic_incidence
         self.hard_zero_fraction = hard_zero_fraction
         self.n_iter = n_iter
         self.learning_rate = learning_rate
@@ -192,10 +204,11 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         self.random_state = random_state
 
     def fit(self, X, y, times=None):
-        X = check_array(X)
+        X = check_array(X, force_all_finite="allow-nan")
         event, duration = check_y_survival(y)
 
-        self.event_ids_ = np.unique(event)
+        # Add 0 as a special event id for the survival function.
+        self.event_ids_ = np.array(list(set([0]) | set(event)))
 
         self.estimator_ = self._build_base_estimator()
 
@@ -348,11 +361,27 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 max_depth=self.max_depth,
                 min_samples_leaf=self.min_samples_leaf,
             )
+        elif self.loss == "competing_risks":
+            loss = "los_loss"
+            # class_weight = {0: 0, **{event: 1 for event in self.event_ids_[1:]}}
+            return HistGradientBoostingClassifier(
+                loss=loss,
+                class_weight=None,
+                max_iter=1,
+                warm_start=True,
+                learning_rate=self.learning_rate,
+                max_leaf_nodes=self.max_leaf_nodes,
+                max_depth=self.max_depth,
+                min_samples_leaf=self.min_samples_leaf,
+            )
         else:
-            raise ValueError(f"Parameter 'loss' must be 'inll', got {self.loss}.")
+            raise ValueError(
+                "Parameter 'loss' must be 'inll' or 'competing_risks', got"
+                f" {self.loss}."
+            )
 
-    def score(self, X, y):
-        """Return INLL.
+    def score(self, X, y, shape_censoring=None, scale_censoring=None):
+        """Return IBS or competing_risks loss (proper scoring rule).
 
         This returns the negative of a proper scoring rule, so that the higher
         the value, the better the model to be consistent with the scoring
@@ -380,8 +409,29 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
 
         #TODO: implement time integrated NLL.
         """
+        predicted_curves = self.predict_cumulative_incidence(X)
+        ibs_events = []
+        for idx, event in enumerate(self.event_ids_[1:]):
+            predicted_curves_for_event = predicted_curves[idx + 1]
+            if scale_censoring is not None and shape_censoring is not None:
+                ibs_event = integrated_brier_score_incidence_oracle(
+                    y_train=self.weighted_targets_.y_train,
+                    y_test=y,
+                    y_pred=predicted_curves_for_event,
+                    times=self.time_grid_,
+                    shape_censoring=shape_censoring,
+                    scale_censoring=scale_censoring,
+                    event_of_interest=event,
+                )
 
-        if self.loss == "inll":
-            return -self.estimator_.score(X, y)
-        else:
-            raise ValueError(f"Parameter 'loss' must be 'inll', got {self.loss}.")
+            else:
+                ibs_event = integrated_brier_score_incidence(
+                    y_train=self.weighted_targets_.y_train,
+                    y_test=y,
+                    y_pred=predicted_curves_for_event,
+                    times=self.time_grid_,
+                    event_of_interest=event,
+                )
+
+            ibs_events.append(ibs_event)
+        return np.mean(ibs_events)
