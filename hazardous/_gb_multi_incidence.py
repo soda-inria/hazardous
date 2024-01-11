@@ -210,7 +210,6 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
     def fit(self, X, y, times=None):
         X = check_array(X, force_all_finite="allow-nan")
         event, duration = check_y_survival(y)
-        self.y_train = y  # TODO: remove this attribute.
 
         # Add 0 as a special event id for the survival function.
         self.event_ids_ = np.array(list(set([0]) | set(event)))
@@ -423,7 +422,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 scale_censoring_test = self.scale_censoring[X.index]
 
                 ibs_event = integrated_brier_score_incidence_oracle(
-                    y_train=self.y_train,
+                    y_train=self.weighted_targets_.y_train,
                     y_test=y,
                     y_pred=predicted_curves_for_event,
                     times=self.time_grid_,
@@ -434,7 +433,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
 
             else:
                 ibs_event = integrated_brier_score_incidence(
-                    y_train=self.y_train,
+                    y_train=self.weighted_targets_.y_train,
                     y_test=y,
                     y_pred=predicted_curves_for_event,
                     times=self.time_grid_,
