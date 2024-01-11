@@ -417,24 +417,27 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         predicted_curves = self.predict_cumulative_incidence(X)
         ibs_events = []
         for idx, event in enumerate(self.event_ids_[1:]):
-            predicted_curves_for_event = predicted_curves[:, idx + 1]
+            predicted_curves_for_event = predicted_curves[idx + 1]
             if self.scale_censoring is not None:
+                shape_censoring_test = self.shape_censoring[X.index]
+                scale_censoring_test = self.scale_censoring[X.index]
+
                 ibs_event = integrated_brier_score_incidence_oracle(
-                    self.y_train,
-                    y,
-                    predicted_curves_for_event,
-                    self.time_grid_,
-                    self.shape_censoring,
-                    self.scale_censoring,
+                    y_train=self.y_train,
+                    y_test=y,
+                    y_pred=predicted_curves_for_event,
+                    times=self.time_grid_,
+                    shape_censoring=shape_censoring_test,
+                    scale_censoring=scale_censoring_test,
                     event_of_interest=event,
                 )
 
             else:
-                integrated_brier_score_incidence(
-                    self.y_train,
-                    y,
-                    predicted_curves_for_event,
-                    self.time_grid_,
+                ibs_event = integrated_brier_score_incidence(
+                    y_train=self.y_train,
+                    y_test=y,
+                    y_pred=predicted_curves_for_event,
+                    times=self.time_grid_,
                     event_of_interest=event,
                 )
 
