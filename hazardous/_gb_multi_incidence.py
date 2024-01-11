@@ -208,7 +208,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         event, duration = check_y_survival(y)
 
         # Add 0 as a special event id for the survival function.
-        self.event_ids_ = np.array(list(set([0]) | set(event)))
+        self.event_ids_ = np.array(sorted(list(set([0]) | set(event))))
 
         self.estimator_ = self._build_base_estimator()
 
@@ -434,4 +434,4 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 )
 
             ibs_events.append(ibs_event)
-        return np.mean(ibs_events)
+        return -np.mean(ibs_events)
