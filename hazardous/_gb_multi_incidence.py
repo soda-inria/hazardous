@@ -188,8 +188,6 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         n_iter_before_feedback=20,
         ipcw_est=None,
         random_state=None,
-        shape_censoring=None,
-        scale_censoring=None,
     ):
         self.loss = loss
         self.hard_zero_fraction = hard_zero_fraction
@@ -204,8 +202,6 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         self.n_iter_before_feedback = n_iter_before_feedback
         self.ipcw_est = ipcw_est
         self.random_state = random_state
-        self.shape_censoring = shape_censoring
-        self.scale_censoring = scale_censoring
 
     def fit(self, X, y, times=None):
         X = check_array(X, force_all_finite="allow-nan")
@@ -366,7 +362,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 min_samples_leaf=self.min_samples_leaf,
             )
         elif self.loss == "competing_risks":
-            loss = "inll"
+            loss = "los_loss"
             # class_weight = {0: 0, **{event: 1 for event in self.event_ids_[1:]}}
             return HistGradientBoostingClassifier(
                 loss=loss,
@@ -384,7 +380,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 f" {self.loss}."
             )
 
-    def score(self, X, y):
+    def score(self, X, y, shape_censoring=None, scale_censoring=None):
         """Return IBS or competing_risks loss (proper scoring rule).
 
         This returns the negative of a proper scoring rule, so that the higher
@@ -417,17 +413,14 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         ibs_events = []
         for idx, event in enumerate(self.event_ids_[1:]):
             predicted_curves_for_event = predicted_curves[idx + 1]
-            if self.scale_censoring is not None:
-                shape_censoring_test = self.shape_censoring[X.index]
-                scale_censoring_test = self.scale_censoring[X.index]
-
+            if scale_censoring is not None and shape_censoring is not None:
                 ibs_event = integrated_brier_score_incidence_oracle(
                     y_train=self.weighted_targets_.y_train,
                     y_test=y,
                     y_pred=predicted_curves_for_event,
                     times=self.time_grid_,
-                    shape_censoring=shape_censoring_test,
-                    scale_censoring=scale_censoring_test,
+                    shape_censoring=shape_censoring,
+                    scale_censoring=scale_censoring,
                     event_of_interest=event,
                 )
 
