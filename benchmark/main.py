@@ -8,6 +8,7 @@ from joblib import delayed, Parallel, dump
 from sklearn.model_selection import GridSearchCV
 
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
+from hazardous.data._seer import load_seer
 from hazardous._gb_multi_incidence import GBMultiIncidence
 
 from memory_monitor import MemoryMonitor
@@ -44,27 +45,54 @@ DATASET_GRID = {
 
 PATH_DAILY_SESSION = Path(datetime.now().strftime("%Y-%m-%d"))
 
+SEER_PATH = "../hazardous/data/seer_cancer_cardio_raw_data.txt"
+
 
 def run_all():
-    dataset_params = list(product(*DATASET_GRID.values()))
+    grid_dataset_params = list(product(*DATASET_GRID.values()))
 
     parallel = Parallel(n_jobs=-1)
-    parallel(delayed(run_dataset)(dataset_param) for dataset_param in dataset_params)
+    parallel(
+        delayed(run_synthetic_dataset)(dataset_params)
+        for dataset_params in grid_dataset_params
+    )
 
 
-def run_dataset(dataset_param):
-    dataset_param = dict(zip(DATASET_GRID.keys(), dataset_param))
-    print(dataset_param)
+def run_synthetic_dataset(dataset_params):
+    dataset_params = dict(zip(DATASET_GRID.keys(), dataset_params))
+    print(dataset_params)
+    data_bunch = make_synthetic_competing_weibull(**dataset_params)
+    dataset_params["dataset_name"] = "weibull"
     for estimator_name in ESTIMATOR_GRID:
-        run_estimator(estimator_name, dataset_param)
+        run_estimator(estimator_name, data_bunch, dataset_params)
 
 
-def run_estimator(estimator_name, dataset_params):
+def run_seer():
+    data_bunch = load_seer(
+        SEER_PATH,
+        survtrace_preprocessing=True,
+        return_X_y=False,
+    )
+
+    event = data_bunch.y["event"]
+    dataset_params = {
+        "dataset_name": "seer",
+        "n_events": event.nunique(),
+        "n_samples": event.shape[0],
+        "censoring_relative_scale": (event == 0).mean(),
+        "complex_features": True,
+        "independent_censoring": False,
+    }
+
+    for estimator_name in ESTIMATOR_GRID:
+        run_estimator(estimator_name, data_bunch, dataset_params)
+
+
+def run_estimator(estimator_name, data_bunch, dataset_params):
     """Find the best hyper-parameters for a given model and a given dataset."""
-    bunch = make_synthetic_competing_weibull(**dataset_params)
-    X, y = bunch.X, bunch.y
-    # scale_censoring, shape_censoring = bunch.scale_censoring, bunch.shape_censoring
-
+    X, y = data_bunch.X, data_bunch.y
+    # scale_censoring = data_bunch.scale_censoring
+    # shape_censoring = data_bunch.shape_censoring
     estimator = ESTIMATOR_GRID[estimator_name]["estimator"]
     param_grid = ESTIMATOR_GRID[estimator_name]["param_grid"]
 

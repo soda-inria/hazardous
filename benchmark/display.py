@@ -53,6 +53,11 @@ def _make_query(data_params, x_col=None):
 
 def _check_data_params(data_params, x_col=None):
     data_grid = deepcopy(DATASET_GRID)
+
+    dataset_name = data_params.pop("dataset_name")
+    if dataset_name == "seer":
+        return
+
     if x_col is not None:
         data_params.pop(x_col, None)
         data_grid.pop(x_col)
@@ -465,6 +470,7 @@ estimator_names = ["gbmi_10", "gbmi_20"]
 displayer = ResultDisplayer(path_session, estimator_names)
 
 data_params = {
+    "dataset_name": "weibull",
     "n_events": 3,
     "complex_features": True,
     "censoring_relative_scale": 1.5,
