@@ -114,17 +114,15 @@ plt.grid()
 ibs_km = gbmi.score(X_test, y_test)
 print("Score on Test set (IBS using KM incidence probabilities)", ibs_km.round(3))
 
-shape_censoring = bunch.shape_censoring
-scale_censoring = bunch.scale_censoring
+shape_censoring = bunch.shape_censoring[X_test.index]
+scale_censoring = bunch.scale_censoring[X_test.index]
 
-gbmi_scale_shape = GBMultiIncidence(
-    n_iter=100,
+ibs_oracle = gbmi.score(
+    X_test,
+    y_test,
     shape_censoring=shape_censoring,
     scale_censoring=scale_censoring,
-    show_progressbar=False,
-).fit(X_train, y_train)
-
-ibs_oracle = gbmi_scale_shape.score(X_test, y_test)
+)
 print(
     "Score on Test set (IBS using oracle incidence probabilities)", ibs_oracle.round(3)
 )
