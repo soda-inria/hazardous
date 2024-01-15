@@ -55,7 +55,7 @@ gb_multi_incidence = GBMultiIncidence(
     max_leaf_nodes=5,
     hard_zero_fraction=0.1,
     min_samples_leaf=50,
-    loss="inll",
+    loss="competing_risks",
     show_progressbar=False,
     random_state=0,
 )

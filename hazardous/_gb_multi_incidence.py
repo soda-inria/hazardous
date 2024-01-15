@@ -6,6 +6,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
+from ._comp_risks_loss import MultinomialBinaryLoss
 from ._ipcw import AlternatingCensoringEst
 from ._kaplan_meier import KaplanMeierEstimator
 from .metrics._brier_score import (
@@ -188,6 +189,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         n_iter_before_feedback=20,
         ipcw_est=None,
         random_state=None,
+        uniform_sampling=True,
     ):
         self.loss = loss
         self.hard_zero_fraction = hard_zero_fraction
@@ -202,13 +204,14 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         self.n_iter_before_feedback = n_iter_before_feedback
         self.ipcw_est = ipcw_est
         self.random_state = random_state
+        self.uniform_sampling = uniform_sampling
 
     def fit(self, X, y, times=None):
         X = check_array(X, force_all_finite="allow-nan")
         event, duration = check_y_survival(y)
 
         # Add 0 as a special event id for the survival function.
-        self.event_ids_ = np.array(list(set([0]) | set(event)))
+        self.event_ids_ = np.array(sorted(list(set([0]) | set(event))))
 
         self.estimator_ = self._build_base_estimator()
 
@@ -241,6 +244,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
             random_state=self.random_state,
             ipcw_est=ipcw_est,
             n_iter_before_feedback=self.n_iter_before_feedback,
+            uniform_sampling=self.uniform_sampling,
         )
 
         iterator = range(self.n_iter)
@@ -362,8 +366,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 min_samples_leaf=self.min_samples_leaf,
             )
         elif self.loss == "competing_risks":
-            loss = "los_loss"
-            # class_weight = {0: 0, **{event: 1 for event in self.event_ids_[1:]}}
+            loss = MultinomialBinaryLoss(n_classes=len(self.event_ids_))
             return HistGradientBoostingClassifier(
                 loss=loss,
                 class_weight=None,
@@ -434,4 +437,4 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
                 )
 
             ibs_events.append(ibs_event)
-        return np.mean(ibs_events)
+        return -np.mean(ibs_events)
