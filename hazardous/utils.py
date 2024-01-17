@@ -2,6 +2,7 @@ from numbers import Integral
 
 import numpy as np
 import pandas as pd
+from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_scalar
 
 
@@ -53,3 +54,11 @@ def check_event_of_interest(k):
             f"got: event_of_interest={k}"
         )
     return
+
+
+class CumulativeIncidencePipeline(Pipeline):
+    def predict_cumulative_incidence(self, X, times):
+        Xt = X
+        for _, _, transformer in self._iter(with_final=False):
+            Xt = transformer.transform(Xt)
+        return self.steps[-1][1].predict_cumulative_incidence(Xt, times)
