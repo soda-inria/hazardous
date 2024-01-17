@@ -5,21 +5,42 @@ from datetime import datetime
 import pandas as pd
 
 from joblib import delayed, Parallel, dump
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, train_test_split
 
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
-from hazardous.data._seer import load_seer
+from hazardous.data._seer import (
+    load_seer,
+    CATEGORICAL_COLUMN_NAMES,
+    NUMERIC_COLUMN_NAMES,
+)
 from hazardous._gb_multi_incidence import GBMultiIncidence
+from hazardous.survtrace._encoder import SurvFeatureEncoder
+from hazardous.utils import CumulativeIncidencePipeline
 
 from memory_monitor import MemoryMonitor
 
+# Enable oracle scoring for GridSearchCV
 # GBMI.set_score_request(scale=True, shape=True)
+
+gbmi_10 = CumulativeIncidencePipeline(
+    [
+        ("surv_feature_encoder", SurvFeatureEncoder()),
+        ("gb_multi_incidence", GBMultiIncidence(n_iter=10, show_progressbar=True)),
+    ]
+)
+
+gbmi_20 = CumulativeIncidencePipeline(
+    [
+        ("surv_feature_encoder", SurvFeatureEncoder()),
+        ("gb_multi_incidence", GBMultiIncidence(n_iter=20, show_progressbar=True)),
+    ]
+)
 
 ESTIMATOR_GRID = {
     "gbmi_10": {
-        "estimator": GBMultiIncidence(n_iter=10, show_progressbar=False),
+        "estimator": gbmi_10,
         "param_grid": {
-            "learning_rate": [0.01],
+            "gb_multi_incidence__learning_rate": [0.01],
             # "n_iter": [50, 100, 200],
             # "max_depth": [3, 5],
             # "max_leaf_nodes": [10, 30, 50],
@@ -27,9 +48,9 @@ ESTIMATOR_GRID = {
         },
     },
     "gbmi_20": {
-        "estimator": GBMultiIncidence(n_iter=20, show_progressbar=False),
+        "estimator": gbmi_20,
         "param_grid": {
-            "learning_rate": [0.01],
+            "gb_multi_incidence__learning_rate": [0.01],
         },
     },
 }
@@ -46,9 +67,10 @@ DATASET_GRID = {
 PATH_DAILY_SESSION = Path(datetime.now().strftime("%Y-%m-%d"))
 
 SEER_PATH = "../hazardous/data/seer_cancer_cardio_raw_data.txt"
+SEED = 0
 
 
-def run_all():
+def run_all_synthetic_datasets():
     grid_dataset_params = list(product(*DATASET_GRID.values()))
 
     parallel = Parallel(n_jobs=-1)
@@ -60,11 +82,14 @@ def run_all():
 
 def run_synthetic_dataset(dataset_params):
     dataset_params = dict(zip(DATASET_GRID.keys(), dataset_params))
-    print(dataset_params)
     data_bunch = make_synthetic_competing_weibull(**dataset_params)
-    dataset_params["dataset_name"] = "weibull"
     for estimator_name in ESTIMATOR_GRID:
-        run_estimator(estimator_name, data_bunch, dataset_params)
+        run_estimator(
+            estimator_name,
+            data_bunch,
+            dataset_name="weibull",
+            dataser_params=dataset_params,
+        )
 
 
 def run_seer():
@@ -73,30 +98,36 @@ def run_seer():
         survtrace_preprocessing=True,
         return_X_y=False,
     )
+    X, y = data_bunch.X, data_bunch.y
+    column_names = CATEGORICAL_COLUMN_NAMES + NUMERIC_COLUMN_NAMES
+    data_bunch.X = data_bunch.X[column_names]
 
-    event = data_bunch.y["event"]
-    dataset_params = {
-        "dataset_name": "seer",
-        "n_events": event.nunique(),
-        "n_samples": event.shape[0],
-        "censoring_relative_scale": (event == 0).mean(),
-        "complex_features": True,
-        "independent_censoring": False,
-    }
+    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.3, random_state=SEED)
+    data_bunch.X, data_bunch.y = X_train, y_train
 
-    for estimator_name in ESTIMATOR_GRID:
-        run_estimator(estimator_name, data_bunch, dataset_params)
+    parallel = Parallel(n_jobs=-1)
+    parallel(
+        delayed(run_estimator)(
+            estimator_name,
+            data_bunch,
+            dataset_name="seer",
+            dataset_params={},
+        )
+        for estimator_name in ESTIMATOR_GRID
+    )
 
 
-def run_estimator(estimator_name, data_bunch, dataset_params):
+def run_estimator(estimator_name, data_bunch, dataset_name, dataset_params):
     """Find the best hyper-parameters for a given model and a given dataset."""
+
+    print(f"{estimator_name}\n{dataset_params}")
     X, y = data_bunch.X, data_bunch.y
     # scale_censoring = data_bunch.scale_censoring
     # shape_censoring = data_bunch.shape_censoring
     estimator = ESTIMATOR_GRID[estimator_name]["estimator"]
     param_grid = ESTIMATOR_GRID[estimator_name]["param_grid"]
 
-    hp_search = GridSearchCV(estimator, param_grid, cv=3, return_train_score=True)
+    hp_search = GridSearchCV(estimator, param_grid, cv=2, return_train_score=True)
     hp_search.fit(
         X,
         y,
@@ -132,7 +163,7 @@ def run_estimator(estimator_name, data_bunch, dataset_params):
 
     str_params = [str(v) for v in dataset_params.values()]
     str_params = "_".join([estimator_name, *str_params])
-    path_profile = PATH_DAILY_SESSION / str_params
+    path_profile = PATH_DAILY_SESSION / dataset_name / str_params
     path_profile.mkdir(parents=True, exist_ok=True)
 
     json.dump(best_params, open(path_profile / "best_params.json", "w"))
@@ -142,4 +173,4 @@ def run_estimator(estimator_name, data_bunch, dataset_params):
 
 
 if __name__ == "__main__":
-    run_all()
+    run_seer()

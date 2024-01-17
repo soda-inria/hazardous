@@ -178,9 +178,7 @@ def load_seer(
         X = _preprocess_cols_as_survtrace(X)
 
     categorical_dtypes = {col: "category" for col in CATEGORICAL_COLUMN_NAMES}
-
-    # There are no decimal values in the numerical columns so let's use int64.
-    numerical_dtypes = {col: "int64" for col in NUMERIC_COLUMN_NAMES}
+    numerical_dtypes = {col: "float64" for col in NUMERIC_COLUMN_NAMES}
 
     # Encode missing values with None so that astype will convert missing
     # numerical values to nan and categorical values to pd.NA.
