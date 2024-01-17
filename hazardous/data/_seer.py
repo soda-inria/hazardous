@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.datasets._base import Bunch  # XXX: use a dataclass instead?
+from sklearn.datasets._base import Bunch
 
 CATEGORICAL_COLUMN_NAMES = [
     "Sex",
@@ -146,72 +146,68 @@ def load_seer(
     # XXX: specify dtypes for all columns at load time insted of retyping a
     # posteriori?
     # In particular this should help remove a pandas warning for column 22.
-    original_data = data = pd.read_csv(
+    original_data = X = pd.read_csv(
         input_path, sep="\t", header=None, names=COLUMN_NAMES
     )
 
     if survtrace_preprocessing:
-        data = _filter_rows_as_survtrace(data)
+        X = _filter_rows_as_survtrace(X)
 
     # Extract the target events and remove the corresponding columns from the
     # data.
     target_columns = [event_column_name, duration_column_name]
-    target, event_labels = _extract_target_events(
-        data[target_columns],
+    y, event_labels = _extract_target_events(
+        X[target_columns],
         event_column_name,
         duration_column_name,
         censoring_labels,
         events_of_interest=events_of_interest,
         other_event_name=other_event_name,
     )
-    data = data.drop(columns=target_columns)
+    X = X.drop(columns=target_columns)
 
     # Remove columns that should not be used as predictors.
-    data = data.drop(columns="Patient ID")
+    X = X.drop(columns="Patient ID")
 
     # TODO: fixme: once informative column names are used, this should be
     # updated accordingly.
-    kept_columns = data.columns[~data.columns.str.startswith("Unused")]
-    data = data[kept_columns]
+    kept_columns = X.columns[~X.columns.str.startswith("Unused")]
+    X = X[kept_columns]
 
     if survtrace_preprocessing:
-        data = _preprocess_cols_as_survtrace(data)
+        X = _preprocess_cols_as_survtrace(X)
 
     categorical_dtypes = {col: "category" for col in CATEGORICAL_COLUMN_NAMES}
-
-    # There are no decimal values in the numerical columns so let's use int64.
     numerical_dtypes = {col: "float64" for col in NUMERIC_COLUMN_NAMES}
 
     # Encode missing values with None so that astype will convert missing
     # numerical values to nan and categorical values to pd.NA.
-    data[CATEGORICAL_COLUMN_NAMES] = data[CATEGORICAL_COLUMN_NAMES].replace(
-        "Unknown", None
-    )
-    data[NUMERIC_COLUMN_NAMES] = data[NUMERIC_COLUMN_NAMES].replace("Unknown", np.nan)
-    data = data.astype({**numerical_dtypes, **categorical_dtypes})
+    X[CATEGORICAL_COLUMN_NAMES] = X[CATEGORICAL_COLUMN_NAMES].replace("Unknown", None)
+    X[NUMERIC_COLUMN_NAMES] = X[NUMERIC_COLUMN_NAMES].replace("Unknown", np.nan)
+    X = X.astype({**numerical_dtypes, **categorical_dtypes})
 
     if return_X_y:
-        return data, target
+        return X, y
 
     return Bunch(
-        data=data,
-        target=target,
+        X=X,
+        y=y,
         event_labels=event_labels,
         original_data=original_data,
     )
 
 
-def _filter_rows_as_survtrace(data):
+def _filter_rows_as_survtrace(X):
     """Filter rows as done in the SurvTRACE paper"""
     mask = (
         # 4 records have N/A cause-specific death classification and are all
         # "Alive".
-        (data["SEER cause-specific death classification"] != "N/A not seq 0-59")
+        (X["SEER cause-specific death classification"] != "N/A not seq 0-59")
         # 282 records with "Survival months" between 1 and 67 months and a mean
         # of 3.2 months. All have a "COD to site recode" with a death cause
         # (non marked as "Alive").
         & (
-            data["Reason no cancer-directed surgery"]
+            X["Reason no cancer-directed surgery"]
             != "Not performed, patient died prior to recommended surgery"
         )
         # The following was part of the original SurvTRACE preprocessing but it
@@ -219,7 +215,7 @@ def _filter_rows_as_survtrace(data):
         # integers.
         # & (data["Survival months"] != "Unknown")
     )
-    return data.loc[mask]
+    return X.loc[mask]
 
 
 def _preprocess_cols_as_survtrace(X):
@@ -302,13 +298,13 @@ def _extract_target_events(
     events_of_interest="all",
     other_event_name="Other",
 ):
-    target = raw_event_df.rename(columns={duration_column_name: "duration"})
+    y = raw_event_df.rename(columns={duration_column_name: "duration"})
 
     if events_of_interest == "all":
         # Encode the event label that corresponds to censoring with 0 and map
         # all the others event labels to integers starting at 1 in
         # lexicographical order.
-        events_of_interest = target[event_column_name].unique().tolist()
+        events_of_interest = y[event_column_name].unique().tolist()
         for censoring_label in censoring_labels:
             events_of_interest.remove(censoring_label)
         events_of_interest = sorted(events_of_interest)
@@ -325,9 +321,9 @@ def _extract_target_events(
         event_codes[event_name] = i + 1
 
     other_event_code = len(event_codes)
-    target["event"] = target[event_column_name].map(event_codes)
+    y["event"] = y[event_column_name].map(event_codes)
 
-    if other_event_code in target["event"].unique():
+    if other_event_code in y["event"].unique():
         event_labels += (other_event_name,)
 
-    return target[["event", "duration"]], np.asarray(event_labels)
+    return y[["event", "duration"]], np.asarray(event_labels)

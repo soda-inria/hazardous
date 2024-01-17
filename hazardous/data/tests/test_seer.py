@@ -24,7 +24,7 @@ def test_load_seer_from_fake_sample_file():
     event_labels = seer_dataset.event_labels
     assert list(event_labels) == ["Breast", "Diseases of Heart", "Other"]
 
-    X = seer_dataset.data
+    X = seer_dataset.X
     assert X.shape == (3, 23)
 
     expected_y = pd.DataFrame(
@@ -34,7 +34,7 @@ def test_load_seer_from_fake_sample_file():
             duration=[7, 81, 28],
         )
     )
-    y = seer_dataset.target
+    y = seer_dataset.y
     assert_frame_equal(y, expected_y)
 
     categorical_column_names = X.select_dtypes("category").columns
@@ -51,7 +51,7 @@ def test_load_seer_from_fake_sample_file_with_all_events():
     event_labels = seer_dataset.event_labels
     assert list(event_labels) == ["Alzheimers (ICD-9 and 10 only)", "Breast"]
 
-    X = seer_dataset.data
+    X = seer_dataset.X
     assert X.shape == (3, 23)
 
     expected_y = pd.DataFrame(
@@ -62,7 +62,7 @@ def test_load_seer_from_fake_sample_file_with_all_events():
             duration=[7, 81, 28],
         )
     )
-    y = seer_dataset.target
+    y = seer_dataset.y
     assert_frame_equal(y, expected_y)
 
 

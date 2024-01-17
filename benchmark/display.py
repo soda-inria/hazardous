@@ -1,10 +1,12 @@
 # %%
+from abc import ABC, abstractmethod
 import warnings
 import json
 from tqdm import tqdm
 from copy import deepcopy
 from pathlib import Path
 from IPython.display import display
+import pickle
 
 import pandas as pd
 import numpy as np
@@ -12,8 +14,10 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 from joblib import load
 from lifelines import AalenJohansenFitter
+from sklearn.model_selection import train_test_split
 
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
+from hazardous.data._seer import load_seer
 from hazardous.metrics._brier_score import (
     integrated_brier_score_incidence,
     brier_score_incidence,
@@ -21,19 +25,22 @@ from hazardous.metrics._brier_score import (
 )
 from hazardous.metrics._concordance import concordance_index_ipcw
 
-from main import DATASET_GRID
+from main import DATASET_GRID, SEER_PATH, SEED
 
 sns.set_style("whitegrid")
 
 
-def aggregate_result(path_session):
+def aggregate_result(path_session_dataset, estimator_names):
     data = []
-    for path_profile in Path(path_session).glob("*"):
+    for path_profile in Path(path_session_dataset).glob("*"):
         results = json.load(open(path_profile / "cv_results.json"))
-        dataset_params = json.load(open(path_profile / "dataset_params.json"))
-        estimator = load(path_profile / "best_estimator.joblib")
-        estimator = {"estimator": estimator}
-        data.append({**dataset_params, **results, **estimator})
+        estimator_name = results["estimator_name"]
+        if estimator_name in estimator_names:
+            dataset_params = json.load(open(path_profile / "dataset_params.json"))
+            estimator = load(path_profile / "best_estimator.joblib")
+            estimator = {"estimator": estimator}
+            data.append({**dataset_params, **results, **estimator})
+
     return pd.DataFrame(data)
 
 
@@ -44,15 +51,18 @@ def make_time_grid(duration, n_steps=100):
 
 def _make_query(data_params, x_col=None):
     data_params = deepcopy(data_params)
-    _check_data_params(data_params, x_col)
+    data_params = _check_data_params(data_params, x_col)
     query = []
     for k, v in data_params.items():
+        if isinstance(v, str):
+            v = f"'{v}'"
         query.append(f"({k} == {v})")
     return " & ".join(query)
 
 
 def _check_data_params(data_params, x_col=None):
     data_grid = deepcopy(DATASET_GRID)
+
     if x_col is not None:
         data_params.pop(x_col, None)
         data_grid.pop(x_col)
@@ -70,164 +80,56 @@ def _check_data_params(data_params, x_col=None):
         if v not in data_grid[k]:
             raise ValueError(f"Options for {k} are {data_grid[k]}, got {v}.")
 
+    return data_params
 
-class ResultDisplayer:
-    def __init__(self, path_session, estimator_names):
-        if not Path(path_session).exists():
-            raise FileNotFoundError(f"{path_session} doesn't exist.")
+
+def _get_estimator(df, estimator_name):
+    df_est = df.query("estimator_name == @estimator_name")
+    if df_est.shape[0] != 1:
+        raise ValueError(f"selection should be a single row, got {df_est}.")
+    row = df_est.iloc[0]
+
+    return row["estimator"]
+
+
+def _get_kind(data_params):
+    if "independent_censoring" in data_params:
+        return "independent" if data_params["independent_censoring"] else "dependent"
+    return ""
+
+
+class BaseDisplayer(ABC):
+    @abstractmethod
+    def __init__(self, path_session, estimator_names, dataset_name):
+        path_session_dataset = Path(path_session) / dataset_name
+        if not path_session_dataset.exists():
+            raise FileNotFoundError(f"{path_session_dataset} doesn't exist.")
         self.path_session = Path(path_session)
-        self.df = aggregate_result(self.path_session)
-        self.estimator_names = [
-            name
-            for name in self.df["estimator_name"].unique()
-            if name in estimator_names
-        ]
-
-    def plot_memory_time(self, data_params, x_col):
-        query = _make_query(data_params, x_col)
-        df = self.df.query(query)
-
-        fig, ax = plt.subplots()
-
-        sns.barplot(
-            df,
-            x=x_col,
-            y="peak_memory",
-            hue="estimator_name",
-            ax=ax,
-        )
-        ax.set(
-            title="RAM peak",
-            ylabel="RAM (GiB)",
-        )
-
-        fig, axes = plt.subplots(ncols=2, sharey=True)
-
-        sns.barplot(df, x=x_col, y="mean_fit_time", hue="estimator_name", ax=axes[0])
-        axes[0].set(
-            title="Time to fit",
-            ylabel="time(s)",
-        )
-
-        sns.barplot(df, x=x_col, y="mean_score_time", hue="estimator_name", ax=axes[1])
-        axes[1].set(
-            title="Time to test",
-            ylabel=None,
-        )
-
-    def plot_IPSR(self, data_params):
-        x_cols = ["n_samples", "censoring_relative_scale"]
-        fig, axes = plt.subplots(ncols=2)
-
-        for ax, x_col in zip(axes, x_cols):
-            query = _make_query(data_params, x_col=x_col)
-            df = self.df.query(query)
-
-            for estimator_name in tqdm(self.estimator_names):
-                df_est = df.query("estimator_name == @estimator_name")
-                self._plot_IPSR_estimator(
-                    df_est,
-                    x_col,
-                    data_params,
-                    ax=ax,
-                )
-            ax.set(
-                title="IBS",
-                xlabel=x_col,
-                ylabel=None,
-            )
-            ax.legend()
-
-    @staticmethod
-    def _plot_IPSR_estimator(df, x_col, data_params, ax):
-        x_col_params, all_ipsr = [], []
-        for x_col_param, df_group in df.groupby(x_col):
-            data_params[x_col] = x_col_param
-            X, y = make_synthetic_competing_weibull(**data_params, return_X_y=True)
-
-            time_grid = make_time_grid(y["duration"])
-
-            if df_group.shape[0] != 1:
-                raise ValueError(f"selection should be a single row, got {df_group}.")
-
-            row = df_group.iloc[0]
-            estimator = row["estimator"]
-            y_train = estimator.y_train  # hack for benchmarks
-
-            y_pred = estimator.predict_cumulative_incidence(
-                X,
-                times=time_grid,
-            )
-            event_specific_ipsr = []
-            for idx in range(data_params["n_events"]):
-                event_specific_ipsr.append(
-                    integrated_brier_score_incidence(
-                        y_train=y_train,
-                        y_test=y,
-                        # TODO: remove when removing GBI.
-                        y_pred=y_pred[idx + 1] if y_pred.ndim == 3 else y_pred,
-                        times=time_grid,
-                        event_of_interest=idx + 1,
-                    )
-                )
-            x_col_params.append(x_col_param)
-            all_ipsr.append(np.mean(event_specific_ipsr))
-
-        ax.plot(
-            x_col_params,
-            all_ipsr,
-            label=row["estimator_name"],
-            marker="o",
-        )
+        self.estimator_names = estimator_names
+        self.dataset_name = dataset_name
+        self.df = aggregate_result(self.path_session / dataset_name, estimator_names)
 
     def plot_PSR(self, data_params):
-        query = _make_query(data_params, x_col=None)
-        df = self.df.query(query)
+        df = self.load_cv_results(data_params)
 
-        bunch = make_synthetic_competing_weibull(**data_params, return_X_y=False)
-        (
-            X,
-            y,
-            scale_censoring,
-            shape_censoring,
-        ) = (
-            bunch.X,
-            bunch.y,
-            bunch.scale_censoring,
-            bunch.shape_censoring,
-        )
+        bunch = self.load_dataset(data_params, return_X_y=False)
+        X, y = bunch.X, bunch.y
         time_grid = make_time_grid(y["duration"])
 
-        n_events = data_params["n_events"]
+        n_events = y["event"].nunique() - 1
         fig, axes = plt.subplots(figsize=(12, 4), ncols=n_events, sharey=True)
 
+        kind = _get_kind(data_params)
         censoring_fraction = (y["event"] == 0).mean()
-        kind = "independent" if data_params["independent_censoring"] else "dependent"
         fig.suptitle(
             f"Time-varying Brier score ({censoring_fraction:.1%} {kind} censoring)"
         )
 
-        for estimator_id, estimator_name in enumerate(self.estimator_names, 1):
-            df_est = df.query("estimator_name == @estimator_name")
-
-            if df_est.shape[0] != 1:
-                raise ValueError(f"selection should be a single row, got {df_est}.")
-
-            row = df_est.iloc[0]
-            estimator = row["estimator"]
-            y_pred = estimator.predict_cumulative_incidence(X, times=time_grid)
+        for estimator_name in self.estimator_names:
+            estimator = _get_estimator(df, estimator_name)
+            y_pred = self.get_predictions(X, time_grid, estimator, estimator_name)
 
             for event_id, ax in enumerate(axes, 1):
-                debiased_bs_scores = brier_score_incidence_oracle(
-                    y_train=y,
-                    y_test=y,
-                    y_pred=y_pred[event_id] if y_pred.ndim == 3 else y_pred,  # TODO
-                    times=time_grid,
-                    shape_censoring=shape_censoring,
-                    scale_censoring=scale_censoring,
-                    event_of_interest=event_id,
-                )
-
                 bs_scores = brier_score_incidence(
                     y_train=y,
                     y_test=y,
@@ -241,44 +143,51 @@ class ResultDisplayer:
                     bs_scores,
                     label=f"{estimator_name} (estimated PSR)",
                 )
-                ax.plot(
-                    time_grid,
-                    debiased_bs_scores,
-                    label=f"{estimator_name} (oracle PSR)",
-                    color=line.get_color(),
-                    linestyle="--",
-                    alpha=0.5,
-                )
+
+                if hasattr(bunch, "scale_censoring") and hasattr(
+                    bunch, "shape_censoring"
+                ):
+                    debiased_bs_scores = brier_score_incidence_oracle(
+                        y_train=y,
+                        y_test=y,
+                        y_pred=y_pred[event_id] if y_pred.ndim == 3 else y_pred,  # TODO
+                        times=time_grid,
+                        shape_censoring=bunch.shape_censoring,
+                        scale_censoring=bunch.scale_censoring,
+                        event_of_interest=event_id,
+                    )
+
+                    ax.plot(
+                        time_grid,
+                        debiased_bs_scores,
+                        label=f"{estimator_name} (oracle PSR)",
+                        color=line.get_color(),
+                        linestyle="--",
+                        alpha=0.5,
+                    )
+
                 ax.set_title(f"event {event_id}")
         axes[0].legend()
 
     def plot_marginal_incidence(self, data_params):
-        query = _make_query(data_params, x_col=None)
-        df = self.df.query(query)
-
-        bunch = make_synthetic_competing_weibull(**data_params, return_X_y=False)
-        X, y, y_uncensored = bunch.X, bunch.y, bunch.y_uncensored
+        df = self.load_cv_results(data_params)
+        bunch = self.load_dataset(data_params, return_X_y=False)
+        X, y = bunch.X, bunch.y
         time_grid = make_time_grid(y["duration"])
 
-        n_events = data_params["n_events"]
+        n_events = y["event"].nunique() - 1
         fig, axes = plt.subplots(figsize=(12, 4), ncols=n_events, sharey=True)
 
         censoring_fraction = (y["event"] == 0).mean()
-        kind = "independent" if data_params["independent_censoring"] else "dependent"
+        kind = _get_kind(data_params)
         fig.suptitle(
             "Cause-specific cumulative incidence functions"
             f" ({censoring_fraction:.1%} {kind} censoring)"
         )
 
-        for estimator_id, estimator_name in enumerate(self.estimator_names, 1):
-            df_est = df.query("estimator_name == @estimator_name")
-
-            if df_est.shape[0] != 1:
-                raise ValueError(f"selection should be a single row, got {df_est}.")
-
-            row = df_est.iloc[0]
-            estimator = row["estimator"]
-            y_pred = estimator.predict_cumulative_incidence(X, times=time_grid)
+        for estimator_name in self.estimator_names:
+            estimator = _get_estimator(df, estimator_name)
+            y_pred = self.get_predictions(X, time_grid, estimator, estimator_name)
 
             for event_id, ax in enumerate(axes, 1):
                 ax.plot(
@@ -300,17 +209,19 @@ class ResultDisplayer:
                 )
                 aj.plot(label="AalenJohansen", ax=ax, color="k")
 
-                aj.fit(
-                    durations=y_uncensored["duration"],
-                    event_observed=y_uncensored["event"],
-                    event_of_interest=event_id,
-                )
-                aj.plot(
-                    label="AalenJohansen uncensored",
-                    ax=ax,
-                    color="k",
-                    linestyle="--",
-                )
+                if hasattr(bunch, "y_uncensored"):
+                    y_uncensored = bunch.y_uncensored
+                    aj.fit(
+                        durations=y_uncensored["duration"],
+                        event_observed=y_uncensored["event"],
+                        event_of_interest=event_id,
+                    )
+                    aj.plot(
+                        label="AalenJohansen uncensored",
+                        ax=ax,
+                        color="k",
+                        linestyle="--",
+                    )
 
         for ax in [axes[1], axes[2]]:
             ax.legend().remove()
@@ -319,18 +230,12 @@ class ResultDisplayer:
         if isinstance(sample_ids, int):
             sample_ids = list(range(sample_ids))
 
-        query = _make_query(data_params, x_col=None)
-        df = self.df.query(query)
-
-        bunch = make_synthetic_competing_weibull(
-            **data_params,
-            return_X_y=False,
-            random_state=None,
-        )
+        df = self.load_cv_results(data_params)
+        bunch = self.load_dataset(data_params, return_X_y=False)
         X, y = bunch.X, bunch.y
         time_grid = make_time_grid(y["duration"])
 
-        n_events = data_params["n_events"]
+        n_events = y["event"].nunique() - 1
         fig, axes = plt.subplots(
             figsize=(10, 8),
             nrows=len(sample_ids),
@@ -340,15 +245,9 @@ class ResultDisplayer:
         fig.suptitle(f"Probability of incidence for {len(sample_ids)} samples")
 
         for estimator_name in self.estimator_names:
-            df_est = df.query("estimator_name == @estimator_name")
-            if df_est.shape[0] != 1:
-                raise ValueError(f"selection should be a single row, got {df_est}.")
-
-            row = df_est.iloc[0]
-            estimator = row["estimator"]
-
-            y_pred = estimator.predict_cumulative_incidence(
-                X.loc[sample_ids], times=time_grid
+            estimator = _get_estimator(df, estimator_name)
+            y_pred = self.get_predictions(
+                X.loc[sample_ids], time_grid, estimator, estimator_name
             )
             y_test = y.loc[sample_ids]
 
@@ -378,31 +277,24 @@ class ResultDisplayer:
         plt.tight_layout()
 
     def print_table_metrics(self, data_params):
-        query = _make_query(data_params, x_col=None)
-        df = self.df.query(query)
-
-        bunch = make_synthetic_competing_weibull(**data_params, return_X_y=False)
+        df = self.load_cv_results(data_params)
+        bunch = self.load_dataset(data_params, return_X_y=False)
         X, y = bunch.X, bunch.y
         time_grid = make_time_grid(y["duration"])
+        n_events = y["event"].nunique() - 1
 
         results = []
 
         for estimator_name in self.estimator_names:
-            df_est = df.query("estimator_name == @estimator_name")
-            if df_est.shape[0] != 1:
-                raise ValueError(f"selection should be a single row, got {df_est}.")
-
-            row = df_est.iloc[0]
-            estimator = row["estimator"]
-
+            estimator = _get_estimator(df, estimator_name)
             y_train = estimator.y_train
-            y_pred = estimator.predict_cumulative_incidence(X, times=time_grid)
+            y_pred = self.get_predictions(X, time_grid, estimator, estimator_name)
 
             truncation_quantiles = [0.25, 0.5, 0.75]
             truncation_times = np.quantile(time_grid, truncation_quantiles)
             truncation_indices = np.searchsorted(time_grid, truncation_times)
 
-            for event_id in range(1, data_params["n_events"] + 1):
+            for event_id in range(1, n_events + 1):
                 ibs = integrated_brier_score_incidence(
                     y_train=y_train,
                     y_test=y,
@@ -419,10 +311,11 @@ class ResultDisplayer:
                         if y_pred.ndim == 3
                         else y_pred[:, truncation_idx]  # TODO
                     )
+                    n_subsamples = 10_000
                     ct_index, _, _, _, _ = concordance_index_ipcw(
-                        y_train,
-                        y,
-                        y_pred_at_t,
+                        y_train.head(n_subsamples),
+                        y.head(n_subsamples),
+                        y_pred_at_t[:n_subsamples],
                         tau=truncation_time,
                     )
                     results.append(
@@ -458,34 +351,235 @@ class ResultDisplayer:
         display(results_ct_index)
 
 
+class WeibullDisplayer(BaseDisplayer):
+    def __init__(self, path_session, estimator_names):
+        super().__init__(
+            path_session,
+            estimator_names,
+            dataset_name="weibull",
+        )
+
+    def plot_memory_time(self, data_params, x_col="n_samples"):
+        df = self.load_cv_results(data_params, x_col)
+
+        fig, ax = plt.subplots()
+
+        sns.barplot(
+            df,
+            x=x_col,
+            y="peak_memory",
+            hue="estimator_name",
+            ax=ax,
+        )
+        ax.set(
+            title="RAM peak",
+            ylabel="RAM (GiB)",
+        )
+
+        fig, axes = plt.subplots(ncols=2, sharey=True)
+
+        sns.barplot(df, x=x_col, y="mean_fit_time", hue="estimator_name", ax=axes[0])
+        axes[0].set(
+            title="Time to fit",
+            ylabel="time(s)",
+        )
+
+        sns.barplot(df, x=x_col, y="mean_score_time", hue="estimator_name", ax=axes[1])
+        axes[1].set(
+            title="Time to test",
+            ylabel=None,
+        )
+
+    def plot_IPSR(self, data_params):
+        x_cols = ["n_samples", "censoring_relative_scale"]
+        fig, axes = plt.subplots(ncols=2)
+
+        for x_col, ax in zip(x_cols, axes):
+            self._plot_IPSR(data_params, x_col, ax)
+
+    def _plot_IPSR(self, data_params, x_col, ax):
+        df = self.load_cv_results(data_params, x_col)
+
+        for estimator_name in tqdm(self.estimator_names):
+            x_col_params, all_ipsr = [], []
+            for x_col_param, df_group in df.groupby(x_col):
+                data_params[x_col] = x_col_param
+
+                X, y = self.load_dataset(data_params, return_X_y=True)
+                time_grid = make_time_grid(y["duration"])
+
+                estimator = _get_estimator(df_group, estimator_name)
+
+                y_train = estimator.y_train  # hack for benchmarks
+                y_pred = self.get_predictions(X, time_grid, estimator, estimator_name)
+                event_specific_ipsr = []
+                for idx in range(data_params["n_events"]):
+                    event_specific_ipsr.append(
+                        integrated_brier_score_incidence(
+                            y_train=y_train,
+                            y_test=y,
+                            # TODO: remove when removing GBI.
+                            y_pred=y_pred[idx + 1] if y_pred.ndim == 3 else y_pred,
+                            times=time_grid,
+                            event_of_interest=idx + 1,
+                        )
+                    )
+                x_col_params.append(x_col_param)
+                all_ipsr.append(np.mean(event_specific_ipsr))
+
+            ax.plot(
+                x_col_params,
+                all_ipsr,
+                label=estimator_name,
+                marker="o",
+            )
+            ax.set(
+                title="IBS",
+                xlabel=x_col,
+                ylabel=None,
+            )
+            ax.legend()
+
+    def load_cv_results(self, data_params, x_col=None):
+        query = _make_query(data_params, x_col)
+        return self.df.query(query)
+
+    def load_dataset(self, data_params, return_X_y=False, use_cache=True):
+        del use_cache
+        return make_synthetic_competing_weibull(**data_params, return_X_y=return_X_y)
+
+    def get_predictions(self, X, times, estimator, estimator_name):
+        """TODO: implement cache if some estimators take long to predict."""
+        return estimator.predict_cumulative_incidence(X, times)
+
+
+class SEERDisplayer(BaseDisplayer):
+    def __init__(self, path_session, estimator_names):
+        super().__init__(
+            path_session,
+            estimator_names,
+            dataset_name="seer",
+        )
+        self.estimator_cumulative_incidence = dict()
+
+    def plot_memory_time(self, data_params, x_col=None):
+        del x_col
+        df = self.load_cv_results(data_params)
+
+        fig, ax = plt.subplots()
+
+        sns.barplot(
+            df,
+            x="estimator_name",
+            y="peak_memory",
+            ax=ax,
+        )
+        ax.set(
+            title="RAM peak",
+            ylabel="RAM (GiB)",
+        )
+
+        fig, axes = plt.subplots(ncols=2, sharey=True)
+
+        sns.barplot(df, x="estimator_name", y="mean_fit_time", ax=axes[0])
+        axes[0].set(
+            title="Time to fit",
+            ylabel="time(s)",
+        )
+
+        sns.barplot(df, x="estimator_name", y="mean_score_time", ax=axes[1])
+        axes[1].set(
+            title="Time to test",
+            ylabel=None,
+        )
+
+    def load_cv_results(self, data_params, x_col=None):
+        del data_params, x_col
+        return self.df
+
+    def load_dataset(self, data_params, return_X_y=False, use_cache=True):
+        del data_params
+        if use_cache:
+            path_cache = Path("cache_seer_surv_preprocessing.pkl")
+            if path_cache.exists():
+                bunch = pickle.load(open(path_cache, "rb"))
+            else:
+                bunch = load_seer(
+                    SEER_PATH, survtrace_preprocessing=True, return_X_y=False
+                )
+                pickle.dump(bunch, open(path_cache, "wb"))
+        else:
+            bunch = load_seer(SEER_PATH, survtrace_preprocessing=True, return_X_y=False)
+
+        _, X_test, _, y_test = train_test_split(
+            bunch.X,
+            bunch.y,
+            test_size=0.3,
+            random_state=SEED,
+        )
+        bunch.X, bunch.y = X_test, y_test
+
+        if return_X_y:
+            return bunch.X, bunch.y
+
+        return bunch
+
+    def get_predictions(self, X, times, estimator, estimator_name):
+        if estimator_name in self.estimator_cumulative_incidence:
+            y_pred = self.estimator_cumulative_incidence[estimator_name]
+        else:
+            y_pred = estimator.predict_cumulative_incidence(X, times)
+            self.estimator_cumulative_incidence[estimator_name] = y_pred
+        return y_pred
+
+
 # %%
 
-path_session = "2024-01-14"
+path_session = "2024-01-17"
 estimator_names = ["gbmi_10", "gbmi_20"]
-displayer = ResultDisplayer(path_session, estimator_names)
+displayer = SEERDisplayer(path_session, estimator_names)
+
+data_params = {}
+displayer.plot_memory_time(data_params)
+
+# %%
+
+displayer.plot_PSR(data_params)
+
+# %%
+
+displayer.plot_marginal_incidence(data_params)
+
+# %%
+
+displayer.plot_individual_incidence(data_params, sample_ids=2)
+
+# %%
+
+displayer.print_table_metrics(data_params=data_params)
+
+# %%
+
+path_session = "2024-01-15"
+estimator_names = ["gbmi_10", "gbmi_20"]
+displayer = WeibullDisplayer(path_session, estimator_names)
 
 data_params = {
+    "censoring_relative_scale": 1.5,
     "n_events": 3,
     "complex_features": True,
-    "censoring_relative_scale": 1.5,
     "independent_censoring": True,
 }
-displayer.plot_memory_time(
-    data_params=data_params,
-    x_col="n_samples",
-)
+displayer.plot_memory_time(data_params)
 
 # %%
 
-displayer.plot_IPSR(
-    data_params=data_params,
-)
+data_params["n_samples"] = 10_000
+displayer.plot_IPSR(data_params)
 
 # %%
-
 data_params.update(
     {
-        "n_samples": 10_000,
         "censoring_relative_scale": 1.5,
         "independent_censoring": True,
     }
@@ -495,8 +589,12 @@ displayer.plot_PSR(
 )
 
 # %%
-
-data_params["independent_censoring"] = False
+data_params.update(
+    {
+        "censoring_relative_scale": 1.5,
+        "independent_censoring": False,
+    }
+)
 displayer.plot_PSR(
     data_params=data_params,
 )
@@ -506,28 +604,13 @@ data_params["independent_censoring"] = True
 displayer.plot_marginal_incidence(data_params)
 
 # %%
-
 data_params["independent_censoring"] = False
 displayer.plot_marginal_incidence(data_params)
 
 # %%
-
-data_params.update(
-    {
-        "n_samples": 10_000,
-        "censoring_relative_scale": 1.5,
-        "independent_censoring": True,
-    }
-)
+data_params["independent_censoring"] = True
 displayer.plot_individual_incidence(data_params, sample_ids=2)
 # %%
 
-data_params.update(
-    {
-        "n_samples": 10_000,
-        "censoring_relative_scale": 1.5,
-        "independent_censoring": True,
-    }
-)
 displayer.print_table_metrics(data_params=data_params)
 # %%
