@@ -6,6 +6,7 @@ from rpy2.robjects.conversion import localconverter
 from rpy2.robjects.packages import importr
 from scipy.interpolate import interp1d
 from sklearn.base import BaseEstimator, check_is_fitted
+from sklearn.utils import check_random_state
 
 from hazardous.utils import check_y_survival
 
@@ -69,11 +70,13 @@ def r_matrix(X):
 
 
 def np_matrix(r_dataframe):
+    """Convert a R dataframe into a numpy 2d array."""
     with localconverter(robjects.default_converter + pandas2ri.converter):
         return robjects.conversion.rpy2py(r_dataframe)
 
 
 def r_dataframe(pd_dataframe):
+    """Convert a Pandas dataframe into a R dataframe."""
     with localconverter(robjects.default_converter + pandas2ri.converter):
         return robjects.conversion.py2rpy(pd_dataframe)
 
@@ -83,14 +86,63 @@ def parse_r_list(r_list):
 
 
 class FineGrayEstimator(BaseEstimator):
-    def __init__(self, event_of_interest=1):
+    """Fine and Gray competing risk estimator.
+
+    This estimator is a rpy2 wrapper around the cmprsk R package.
+
+    Parameters
+    ----------
+    event_of_interest : int, default=1,
+        The event to perform Fine and Gray regression on.
+
+    max_fit_samples : int, default=10_000,
+        The maximum number of samples to use during fit.
+        This is required since the time complexity of this operation is quadratic.
+
+    random_state : default=None
+        Used to subsample X during fit when X has more samples
+        than max_fit_samples.
+    """
+
+    def __init__(
+        self,
+        event_of_interest=1,
+        max_fit_samples=10_000,
+        random_state=None,
+    ):
         self.event_of_interest = event_of_interest
+        self.max_fit_samples = max_fit_samples
+        self.random_state = random_state
 
     def fit(self, X, y):
-        X = self._check_input(X)
+        """
+        Parameters
+        ----------
+        X : pandas.DataFrame of shape (n_samples, n_features)
+            The input covariates
+
+        y : pandas.DataFrame of shape (n_samples, 2)
+            The target, with columns 'event' and 'duration'.
+
+        Returns
+        -------
+        self : fitted instance of FineGrayEstimator
+        """
+        X = self._check_input(X, y)
+
+        if X.shape[0] > self.max_fit_samples:
+            rng = check_random_state(self.random_state)
+            sample_indices = rng.choice(
+                np.arange(X.shape[0]),
+                size=self.max_fit_samples,
+                replace=False,
+            )
+            X, y = X.iloc[sample_indices], y.iloc[sample_indices]
+
         self._check_feature_names(X, reset=True)
         self._check_n_features(X, reset=True)
 
+        y = y.loc[X.index]
         event, duration = check_y_survival(y)
         self.times_ = np.unique(duration[event == self.event_of_interest])
         event, duration = r_vector(event), r_vector(duration)
@@ -109,6 +161,23 @@ class FineGrayEstimator(BaseEstimator):
         return self
 
     def predict_cumulative_incidence(self, X, times=None):
+        """Predict the conditional cumulative incidence.
+
+        Parameters
+        ----------
+        X : pd.DataFrame of shape (n_samples, n_features)
+
+        times : ndarray of shape (n_times,), default=None
+            The time steps to estimate the cumulative incidence at.
+            * If set to None, the duration of the event of interest
+              seen during fit 'times_' is used.
+            * If not None, this performs a linear interpolation for each sample.
+
+        Returns
+        -------
+        y_pred : ndarray of shape (n_samples, n_times)
+            The conditional cumulative cumulative incidence at times.
+        """
         check_is_fitted(self, "r_crr_result_")
 
         self._check_feature_names(X, reset=False)
@@ -139,9 +208,12 @@ class FineGrayEstimator(BaseEstimator):
 
         return y_pred
 
-    def _check_input(self, X):
+    def _check_input(self, X, y):
         if not hasattr(X, "__dataframe__"):
             X = pd.DataFrame(X)
+
+        if not hasattr(y, "__dataframe__"):
+            raise TypeError(f"'y' must be a Pandas dataframe, got {type(y)}.")
 
         # Check no categories
         numeric_columns = X.select_dtypes("number").columns
