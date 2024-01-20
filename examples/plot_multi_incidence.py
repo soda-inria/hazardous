@@ -58,6 +58,8 @@ gb_multi_incidence = GBMultiIncidence(
     loss="competing_risks",
     show_progressbar=False,
     random_state=0,
+    n_times=3,
+    uniform_sampling=False,
 )
 
 gb_incidence = GradientBoostingIncidence(
@@ -223,7 +225,9 @@ gb_multi_incidence = GBMultiIncidence(
     max_leaf_nodes=5,
     hard_zero_fraction=0.1,
     min_samples_leaf=50,
-    loss="inll",
+    loss="competing_risks",
+    n_times=5,
+    uniform_sampling=False,
     show_progressbar=False,
     random_state=0,
 )
@@ -300,6 +304,8 @@ def plot_cifs(
             hard_zero_fraction=0.1,
             min_samples_leaf=50,
             loss="inll",
+            n_times=5,
+            uniform_sampling=False,
             show_progressbar=False,
             random_state=0,
         )

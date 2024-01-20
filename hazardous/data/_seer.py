@@ -182,6 +182,9 @@ def load_seer(
 
     # Encode missing values with None so that astype will convert missing
     # numerical values to nan and categorical values to pd.NA.
+
+    X = X[CATEGORICAL_COLUMN_NAMES + NUMERIC_COLUMN_NAMES]
+
     X[CATEGORICAL_COLUMN_NAMES] = X[CATEGORICAL_COLUMN_NAMES].replace("Unknown", None)
     X[NUMERIC_COLUMN_NAMES] = X[NUMERIC_COLUMN_NAMES].replace("Unknown", np.nan)
     X = X.astype({**numerical_dtypes, **categorical_dtypes})

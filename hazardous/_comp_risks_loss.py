@@ -98,8 +98,7 @@ class _MultinomialBinaryLoss:
                     -1 * (y_true[i] == k)
                     + p[k]
                     * (n_classes - 1 + r_true_pb - (1 - y_true[i] == k) / (1 - p[k]))
-                    * sample_weight[i]
-                )
+                ) * sample_weight[i]
 
             if sample_weight is not None:
                 loss_out[i] *= sample_weight[i]
@@ -135,8 +134,7 @@ class _MultinomialBinaryLoss:
                         + ratio_true_probas
                         - (1 - y_true[i] == k) / (1 - p[k])
                     )
-                    * sample_weight[i]
-                )
+                ) * sample_weight[i]
 
         gradient_out[:, 0] = 0.0
         return -np.asarray(gradient_out)
@@ -177,9 +175,8 @@ class _MultinomialBinaryLoss:
                 )
 
                 gradient_out[i, k] = (
-                    -1 * (y_true[i] == k)
-                    + p[k] * (n_classes - 1 - r_true_pb) * sample_weight[i]
-                )
+                    -1 * (y_true[i] == k) + p[k] * (n_classes - 1 - r_true_pb_k)
+                ) * sample_weight[i]
                 hessian_out[i, k] = (
                     p[k]
                     * (
@@ -224,8 +221,7 @@ class _MultinomialBinaryLoss:
                     -1 * (y_true[i] == k)
                     + p[k]
                     * (n_classes - 1 + r_true_pb - (1 - y_true[i] == k) / (1 - p[k]))
-                    * sample_weight[i]
-                )
+                ) * sample_weight[i]
 
         gradient_out[:, 0] = 0.0
         return -np.asarray(gradient_out), np.asarray(proba_out)

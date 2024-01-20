@@ -190,6 +190,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         ipcw_est=None,
         random_state=None,
         uniform_sampling=True,
+        n_times=1,
     ):
         self.loss = loss
         self.hard_zero_fraction = hard_zero_fraction
@@ -205,6 +206,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         self.ipcw_est = ipcw_est
         self.random_state = random_state
         self.uniform_sampling = uniform_sampling
+        self.n_times = n_times
 
     def fit(self, X, y, times=None):
         X = check_array(X, force_all_finite="allow-nan")
@@ -252,13 +254,21 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
             iterator = tqdm(iterator)
 
         for idx_iter in iterator:
-            (
-                sampled_times,
-                y_targets,
-                sample_weight,
-            ) = self.weighted_targets_.draw(X=X, ipcw_training=False)
+            X_with_time = np.empty((0, X.shape[1] + 1))
+            y_targets = np.empty((0,))
+            sample_weight = np.empty((0,))
+            for _ in range(self.n_times):
+                (
+                    sampled_times_,
+                    y_targets_,
+                    sample_weight_,
+                ) = self.weighted_targets_.draw(X=X, ipcw_training=False)
 
-            X_with_time = np.hstack([sampled_times, X])
+                X_with_time_ = np.hstack([sampled_times_, X])
+                X_with_time = np.vstack([X_with_time, X_with_time_])
+                y_targets = np.hstack([y_targets, y_targets_])
+                sample_weight = np.hstack([sample_weight, sample_weight_])
+
             self.estimator_.max_iter += 1
             self.estimator_.fit(X_with_time, y_targets, sample_weight=sample_weight)
 

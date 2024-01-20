@@ -3,16 +3,15 @@ from pathlib import Path
 from itertools import product
 from datetime import datetime
 import pandas as pd
+import numpy as np
+from memory_profiler import profile
+from sklearn.utils import Bunch
 
 from joblib import delayed, Parallel, dump
 from sklearn.model_selection import GridSearchCV, train_test_split
 
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
-from hazardous.data._seer import (
-    load_seer,
-    CATEGORICAL_COLUMN_NAMES,
-    NUMERIC_COLUMN_NAMES,
-)
+from hazardous.data._seer import load_seer
 from hazardous._gb_multi_incidence import GBMultiIncidence
 from hazardous.survtrace._encoder import SurvFeatureEncoder
 from hazardous.utils import CumulativeIncidencePipeline
@@ -22,35 +21,24 @@ from memory_monitor import MemoryMonitor
 # Enable oracle scoring for GridSearchCV
 # GBMI.set_score_request(scale=True, shape=True)
 
-gbmi_10 = CumulativeIncidencePipeline(
+gbmi_competing_loss = CumulativeIncidencePipeline(
     [
         ("surv_feature_encoder", SurvFeatureEncoder()),
-        ("gb_multi_incidence", GBMultiIncidence(n_iter=10, show_progressbar=True)),
-    ]
-)
-
-gbmi_20 = CumulativeIncidencePipeline(
-    [
-        ("surv_feature_encoder", SurvFeatureEncoder()),
-        ("gb_multi_incidence", GBMultiIncidence(n_iter=20, show_progressbar=True)),
+        (
+            "gb_multi_incidence",
+            GBMultiIncidence(loss="competing_risks", show_progressbar=True),
+        ),
     ]
 )
 
 ESTIMATOR_GRID = {
-    "gbmi_10": {
-        "estimator": gbmi_10,
+    "gbmi_competing_loss": {
+        "estimator": gbmi_competing_loss,
         "param_grid": {
-            "gb_multi_incidence__learning_rate": [0.01],
-            # "n_iter": [50, 100, 200],
-            # "max_depth": [3, 5],
-            # "max_leaf_nodes": [10, 30, 50],
-            # "min_samples_leaf": [10, 50],
-        },
-    },
-    "gbmi_20": {
-        "estimator": gbmi_20,
-        "param_grid": {
-            "gb_multi_incidence__learning_rate": [0.01],
+            "gb_multi_incidence__learning_rate": [0.01, 0.03],
+            "gb_multi_incidence__max_depth": [5, 10],
+            "gb_multi_incidence__n_iter": [50, 100, 200],
+            "gb_multi_incidence__n_times": [2, 3, 5],
         },
     },
 }
@@ -67,9 +55,11 @@ DATASET_GRID = {
 PATH_DAILY_SESSION = Path(datetime.now().strftime("%Y-%m-%d"))
 
 SEER_PATH = "../hazardous/data/seer_cancer_cardio_raw_data.txt"
+CHURN_PATH = "../hazardous/data/churn.csv"
 SEED = 0
 
 
+@profile()
 def run_all_synthetic_datasets():
     grid_dataset_params = list(product(*DATASET_GRID.values()))
 
@@ -88,33 +78,47 @@ def run_synthetic_dataset(dataset_params):
             estimator_name,
             data_bunch,
             dataset_name="weibull",
-            dataser_params=dataset_params,
+            dataset_params=dataset_params,
         )
 
 
-def run_seer():
-    data_bunch = load_seer(
-        SEER_PATH,
-        survtrace_preprocessing=True,
-        return_X_y=False,
-    )
-    X, y = data_bunch.X, data_bunch.y
-    column_names = CATEGORICAL_COLUMN_NAMES + NUMERIC_COLUMN_NAMES
-    data_bunch.X = data_bunch.X[column_names]
-
-    X_train, _, y_train, _ = train_test_split(X, y, test_size=0.3, random_state=SEED)
-    data_bunch.X, data_bunch.y = X_train, y_train
-
-    parallel = Parallel(n_jobs=-1)
-    parallel(
-        delayed(run_estimator)(
-            estimator_name,
-            data_bunch,
-            dataset_name="seer",
-            dataset_params={},
+@profile()
+def run_real_dataset(dataset_name="seer"):
+    if dataset_name == "seer":
+        data_bunch = load_seer(
+            SEER_PATH,
+            survtrace_preprocessing=True,
+            return_X_y=False,
         )
-        for estimator_name in ESTIMATOR_GRID
-    )
+        X, y = data_bunch.X, data_bunch.y
+
+    elif dataset_name == "churn":
+        churn_data = pd.read_csv(CHURN_PATH)
+        X, y = churn_data[["months_active"]], churn_data["churned"]
+        data_bunch = Bunch(X=X, y=y)
+
+    else:
+        raise ValueError(f"Unknown dataset name: {dataset_name}")
+
+    X_train_, _, y_train_, _ = train_test_split(X, y, test_size=0.3, random_state=SEED)
+    SAMPLES_RATIO = [0.1, 0.3, 0.5, 0.7, 1.0]
+    for samples_ratio in SAMPLES_RATIO:
+        idx_train = np.random.choice(
+            len(X_train_), int(len(X_train_) * samples_ratio), replace=False
+        )
+        X_train, y_train = X_train_.iloc[idx_train], y_train_.iloc[idx_train]
+        data_bunch.X, data_bunch.y = X_train, y_train
+
+        parallel = Parallel(n_jobs=-1)
+        parallel(
+            delayed(run_estimator)(
+                estimator_name,
+                data_bunch,
+                dataset_name=dataset_name,
+                dataset_params={"samples_ratio": samples_ratio},
+            )
+            for estimator_name in ESTIMATOR_GRID
+        )
 
 
 def run_estimator(estimator_name, data_bunch, dataset_name, dataset_params):
@@ -173,4 +177,5 @@ def run_estimator(estimator_name, data_bunch, dataset_name, dataset_params):
 
 
 if __name__ == "__main__":
-    run_seer()
+    run_all_synthetic_datasets()
+    # run_real_dataset("seer")

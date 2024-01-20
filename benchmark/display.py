@@ -27,7 +27,10 @@ from hazardous.metrics._concordance import concordance_index_ipcw
 
 from main import DATASET_GRID, SEER_PATH, SEED
 
-sns.set_style("whitegrid")
+sns.set_style(
+    style="white",
+)
+sns.set_palette("colorblind")
 
 
 def aggregate_result(path_session_dataset, estimator_names):
@@ -108,6 +111,9 @@ class BaseDisplayer(ABC):
         self.estimator_names = estimator_names
         self.dataset_name = dataset_name
         self.df = aggregate_result(self.path_session / dataset_name, estimator_names)
+        path_profile = Path(path_session) / f"{dataset_name}_plots/"
+        path_profile.mkdir(parents=True, exist_ok=True)
+        self.path_profile = path_profile
 
     def plot_PSR(self, data_params):
         df = self.load_cv_results(data_params)
@@ -124,6 +130,7 @@ class BaseDisplayer(ABC):
         fig.suptitle(
             f"Time-varying Brier score ({censoring_fraction:.1%} {kind} censoring)"
         )
+        sns.despine(fig=fig)
 
         for estimator_name in self.estimator_names:
             estimator = _get_estimator(df, estimator_name)
@@ -168,6 +175,7 @@ class BaseDisplayer(ABC):
 
                 ax.set_title(f"event {event_id}")
         axes[0].legend()
+        plt.savefig(self.path_profile / "PSR.pdf", format="pdf")
 
     def plot_marginal_incidence(self, data_params):
         df = self.load_cv_results(data_params)
@@ -225,6 +233,7 @@ class BaseDisplayer(ABC):
 
         for ax in [axes[1], axes[2]]:
             ax.legend().remove()
+        plt.savefig(self.path_profile / "marginal_incidence.pdf", format="pdf")
 
     def plot_individual_incidence(self, data_params, sample_ids=2):
         if isinstance(sample_ids, int):
@@ -247,9 +256,9 @@ class BaseDisplayer(ABC):
         for estimator_name in self.estimator_names:
             estimator = _get_estimator(df, estimator_name)
             y_pred = self.get_predictions(
-                X.loc[sample_ids], time_grid, estimator, estimator_name
+                X.iloc[sample_ids], time_grid, estimator, estimator_name
             )
-            y_test = y.loc[sample_ids]
+            y_test = y.iloc[sample_ids]
 
             for row_idx in range(len(sample_ids)):
                 y_sample = y_test.iloc[row_idx]
@@ -275,6 +284,7 @@ class BaseDisplayer(ABC):
                         if col_idx == 0:
                             ax.legend()
         plt.tight_layout()
+        plt.savefig(self.path_profile / "individual_incidence.pdf", format="pdf")
 
     def print_table_metrics(self, data_params):
         df = self.load_cv_results(data_params)
@@ -389,13 +399,15 @@ class WeibullDisplayer(BaseDisplayer):
             title="Time to test",
             ylabel=None,
         )
+        plt.savefig(self.path_profile / "memory_time.pdf", format="pdf")
 
     def plot_IPSR(self, data_params):
         x_cols = ["n_samples", "censoring_relative_scale"]
-        fig, axes = plt.subplots(ncols=2)
-
+        fig, axes = plt.subplots(ncols=2, figsize=(8, 4), sharey=True)
+        sns.despine(fig=fig)
         for x_col, ax in zip(x_cols, axes):
             self._plot_IPSR(data_params, x_col, ax)
+        plt.savefig(self.path_profile / "IPSR.pdf", format="pdf")
 
     def _plot_IPSR(self, data_params, x_col, ax):
         df = self.load_cv_results(data_params, x_col)
@@ -492,6 +504,7 @@ class SEERDisplayer(BaseDisplayer):
             title="Time to test",
             ylabel=None,
         )
+        plt.savefig(self.path_profile / "memory_time.pdf", format="pdf")
 
     def load_cv_results(self, data_params, x_col=None):
         del data_params, x_col
@@ -536,7 +549,7 @@ class SEERDisplayer(BaseDisplayer):
 # %%
 
 path_session = "2024-01-17"
-estimator_names = ["gbmi_10", "gbmi_20"]
+estimator_names = ["gbmi_competing_loss", "gbmi_log_loss"]
 displayer = SEERDisplayer(path_session, estimator_names)
 
 data_params = {}
@@ -560,8 +573,8 @@ displayer.print_table_metrics(data_params=data_params)
 
 # %%
 
-path_session = "2024-01-15"
-estimator_names = ["gbmi_10", "gbmi_20"]
+path_session = "2024-01-19"
+estimator_names = ["gbmi_competing_loss"]
 displayer = WeibullDisplayer(path_session, estimator_names)
 
 data_params = {
@@ -574,7 +587,8 @@ displayer.plot_memory_time(data_params)
 
 # %%
 
-data_params["n_samples"] = 10_000
+data_params["n_samples"] = 5_000
+
 displayer.plot_IPSR(data_params)
 
 # %%
