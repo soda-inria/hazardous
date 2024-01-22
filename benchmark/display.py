@@ -30,6 +30,7 @@ from main import DATASET_GRID, SEER_PATH, SEED
 sns.set_style(
     style="white",
 )
+sns.set_context("paper")
 sns.set_palette("colorblind")
 
 
@@ -360,6 +361,57 @@ class BaseDisplayer(ABC):
         print("Ct-index")
         display(results_ct_index)
 
+    def plot_performance_time(self, data_params, x_col="n_samples"):
+        # Plot performance vs time
+        df = self.load_cv_results(data_params, x_col)
+        fig, ax = plt.subplots(figsize=(8, 4))
+        fit_time = {
+            "mean_fit_time": [],
+            "std_fit_time": [],
+            "estimator_name": [],
+            "mean_ipsr": [],
+        }
+        for estimator_name in tqdm(self.estimator_names):
+            for x_col_param, df_group in df.groupby(x_col):
+                data_params[x_col] = x_col_param
+
+                X, y = self.load_dataset(data_params, return_X_y=True)
+                time_grid = make_time_grid(y["duration"])
+
+                estimator = _get_estimator(df_group, estimator_name)
+
+                y_train = estimator.y_train  # hack for benchmarks
+                y_pred = self.get_predictions(X, time_grid, estimator, estimator_name)
+                event_specific_ipsr = []
+                for idx in range(data_params["n_events"]):
+                    event_specific_ipsr.append(
+                        integrated_brier_score_incidence(
+                            y_train=y_train,
+                            y_test=y,
+                            # TODO: remove when removing GBI.
+                            y_pred=y_pred[idx + 1] if y_pred.ndim == 3 else y_pred,
+                            times=time_grid,
+                            event_of_interest=idx + 1,
+                        )
+                    )
+                fit_time["mean_fit_time"].append(df_group["mean_fit_time"].values[0])
+                fit_time["estimator_name"].append(estimator_name + f" {x_col_param} TS")
+                fit_time["mean_ipsr"].append(np.mean(event_specific_ipsr))
+                fit_time["std_fit_time"].append(df_group["std_fit_time"].values[0])
+        fit_time = pd.DataFrame(fit_time)
+        sns.scatterplot(
+            fit_time,
+            x="mean_fit_time",
+            y="mean_ipsr",
+            hue="estimator_name",
+            ax=ax,
+        )
+        ax.set(
+            xlabel="time(s) to fit",
+            ylabel="IPSR",
+        )
+        plt.savefig(self.path_profile / "performance_vs_time.pdf", format="pdf")
+
 
 class WeibullDisplayer(BaseDisplayer):
     def __init__(self, path_session, estimator_names):
@@ -458,7 +510,9 @@ class WeibullDisplayer(BaseDisplayer):
 
     def load_dataset(self, data_params, return_X_y=False, use_cache=True):
         del use_cache
-        return make_synthetic_competing_weibull(**data_params, return_X_y=return_X_y)
+        return make_synthetic_competing_weibull(
+            **data_params, return_X_y=return_X_y, random_state=1345
+        )
 
     def get_predictions(self, X, times, estimator, estimator_name):
         """TODO: implement cache if some estimators take long to predict."""
@@ -548,8 +602,8 @@ class SEERDisplayer(BaseDisplayer):
 
 # %%
 
-path_session = "2024-01-17"
-estimator_names = ["gbmi_competing_loss", "gbmi_log_loss"]
+path_session = "2024-01-20"
+estimator_names = ["gbmi_competing_loss"]
 displayer = SEERDisplayer(path_session, estimator_names)
 
 data_params = {}
@@ -573,7 +627,7 @@ displayer.print_table_metrics(data_params=data_params)
 
 # %%
 
-path_session = "2024-01-19"
+path_session = "2024-01-20"
 estimator_names = ["gbmi_competing_loss"]
 displayer = WeibullDisplayer(path_session, estimator_names)
 
@@ -586,11 +640,13 @@ data_params = {
 displayer.plot_memory_time(data_params)
 
 # %%
-
-data_params["n_samples"] = 5_000
+displayer.plot_performance_time(data_params)
+# %%
 
 displayer.plot_IPSR(data_params)
 
+# %%
+data_params
 # %%
 data_params.update(
     {

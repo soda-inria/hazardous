@@ -8,45 +8,66 @@ from memory_profiler import profile
 from sklearn.utils import Bunch
 
 from joblib import delayed, Parallel, dump
-from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.model_selection import GridSearchCV, train_test_split, cross_validate
 
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
 from hazardous.data._seer import load_seer
 from hazardous._gb_multi_incidence import GBMultiIncidence
-from hazardous.survtrace._encoder import SurvFeatureEncoder
-from hazardous.utils import CumulativeIncidencePipeline
+
+# from hazardous.survtrace._encoder import SurvFeatureEncoder
+from hazardous._deep_hit import _DeepHit
+from hazardous._fine_and_gray import FineGrayEstimator
+
+# from hazardous.utils import CumulativeIncidencePipeline
 
 from memory_monitor import MemoryMonitor
 
 # Enable oracle scoring for GridSearchCV
 # GBMI.set_score_request(scale=True, shape=True)
 
-gbmi_competing_loss = CumulativeIncidencePipeline(
-    [
-        ("surv_feature_encoder", SurvFeatureEncoder()),
-        (
-            "gb_multi_incidence",
-            GBMultiIncidence(loss="competing_risks", show_progressbar=True),
-        ),
-    ]
+gbmi_competing_loss = GBMultiIncidence(loss="competing_risks", show_progressbar=True)
+
+deephit = _DeepHit(
+    num_nodes_shared=[64, 64],
+    num_nodes_indiv=[32],
+    verbose=True,
+    num_durations=10,
+    batch_norm=True,
+    dropout=None,
 )
 
+fine_and_gray = FineGrayEstimator()
+
 ESTIMATOR_GRID = {
-    "gbmi_competing_loss": {
-        "estimator": gbmi_competing_loss,
+    #     "gbmi_competing_loss": {
+    #         "estimator": gbmi_competing_loss,
+    #         "param_grid": {
+    #             "gb_multi_incidence__learning_rate": [0.01, 0.03],
+    #             "gb_multi_incidence__max_depth": [5, 10],
+    #             "gb_multi_incidence__n_iter": [50, 100, 200],
+    #             "gb_multi_incidence__n_times": [2, 3, 5],
+    #         },
+    #    },
+    "deephit": {
+        "estimator": deephit,
         "param_grid": {
-            "gb_multi_incidence__learning_rate": [0.01, 0.03],
-            "gb_multi_incidence__max_depth": [5, 10],
-            "gb_multi_incidence__n_iter": [50, 100, 200],
-            "gb_multi_incidence__n_times": [2, 3, 5],
+            "deephit__batch_size": [128, 256],
+            "deephit__epochs": [256, 512],
+            "deephit__alpha": [0.2, 0.3],
+            "deephit__sigma": [0.1, 0.2],
         },
-    },
+        "fine_and_gray": {
+            "estimator": fine_and_gray,
+            "param_grid": {},
+        },
+    }
 }
+
 
 # Parameters of the make_synthetic_competing_weibull function.
 DATASET_GRID = {
     "n_events": [3],
-    "n_samples": [1_000, 5_000, 10_000, 20_000, 50_000],
+    "n_samples": [1_000, 5_000],  # , 10_000, 20_000, 50_000],
     "censoring_relative_scale": [0.8, 1.5, 2.5],
     "complex_features": [True],
     "independent_censoring": [True, False],
@@ -135,8 +156,6 @@ def run_estimator(estimator_name, data_bunch, dataset_name, dataset_params):
     hp_search.fit(
         X,
         y,
-        # scale_censoring=scale_censoring,
-        # shape_censoring=shape_censoring,
     )
 
     best_params = hp_search.best_params_
@@ -157,7 +176,7 @@ def run_estimator(estimator_name, data_bunch, dataset_name, dataset_params):
     best_results["estimator_name"] = estimator_name
 
     monitor = MemoryMonitor()
-    best_estimator.fit(X, y)
+    cross_validate(best_estimator, X, y, cv=3)
     monitor.join()
     peak_memory = max(monitor.memory_buffer) / 1e6  # unit is MiB
     best_results["peak_memory"] = peak_memory

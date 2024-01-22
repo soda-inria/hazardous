@@ -35,8 +35,8 @@ ax.set_title(f"{censoring_kind} censoring rate {censoring_rate:.2%}")
 # %%
 from hazardous._fine_and_gray import FineGrayEstimator
 
-fg = FineGrayEstimator(event_of_interest=1).fit(X, y)
-fg.coef_
+fg = FineGrayEstimator().fit(X, y)
+fg.coefs_
 
 # %%
 # Increasing the value of a feature matching a positive coefficient
@@ -52,7 +52,7 @@ y_pred = fg.predict_cumulative_incidence(X_test)
 
 fig, ax = plt.subplots()
 for idx in range(X_test.shape[0]):
-    ax.plot(fg.times_, y_pred[idx, :], label=f"sample {idx}")
+    ax.plot(fg.times_, y_pred[1, idx, :], label=f"sample {idx}")
 ax.grid()
 ax.legend()
 
@@ -70,7 +70,7 @@ y_pred = fg.predict_cumulative_incidence(X_test)
 
 fig, ax = plt.subplots()
 for idx in range(X_test.shape[0]):
-    ax.plot(fg.times_, y_pred[idx, :], label=f"sample {idx}")
+    ax.plot(fg.times_, y_pred[1, idx, :], label=f"sample {idx}")
 ax.grid()
 ax.legend()
 
@@ -87,24 +87,23 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
 
 n_events = y["event"].nunique() - 1
 fig, axes = plt.subplots(ncols=n_events, sharey=True, figsize=(12, 5))
+fg = FineGrayEstimator().fit(X_train, y_train)
+y_pred = fg.predict_cumulative_incidence(X_test)
 
 for ax, event_id in tqdm(zip(axes, range(1, n_events + 1))):
-    fg = FineGrayEstimator(event_of_interest=event_id).fit(X_train, y_train)
-
-    y_pred = fg.predict_cumulative_incidence(X_test)
     times = fg.times_
 
     for idx in range(5):
         ax.plot(
             times,
-            y_pred[idx, :],
+            y_pred[event_id, idx, :],
             label=f"F&G sample {idx}",
             linestyle="--",
         )
 
     ax.plot(
         times,
-        y_pred.mean(axis=0),
+        y_pred[event_id].mean(axis=0),
         label="F&G marginal",
         linewidth=3,
     )
@@ -137,18 +136,19 @@ from scipy.interpolate import interp1d
 from hazardous.metrics import brier_score_incidence
 
 
+fg = FineGrayEstimator().fit(X_train, y_train)
+y_pred = fg.predict_cumulative_incidence(X_test)
+n_events = y["event"].max()
+
 fig, axes = plt.subplots(ncols=n_events, sharey=True, figsize=(12, 5))
 
 for ax, event_id in tqdm(zip(axes, range(1, n_events + 1))):
-    fg = FineGrayEstimator(event_of_interest=event_id).fit(X_train, y_train)
-
-    y_pred = fg.predict_cumulative_incidence(X_test)
     times = fg.times_
 
     fg_brier_score = brier_score_incidence(
         y_train,
         y_test,
-        y_pred,
+        y_pred[event_id, :],
         times,
         event_of_interest=event_id,
     )
@@ -188,4 +188,6 @@ for ax, event_id in tqdm(zip(axes, range(1, n_events + 1))):
     ax.set_title(f"Event {event_id}")
     ax.grid()
     ax.legend()
+# %%
+y_pred.shape
 # %%

@@ -5,6 +5,11 @@ from pycox.models import DeepHit
 from pycox.preprocessing.label_transforms import LabTransDiscreteTime
 from sklearn.model_selection import train_test_split
 
+from hazardous.metrics._brier_score import (
+    integrated_brier_score_incidence,
+    integrated_brier_score_incidence_oracle,
+)
+
 SEED = 0
 
 np.random.seed(1234)
@@ -70,7 +75,7 @@ def get_target(df):
     )
 
 
-class _DeepHit:
+class _DeepHit(tt.Model):
     def __init__(
         self,
         num_nodes_shared=[64, 64],
@@ -115,6 +120,8 @@ class _DeepHit:
 
         y_train = self.labtrans.fit_transform(*y_train)
         y_val = self.labtrans.transform(*y_val)
+        # TODO : REMOVE THIS
+        self.y_train = y_train
         self.in_features = X_train.shape[1]
         self.num_risks = y_train[1].max()
 
@@ -159,3 +166,69 @@ class _DeepHit:
     def predict_proba(self, X):
         X_ = get_x(X)
         return self.model.predict_pmf(X_)
+
+    def score(self, X, y, scale_censoring=None, shape_censoring=None):
+        X_ = get_x(X)
+        predicted_curves = self.model.predict_cif(X_)
+        ibs_events = []
+        for event in range(len(predicted_curves)):
+            predicted_curves_for_event = predicted_curves[event]
+            if scale_censoring is not None and shape_censoring is not None:
+                ibs_event = integrated_brier_score_incidence_oracle(
+                    y_train=self.y_train,
+                    y_test=y,
+                    y_pred=predicted_curves_for_event,
+                    times=self.labtrans.cuts,
+                    shape_censoring=shape_censoring,
+                    scale_censoring=scale_censoring,
+                    event_of_interest=event + 1,
+                )
+
+            else:
+                ibs_event = integrated_brier_score_incidence(
+                    y_train=self.y_train,
+                    y_test=y,
+                    y_pred=predicted_curves_for_event,
+                    times=self.labtrans.cuts,
+                    event_of_interest=event + 1,
+                )
+
+            ibs_events.append(ibs_event)
+        return -np.mean(ibs_events)
+
+    def get_params(self, deep=True):
+        """
+        Get parameters for this estimator.
+
+        Returns
+        -------
+        params : dict
+            Parameter names mapped to their values.
+        """
+        del deep
+        out = dict()
+        out["num_durations"] = self.num_durations
+        out["num_nodes_shared"] = self.num_nodes_shared
+        out["num_nodes_indiv"] = self.num_nodes_indiv
+        out["batch_norm"] = self.batch_norm
+        out["dropout"] = self.dropout
+        out["alpha"] = self.alpha
+        out["sigma"] = self.sigma
+        out["optimizer"] = self.optimizer
+        out["batch_size"] = self.batch_size
+        out["epochs"] = self.epochs
+        out["callbacks"] = self.callbacks
+        out["verbose"] = self.verbose
+        return out
+
+    def set_params(self, **parameters):
+        """
+        Set the parameters of this estimator.
+
+        Returns
+        -------
+        self
+        """
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
