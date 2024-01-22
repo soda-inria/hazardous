@@ -1,8 +1,9 @@
 # %%
 import numpy as np
-from matplotlib import pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
 
+from hazardous._deep_hit import _DeepHit
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
 
 seed = 0
@@ -10,9 +11,9 @@ independent_censoring = False
 complex_features = True
 
 bunch = make_synthetic_competing_weibull(
-    n_samples=1000,
+    n_samples=10000,
     n_events=3,
-    n_features=5,
+    n_features=10,
     return_X_y=False,
     independent_censoring=independent_censoring,
     censoring_relative_scale=1.5,
@@ -33,48 +34,6 @@ ax = sns.histplot(
 ax.set_title(f"{censoring_kind} censoring rate {censoring_rate:.2%}")
 
 # %%
-from hazardous._fine_and_gray import FineGrayEstimator
-
-fg = FineGrayEstimator().fit(X, y)
-fg.coefs_
-
-# %%
-# Increasing the value of a feature matching a positive coefficient
-# increases the probability of incidence of our event of interest.
-X_test = np.array(
-    [
-        [1.0, 0.0, 0.0, 0.0, 0.0],
-        [2.0, 0.0, 0.0, 0.0, 0.0],
-        [3.0, 0.0, 0.0, 0.0, 0.0],
-    ]
-)
-y_pred = fg.predict_cumulative_incidence(X_test)
-
-fig, ax = plt.subplots()
-for idx in range(X_test.shape[0]):
-    ax.plot(fg.times_, y_pred[1, idx, :], label=f"sample {idx}")
-ax.grid()
-ax.legend()
-
-# %%
-# Reversely, doing so for a negative coefficient decreases
-# the probability of incidence.
-X_test = np.array(
-    [
-        [0.0, 0.0, 0.0, 1.0, 0.0],
-        [0.0, 0.0, 0.0, 2.0, 0.0],
-        [0.0, 0.0, 0.0, 3.0, 0.0],
-    ]
-)
-y_pred = fg.predict_cumulative_incidence(X_test)
-
-fig, ax = plt.subplots()
-for idx in range(X_test.shape[0]):
-    ax.plot(fg.times_, y_pred[1, idx, :], label=f"sample {idx}")
-ax.grid()
-ax.legend()
-
-# %%
 # Let's compare Fine and Gray marginal incidence to AalenJohansen
 # and assess of potential biases.
 import warnings
@@ -84,27 +43,29 @@ from lifelines import AalenJohansenFitter
 
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
+deephit = _DeepHit()
+deephit.fit(X_train, y_train)
 
+# %%
+y_pred = deephit.predict_cumulative_incidence(X_test)
 n_events = y["event"].nunique() - 1
 fig, axes = plt.subplots(ncols=n_events, sharey=True, figsize=(12, 5))
-fg = FineGrayEstimator().fit(X_train, y_train)
-y_pred = fg.predict_cumulative_incidence(X_test)
 
 for ax, event_id in tqdm(zip(axes, range(1, n_events + 1))):
-    times = fg.times_
+    times = deephit.labtrans.cuts
 
-    for idx in range(5):
+    for idx in range(3):
         ax.plot(
             times,
-            y_pred[event_id, idx, :],
-            label=f"F&G sample {idx}",
+            y_pred[event_id - 1, idx, :],
+            label=f"DeepHit sample {idx}",
             linestyle="--",
         )
 
     ax.plot(
         times,
-        y_pred[event_id].mean(axis=0),
-        label="F&G marginal",
+        y_pred.mean(axis=1)[event_id - 1, :],
+        label="DeepHit marginal",
         linewidth=3,
     )
 
@@ -136,24 +97,21 @@ from scipy.interpolate import interp1d
 from hazardous.metrics import brier_score_incidence
 
 
-fg = FineGrayEstimator().fit(X_train, y_train)
-y_pred = fg.predict_cumulative_incidence(X_test)
-n_events = y["event"].max()
-
 fig, axes = plt.subplots(ncols=n_events, sharey=True, figsize=(12, 5))
 
-for ax, event_id in tqdm(zip(axes, range(1, n_events + 1))):
-    times = fg.times_
+times = deephit.labtrans.cuts
 
+for ax, event_id in tqdm(zip(axes, range(1, n_events + 1))):
+    y_pred_event = y_pred[event_id - 1]
     fg_brier_score = brier_score_incidence(
         y_train,
         y_test,
-        y_pred[event_id, :],
+        y_pred_event,
         times,
         event_of_interest=event_id,
     )
 
-    ax.plot(times, fg_brier_score, label="FG brier score")
+    ax.plot(times, fg_brier_score, label="DeepHit brier score")
 
     with warnings.catch_warnings(record=True):
         # Cause all warnings to always be triggered.
@@ -188,6 +146,3 @@ for ax, event_id in tqdm(zip(axes, range(1, n_events + 1))):
     ax.set_title(f"Event {event_id}")
     ax.grid()
     ax.legend()
-# %%
-y_pred.shape
-# %%
