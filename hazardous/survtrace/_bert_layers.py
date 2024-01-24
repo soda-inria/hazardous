@@ -395,17 +395,19 @@ class BertCLSMulti(nn.Module):
             )
         )
 
+        # XXX: is this necessary?
         self.net = nn.Sequential(*net)
 
         net_out = []
         for _ in range(n_events):
             net_out.append(nn.Linear(intermediate_size, n_features_out))
         self.net_out = nn.ModuleList(net_out)
+        self.n_events = n_events
 
-    def forward(self, hidden_states, event=0):
+    def forward(self, hidden_states, event_of_interest=1):
         hidden_states = hidden_states.flatten(start_dim=1)
         hidden_states = self.net(hidden_states)
-        output = self.net_out[event](hidden_states)
+        output = self.net_out[event_of_interest - 1](hidden_states)
         return output
 
 

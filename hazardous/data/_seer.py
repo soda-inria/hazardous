@@ -186,6 +186,9 @@ def load_seer(
     X[NUMERIC_COLUMN_NAMES] = X[NUMERIC_COLUMN_NAMES].replace("Unknown", np.nan)
     X = X.astype({**numerical_dtypes, **categorical_dtypes})
 
+    X = X.reset_index(drop=True)
+    y = y.reset_index(drop=True)
+
     if return_X_y:
         return X, y
 
