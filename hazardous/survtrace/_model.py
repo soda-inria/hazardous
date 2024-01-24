@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from skorch import NeuralNet
 from skorch.callbacks import Callback, ProgressBar
 from skorch.dataset import ValidSplit, unpack_data
+from torch.optim import Adam
 
 from hazardous.utils import get_n_events
 
@@ -22,7 +23,6 @@ from ._bert_layers import (
 )
 from ._encoder import SurvFeatureEncoder, SurvTargetEncoder
 from ._losses import NLLPCHazardLoss
-from ._optimizer import BERTAdam
 from ._utils import pad_col_3d
 
 
@@ -77,13 +77,13 @@ class SurvTRACE(NeuralNet):
 
         criterion = NLLPCHazardLoss
         callbacks = [ShapeSetter(), ProgressBar(detect_notebook=False)]
-        optimizer = BERTAdam  # Adam
+        optimizer = Adam
         super().__init__(
             module=module,
             criterion=criterion,
             optimizer=optimizer,
             optimizer__lr=lr,
-            optimizer__weight_decay_rate=weight_decay,
+            optimizer__weight_decay=weight_decay,
             callbacks=callbacks,
             batch_size=batch_size,
             device=device,
@@ -105,38 +105,6 @@ class SurvTRACE(NeuralNet):
                 # pylint: disable=attribute-defined-outside-init
                 setattr(self.module, module_name, sub_module)
         return super().initialize_module()
-
-    def initialize_optimizer(self, triggered_directly=None):
-        """Initialize the model optimizer. If ``self.optimizer__lr``
-        is not set, use ``self.lr`` instead.
-        """
-        named_parameters = self.get_all_learnable_params()
-        _, kwargs = self.get_params_for_optimizer("optimizer", named_parameters)
-
-        # assign no weight decay on these parameters
-        no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
-        param_optimizer = list(self.module.named_parameters())
-        optimizer_grouped_parameters = [
-            {
-                "params": [
-                    p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
-                ],
-                "weight_decay": 0,
-            },
-            {
-                "params": [
-                    p for n, p in param_optimizer if any(nd in n for nd in no_decay)
-                ],
-                "weight_decay": 0.0,
-            },
-        ]
-
-        self.optimizer_ = BERTAdam(
-            optimizer_grouped_parameters,
-            **kwargs,
-        )
-
-        return self
 
     def check_data(self, X, y=None):
         if not hasattr(X, "__dataframe__"):
@@ -224,16 +192,20 @@ class SurvTRACE(NeuralNet):
         Xi, yi = unpack_data(batch)
         loss = 0
         all_y_pred = []
-        # import ipdb; ipdb.set_trace()
+        event_multiclass = yi["event"].copy()
         for event_of_interest in range(1, self.n_events + 1):
+            yi["event"] = (event_multiclass == event_of_interest).long()
             fit_params["event_of_interest"] = event_of_interest
             y_pred = self.infer(Xi, **fit_params)
+
             loss += self.get_loss(y_pred, yi, X=Xi, training=True)
             all_y_pred.append(y_pred[:, :, None])
+
         all_y_pred = torch.concatenate(
             all_y_pred, axis=2
         )  # (n_samples, n_time_steps, n_events)
         loss.backward()
+
         return {
             "loss": loss,
             "y_pred": all_y_pred,
@@ -260,12 +232,16 @@ class SurvTRACE(NeuralNet):
         Xi, yi = unpack_data(batch)
         loss = 0
         all_y_pred = []
+        event_multiclass = yi["event"].copy()
         with torch.no_grad():
             for event_of_interest in range(1, self.n_events + 1):
+                yi["event"] = (event_multiclass == event_of_interest).long()
                 fit_params["event_of_interest"] = event_of_interest
                 y_pred = self.infer(Xi, **fit_params)
+
                 loss += self.get_loss(y_pred, yi, X=Xi, training=False)
                 all_y_pred.append(y_pred[:, :, None])
+
         all_y_pred = torch.concatenate(
             all_y_pred, axis=2
         )  # (n_samples, n_time_steps, n_events)
@@ -358,18 +334,19 @@ class _SurvTRACEModule(nn.Module):
         self,
         init_range=0.02,
         # BertEmbedding
-        n_numerical_features=1,
-        vocab_size=8,
+        n_numerical_features=1,  # *
+        vocab_size=8,  # *
         hidden_size=16,
         layer_norm_eps=1e-12,
         hidden_dropout_prob=0.0,
+        initializer_range=0.02,
         # BertEncoder
         num_hidden_layers=3,
         # BertCLS
         intermediate_size=64,
-        n_events=1,
-        n_features_in=1,
-        n_features_out=1,
+        n_events=1,  # *
+        n_features_in=1,  # *
+        n_features_out=1,  # *
     ):
         super().__init__()
         self.init_range = init_range
@@ -379,6 +356,7 @@ class _SurvTRACEModule(nn.Module):
             hidden_size=hidden_size,
             layer_norm_eps=layer_norm_eps,
             hidden_dropout_prob=hidden_dropout_prob,
+            initializer_range=initializer_range,
         )
         self.encoder = BertEncoder(num_hidden_layers=num_hidden_layers)
         self.cls = BertCLSMulti(
