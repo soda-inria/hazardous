@@ -62,3 +62,21 @@ class CumulativeIncidencePipeline(Pipeline):
         for _, _, transformer in self._iter(with_final=False):
             Xt = transformer.transform(Xt)
         return self.steps[-1][1].predict_cumulative_incidence(Xt, times)
+
+
+def get_n_events(event):
+    """Fetch the number of distinct competing events.
+
+    Parameters
+    ----------
+    event : pd.Series of shape (n_samples,)
+        Binary or multiclass events.
+
+    Returns
+    -------
+    n_events : int
+        The number of events, without accounting for the censoring 0.
+    """
+    event_ids = event.unique()
+    has_censoring = int(0 in event_ids)
+    return len(event_ids) - has_censoring

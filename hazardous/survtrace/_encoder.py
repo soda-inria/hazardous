@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin, check_is_fitted
 from sklearn.compose import make_column_transformer
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 
@@ -105,7 +105,15 @@ class SurvFeatureEncoder(TransformerMixin, BaseEstimator):
 
     def transform(self, X, y=None):
         del y
+        check_is_fitted(self, "col_transformer_")
         return self.col_transformer_.transform(X)
+
+    @property
+    def vocab_size_(self):
+        check_is_fitted(self, "col_transformer_")
+        if len(self.categorical_columns_) == 0:
+            return 0
+        return self.col_transformer_.transformers_[0][1].vocab_size_
 
     def _check_num_categorical_columns(self, X):
         if not hasattr(X, "__dataframe__"):

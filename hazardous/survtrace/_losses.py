@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 
-from ._utils import pad_col
+from ._utils import pad_col_2d
 
 
 class _Loss(torch.nn.Module):
@@ -186,7 +186,7 @@ def nll_pc_hazard_loss(
     log_h_e = log_softplus(phi.gather(1, idx_durations).view(-1)).mul(events)
     haz = F.softplus(phi)
     scaled_h_e = haz.gather(1, idx_durations).view(-1).mul(interval_frac)
-    haz = pad_col(haz, where="start")
+    haz = pad_col_2d(haz, where="start")
     sum_haz = haz.cumsum(1).gather(1, idx_durations).view(-1)
     loss = -log_h_e.sub(scaled_h_e).sub(sum_haz)
     return _reduction(loss, reduction)
