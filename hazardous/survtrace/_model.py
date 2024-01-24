@@ -106,6 +106,38 @@ class SurvTRACE(NeuralNet):
                 setattr(self.module, module_name, sub_module)
         return super().initialize_module()
 
+    def initialize_optimizer(self, triggered_directly=None):
+        """Initialize the model optimizer. If ``self.optimizer__lr``
+        is not set, use ``self.lr`` instead.
+        """
+        named_parameters = self.get_all_learnable_params()
+        _, kwargs = self.get_params_for_optimizer("optimizer", named_parameters)
+
+        # assign no weight decay on these parameters
+        no_decay = ["bias", "LayerNorm.bias", "LayerNorm.weight"]
+        param_optimizer = list(self.module.named_parameters())
+        optimizer_grouped_parameters = [
+            {
+                "params": [
+                    p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
+                ],
+                "weight_decay": 0,
+            },
+            {
+                "params": [
+                    p for n, p in param_optimizer if any(nd in n for nd in no_decay)
+                ],
+                "weight_decay": 0.0,
+            },
+        ]
+
+        self.optimizer_ = BERTAdam(
+            optimizer_grouped_parameters,
+            **kwargs,
+        )
+
+        return self
+
     def check_data(self, X, y=None):
         if not hasattr(X, "__dataframe__"):
             raise TypeError(f"X must be a dataframe. Got {type(X)}")
@@ -192,9 +224,7 @@ class SurvTRACE(NeuralNet):
         Xi, yi = unpack_data(batch)
         loss = 0
         all_y_pred = []
-        import ipdb
-
-        ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         for event_of_interest in range(1, self.n_events + 1):
             fit_params["event_of_interest"] = event_of_interest
             y_pred = self.infer(Xi, **fit_params)
