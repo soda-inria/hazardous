@@ -299,7 +299,9 @@ class SurvTRACE(NeuralNet):
         return surv
 
     def predict_cumulative_incidence(self, X):
-        return 1 - self.predict_survival_function(X)
+        risks = 1 - self.predict_survival_function(X)
+        surv = (1 - risks.sum(axis=0))[None, :, :]
+        return np.concatenate([surv, risks], axis=0)
 
 
 class _SurvTRACEModule(nn.Module):
