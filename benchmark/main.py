@@ -17,7 +17,6 @@ from hazardous._gb_multi_incidence import GBMultiIncidence
 from hazardous.survtrace._encoder import SurvFeatureEncoder
 from hazardous.utils import CumulativeIncidencePipeline
 
-from memory_monitor import MemoryMonitor
 
 # Enable oracle scoring for GridSearchCV
 # GBMI.set_score_request(scale=True, shape=True)
@@ -152,11 +151,7 @@ def run_estimator(estimator_name, data_bunch, dataset_name, dataset_params):
     best_results = best_results.iloc[hp_search.best_index_].to_dict()
     best_results["estimator_name"] = estimator_name
 
-    monitor = MemoryMonitor()
     best_estimator.fit(X, y)
-    monitor.join()
-    peak_memory = max(monitor.memory_buffer) / 1e6  # unit is MiB
-    best_results["peak_memory"] = peak_memory
 
     # hack for benchmarks
     best_estimator.y_train = y
