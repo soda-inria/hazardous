@@ -77,117 +77,94 @@ ax.legend()
 # %%
 # Let's compare Fine and Gray marginal incidence to AalenJohansen
 # and assess of potential biases.
-import warnings
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
-from lifelines import AalenJohansenFitter
+
+from hazardous._aalan_johansen import AalenJohansenEstimator
 
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
 
 n_events = y["event"].nunique() - 1
 fig, axes = plt.subplots(ncols=n_events, sharey=True, figsize=(12, 5))
+
 fg = FineGrayEstimator().fit(X_train, y_train)
-y_pred = fg.predict_cumulative_incidence(X_test)
+y_pred_fg = fg.predict_cumulative_incidence(X_test)
+times = fg.times_
 
-for ax, event_id in tqdm(zip(axes, range(1, n_events + 1))):
-    times = fg.times_
+aj = AalenJohansenEstimator().fit(y_train)
+y_pred_aj = aj.predict_cumulative_incidence(X_test, times)
 
-    for idx in range(5):
+aj_uncensored = AalenJohansenEstimator().fit(y_uncensored)
+y_pred_aj_uncensored = aj_uncensored.predict_cumulative_incidence(X_test, times)
+
+for event_idx, ax in tqdm(enumerate(axes)):
+    for sample_idx in range(5):
         ax.plot(
             times,
-            y_pred[event_id, idx, :],
-            label=f"F&G sample {idx}",
+            y_pred_fg[event_idx + 1, sample_idx, :],
+            label=f"F&G sample {sample_idx}",
             linestyle="--",
         )
 
     ax.plot(
         times,
-        y_pred[event_id].mean(axis=0),
+        y_pred_fg[event_idx + 1].mean(axis=0),
         label="F&G marginal",
         linewidth=3,
     )
 
-    with warnings.catch_warnings(record=True):
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
+    ax.plot(
+        times,
+        y_pred_aj[event_idx + 1][0],
+        label="AJ",
+        color="k",
+    )
+    ax.plot(
+        times,
+        y_pred_aj_uncensored[event_idx + 1][0],
+        label="AJ uncensored",
+        color="k",
+        linestyle="--",
+    )
 
-        aj = AalenJohansenFitter(calculate_variance=False, seed=seed).fit(
-            durations=y["duration"],
-            event_observed=y["event"],
-            event_of_interest=event_id,
-        )
-
-        aj_uncensored = AalenJohansenFitter(calculate_variance=False, seed=seed).fit(
-            durations=y_uncensored["duration"],
-            event_observed=y_uncensored["event"],
-            event_of_interest=event_id,
-        )
-
-    aj.plot(ax=ax, label="AJ", color="k")
-    aj_uncensored.plot(ax=ax, label="AJ uncensored", color="k", linestyle="--")
-
-    ax.set_title(f"Event {event_id}")
+    ax.set_title(f"Event {event_idx}")
     ax.grid()
     ax.legend()
 
+fig.suptitle("Marginal incidence")
+
 # %%
-from scipy.interpolate import interp1d
 from hazardous.metrics import brier_score_incidence
 
 
-fg = FineGrayEstimator().fit(X_train, y_train)
-y_pred = fg.predict_cumulative_incidence(X_test)
-n_events = y["event"].max()
+times = fg.times_
 
 fig, axes = plt.subplots(ncols=n_events, sharey=True, figsize=(12, 5))
 
-for ax, event_id in tqdm(zip(axes, range(1, n_events + 1))):
-    times = fg.times_
-
+for idx, ax in tqdm(enumerate(axes)):
     fg_brier_score = brier_score_incidence(
         y_train,
         y_test,
-        y_pred[event_id, :],
+        y_pred_fg[idx + 1],
         times,
-        event_of_interest=event_id,
+        event_of_interest=idx + 1,
     )
 
     ax.plot(times, fg_brier_score, label="FG brier score")
 
-    with warnings.catch_warnings(record=True):
-        # Cause all warnings to always be triggered.
-        warnings.simplefilter("always")
-
-        aj = AalenJohansenFitter(calculate_variance=False, seed=seed).fit(
-            durations=y["duration"],
-            event_observed=y["event"],
-            event_of_interest=event_id,
-        )
-
-    times_aj = aj.cumulative_density_.index
-    y_pred_aj = aj.cumulative_density_.to_numpy()[:, 0]
-    y_pred_aj = interp1d(
-        x=times_aj,
-        y=y_pred_aj,
-        kind="linear",
-    )(times)
-
-    y_pred_aj = np.vstack([y_pred_aj for _ in range(X_test.shape[0])])
-
     aj_brier_score = brier_score_incidence(
         y_train,
         y_test,
-        y_pred_aj,
+        y_pred_aj[idx + 1],
         times,
-        event_of_interest=event_id,
+        event_of_interest=idx + 1,
     )
 
     ax.plot(times, aj_brier_score, label="AJ brier score")
 
-    ax.set_title(f"Event {event_id}")
+    ax.set_title(f"Event {idx+1}")
     ax.grid()
     ax.legend()
-# %%
-y_pred.shape
+
 # %%
