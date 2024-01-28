@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from skorch import NeuralNet
-from skorch.callbacks import Callback, ProgressBar
+from skorch.callbacks import Callback, EarlyStopping, ProgressBar
 from skorch.dataset import ValidSplit, unpack_data
 from torch.optim import Adam
 
@@ -60,36 +60,62 @@ class ShapeSetter(Callback):
 class SurvTRACE(NeuralNet):
     def __init__(
         self,
+        module=None,
+        criterion=None,
+        optimizer=None,
+        train_split=None,
+        callbacks=None,
         categorical_columns=None,
         numeric_columns=None,
         quantile_horizons=None,
         batch_size=1024,
-        lr=1e-4,
-        weight_decay=0,
+        lr=1e-3,
+        optimizer__weight_decay=0,
         device="cpu",
         max_epochs=100,
+        iterator_valid__batch_size=10_000,
+        **kwargs,
     ):
-        module = _SurvTRACEModule()
+        if module is None:
+            module = _SurvTRACEModule()
+
+        if criterion is None:
+            criterion = NLLPCHazardLoss
+
+        if optimizer is None:
+            optimizer = Adam
+
+        if train_split is None:
+            # 10% of the dataset is used for validation.
+            train_split = ValidSplit(0.1, stratified=True)
+
         # Skorch hack 2: this allows to use ShapeSetter on nested modules
+        # in initialize_module().
         self._modules = ["module", "embeddings", "cls"]
         self.embeddings_ = module.embeddings
         self.cls_ = module.cls
 
-        criterion = NLLPCHazardLoss
-        callbacks = [ShapeSetter(), ProgressBar(detect_notebook=False)]
-        optimizer = Adam
+        if callbacks is None:
+            callbacks = [
+                ShapeSetter(),
+                ProgressBar(detect_notebook=False),
+                EarlyStopping(monitor="valid_loss", patience=3, threshold=0.001),
+            ]
+
         super().__init__(
             module=module,
             criterion=criterion,
             optimizer=optimizer,
-            optimizer__lr=lr,
-            optimizer__weight_decay=weight_decay,
+            lr=lr,
+            optimizer__weight_decay=optimizer__weight_decay,
             callbacks=callbacks,
             batch_size=batch_size,
             device=device,
             max_epochs=max_epochs,
-            train_split=ValidSplit(0.1),  # 5% of the dataset is used for validation.
-            iterator_valid__batch_size=10_000,  # instead of batch_size
+            train_split=train_split,
+            # superseed batch_size
+            iterator_valid__batch_size=iterator_valid__batch_size,
+            **kwargs,
         )
         self.categorical_columns = categorical_columns
         self.numeric_columns = numeric_columns
@@ -192,7 +218,7 @@ class SurvTRACE(NeuralNet):
         Xi, yi = unpack_data(batch)
         loss = 0
         all_y_pred = []
-        event_multiclass = yi["event"].copy()
+        event_multiclass = yi["event"].clone()
         for event_of_interest in range(1, self.n_events + 1):
             yi["event"] = (event_multiclass == event_of_interest).long()
             fit_params["event_of_interest"] = event_of_interest
@@ -232,7 +258,7 @@ class SurvTRACE(NeuralNet):
         Xi, yi = unpack_data(batch)
         loss = 0
         all_y_pred = []
-        event_multiclass = yi["event"].copy()
+        event_multiclass = yi["event"].clone()
         with torch.no_grad():
             for event_of_interest in range(1, self.n_events + 1):
                 yi["event"] = (event_multiclass == event_of_interest).long()
@@ -302,6 +328,23 @@ class SurvTRACE(NeuralNet):
         risks = 1 - self.predict_survival_function(X)
         surv = (1 - risks.sum(axis=0))[None, :, :]
         return np.concatenate([surv, risks], axis=0)
+
+    def score(self, X, y):
+        y_pred = self.predict(X)
+        y_pred = torch.from_numpy(y_pred)
+
+        dataset = self.get_dataset(X, y)
+        y_true = dataset.y
+        event_multiclass = y_true["event"].clone()
+
+        loss = 0
+        with torch.no_grad():
+            for event_of_interest in range(1, self.n_events + 1):
+                y_true["event"] = (event_multiclass == event_of_interest).long()
+                y_pred_event = y_pred[:, :, event_of_interest - 1]
+                loss += self.get_loss(y_pred_event, y_true, X=X, training=False)
+
+            return -loss
 
 
 class _SurvTRACEModule(nn.Module):
