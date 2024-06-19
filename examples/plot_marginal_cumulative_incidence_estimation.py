@@ -32,11 +32,10 @@ severe over-estimation bias for large time horizons.
 from time import perf_counter
 import numpy as np
 from scipy.stats import weibull_min
-from sklearn.base import clone
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from hazardous import GradientBoostingIncidence
+from hazardous import GBMultiIncidence
 from lifelines import AalenJohansenFitter
 
 rng = np.random.default_rng(0)
@@ -108,13 +107,12 @@ def weibull_hazard(t, shape=1.0, scale=1.0, **ignored_kwargs):
 calculate_variance = n_samples <= 5_000
 aj = AalenJohansenFitter(calculate_variance=calculate_variance, seed=0)
 
-gb_incidence = GradientBoostingIncidence(
+multiincidence = GBMultiIncidence(
     learning_rate=0.03,
     n_iter=100,
     max_leaf_nodes=5,
     hard_zero_fraction=0.1,
     min_samples_leaf=50,
-    loss="ibs",
     show_progressbar=False,
     random_state=0,
 )
@@ -128,7 +126,9 @@ gb_incidence = GradientBoostingIncidence(
 # theoretical CIFs:
 
 
-def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=None):
+def plot_cumulative_incidence_functions(
+    distributions, y, gb_multi_incidence=None, aj=None
+):
     _, axes = plt.subplots(figsize=(12, 4), ncols=len(distributions), sharey=True)
 
     # Compute the estimate of the CIFs on a coarse grid.
@@ -158,6 +158,18 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
         f" ({censoring_fraction:.1%} censoring)"
     )
 
+    if gb_multi_incidence is not None:
+        tic = perf_counter()
+        gb_multi_incidence.fit(X_dummy, y)
+        duration = perf_counter() - tic
+        print(f"GB MultiIncidence fit: {duration:.3f} s")
+        tic = perf_counter()
+        cif_preds = gb_multi_incidence.predict_cumulative_incidence(
+            X_dummy, coarse_timegrid
+        )
+        duration = perf_counter() - tic
+        print(f"GB MultiIncidence prediction: {duration:.3f} s")
+
     for event_id, (ax, hazards_i) in enumerate(zip(axes, all_hazards), 1):
         theoretical_cif = (hazards_i * any_event_survival).cumsum(axis=-1) * dt
         print(
@@ -172,22 +184,12 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
             label="Theoretical incidence",
         ),
 
-        if gb_incidence is not None:
-            tic = perf_counter()
-            gb_incidence.set_params(event_of_interest=event_id)
-            gb_incidence.fit(X_dummy, y)
-            duration = perf_counter() - tic
-            print(f"GB Incidence for event {event_id} fit in {duration:.3f} s")
-            tic = perf_counter()
-            cif_pred = gb_incidence.predict_cumulative_incidence(
-                X_dummy[0:1], coarse_timegrid
-            )[0]
-            duration = perf_counter() - tic
-            print(f"GB Incidence for event {event_id} prediction in {duration:.3f} s")
+        if gb_multi_incidence is not None:
+            cif_pred = cif_preds[event_id][0]
             ax.plot(
                 coarse_timegrid,
                 cif_pred,
-                label="GradientBoostingIncidence",
+                label="GradientBoostingMultiIncidence",
             )
             ax.set(title=f"Event {event_id}")
 
@@ -205,7 +207,7 @@ def plot_cumulative_incidence_functions(distributions, y, gb_incidence=None, aj=
 
 
 plot_cumulative_incidence_functions(
-    distributions, gb_incidence=gb_incidence, aj=aj, y=y_uncensored
+    distributions, gb_multi_incidence=multiincidence, aj=aj, y=y_uncensored
 )
 
 # %%
@@ -234,7 +236,7 @@ y_censored["event"].value_counts().sort_index()
 
 # %%
 plot_cumulative_incidence_functions(
-    distributions, gb_incidence=gb_incidence, aj=aj, y=y_censored
+    distributions, gb_multi_incidence=multiincidence, aj=aj, y=y_censored
 )
 # %%
 #
@@ -251,22 +253,3 @@ plot_cumulative_incidence_functions(
 # Alternatively, we could try to enable a monotonicity constraint at training
 # time, however, in practice this often causes a sever over-estimation bias for
 # the large time horizons:
-
-# %%
-#
-# Finally let's try again to fit the GB Incidence models using a monotonicity
-# constraint:
-
-monotonic_gb_incidence = clone(gb_incidence).set_params(
-    monotonic_incidence="at_training_time"
-)
-plot_cumulative_incidence_functions(
-    distributions, gb_incidence=monotonic_gb_incidence, y=y_censored
-)
-# %%
-#
-# The resulting incidence curves are indeed monotonic. However, for smaller
-# training set sizes, the resulting models can be significantly biased, in
-# particular large time horizons, where the CIFs are getting flatter. This
-# effect diminishes with larger training set sizes (lower epistemic
-# uncertainty).
