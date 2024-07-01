@@ -44,6 +44,9 @@ Quantifying the statistical association or causal effect of covariates with/on
 the cumulated event incidence or instantaneous hazard rate is not in the scope
 of this library at this time.
 
+The theory behind the model is described in `this paper
+<https://arxiv.org/abs/2406.14085>`_.
+
 - License: MIT
 - GitHub repository: https://github.com/soda-inria/hazardous
 - Changelog: https://github.com/soda-inria/hazardous/blob/main/CHANGES.rst
