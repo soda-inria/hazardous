@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 
-from .._ipcw import IPCWEstimator, IPCWSampler
+from .._ipcw import IPCWEstimator
 from ..utils import check_event_of_interest, check_y_survival
 
 
@@ -569,39 +569,5 @@ def integrated_brier_score_incidence(
     computer = IncidenceScoreComputer(
         y_train,
         event_of_interest=event_of_interest,
-    )
-    return computer.integrated_brier_score_incidence(y_test, y_pred, times)
-
-
-def brier_score_incidence_oracle(
-    y_train,
-    y_test,
-    y_pred,
-    times,
-    shape_censoring,
-    scale_censoring,
-    event_of_interest="any",
-):
-    ipcw_est = IPCWSampler(shape=shape_censoring, scale=scale_censoring)
-    computer = IncidenceScoreComputer(
-        y_train, event_of_interest=event_of_interest, ipcw_est=ipcw_est
-    )
-    return computer.brier_score_incidence(y_test, y_pred, times)
-
-
-def integrated_brier_score_incidence_oracle(
-    y_train,
-    y_test,
-    y_pred,
-    times,
-    shape_censoring,
-    scale_censoring,
-    event_of_interest="any",
-):
-    ipcw_est = IPCWSampler(shape=shape_censoring, scale=scale_censoring)
-    computer = IncidenceScoreComputer(
-        y_train,
-        event_of_interest=event_of_interest,
-        ipcw_est=ipcw_est,
     )
     return computer.integrated_brier_score_incidence(y_test, y_pred, times)

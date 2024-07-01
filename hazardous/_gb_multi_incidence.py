@@ -10,7 +10,6 @@ from ._ipcw import AlternatingCensoringEst
 from .metrics._brier_score import (
     IncidenceScoreComputer,
     integrated_brier_score_incidence,
-    integrated_brier_score_incidence_oracle,
 )
 from .utils import check_y_survival
 
@@ -362,7 +361,7 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
             min_samples_leaf=self.min_samples_leaf,
         )
 
-    def score(self, X, y, shape_censoring=None, scale_censoring=None):
+    def score(self, X, y):
         """Return IBS or competing_risks loss (proper scoring rule).
 
         This returns the negative of a proper scoring rule, so that the higher
@@ -395,25 +394,13 @@ class GBMultiIncidence(BaseEstimator, ClassifierMixin):
         ibs_events = []
         for idx, event in enumerate(self.event_ids_[1:]):
             predicted_curves_for_event = predicted_curves[idx + 1]
-            if scale_censoring is not None and shape_censoring is not None:
-                ibs_event = integrated_brier_score_incidence_oracle(
-                    y_train=self.weighted_targets_.y_train,
-                    y_test=y,
-                    y_pred=predicted_curves_for_event,
-                    times=self.time_grid_,
-                    shape_censoring=shape_censoring,
-                    scale_censoring=scale_censoring,
-                    event_of_interest=event,
-                )
-
-            else:
-                ibs_event = integrated_brier_score_incidence(
-                    y_train=self.weighted_targets_.y_train,
-                    y_test=y,
-                    y_pred=predicted_curves_for_event,
-                    times=self.time_grid_,
-                    event_of_interest=event,
-                )
+            ibs_event = integrated_brier_score_incidence(
+                y_train=self.weighted_targets_.y_train,
+                y_test=y,
+                y_pred=predicted_curves_for_event,
+                times=self.time_grid_,
+                event_of_interest=event,
+            )
 
             ibs_events.append(ibs_event)
         return -np.mean(ibs_events)
