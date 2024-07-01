@@ -6,26 +6,46 @@
 HΛZΛRDOUS
 =========
 
-*Predictive survival and competing risks analysis in Python*
+Gradient-boosting survival analysis
+-----------------------------------
 
-The objective of this library is to provide a Python implementation of
-**time-to-event prediction models** in the presence of right-censored data.
+.. container:: index-features
 
-The estimators of this library build on top of `scikit-learn
-<https://scikit-learn.org>`_ components and extend the scikit-learn API to
-offer dedicated prediction methods for survival and competing risks analysis.
+   * survival and competing risks
 
-They should be interoperable with scikit-learn tools such as pipelines, column
-transformers, cross-validation, hyper-parameter seach tools, etc.
+   * scikit-learn compatible
 
-This package will also offer neural network based estimators by leveraging
-`PyTorch <https://pytorch.org>`_ and `skorch
-<https://skorch.readthedocs.io/>`_.
+   * scalable gradient boosting
+
+A scalable **time-to-event and competing risk prediction model**
+implemented in Python.
+
+.. container:: index-box sd-card
+
+   **Competing risk settings**
+
+   Predicting which event will occur, and when, from data where some
+   events have not yet been observed:
+
+   .. image:: competing_risk_diagram.svg
+
+The model is **a gradient-boosting variant**, that offers prediction for
+survival and competing risks settings, fully compatible with
+`scikit-learn <https://scikit-learn.org>`_. It can be used with
+scikit-learn tools such as pipelines, column transformers,
+cross-validation, hyper-parameter search tools, etc.
+
+.. This package will also offer neural network based estimators by leveraging
+   `PyTorch <https://pytorch.org>`_ and `skorch
+   <https://skorch.readthedocs.io/>`_.
 
 This library puts a focus on predictive accuracy rather than on inference.
 Quantifying the statistical association or causal effect of covariates with/on
 the cumulated event incidence or instantaneous hazard rate is not in the scope
 of this library at this time.
+
+The theory behind the model is described in `this paper
+<https://arxiv.org/abs/2406.14085>`_.
 
 - License: MIT
 - GitHub repository: https://github.com/soda-inria/hazardous

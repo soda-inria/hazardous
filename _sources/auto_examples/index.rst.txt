@@ -1,7 +1,7 @@
 :orphan:
 
-Example gallery
-===============
+Examples
+========
 
 Below is a gallery of examples on how to use `hazardous` for predictive
 competive risk analysis problems.
@@ -12,6 +12,7 @@ competive risk analysis problems.
 
     <div class="sphx-glr-thumbnails">
 
+.. thumbnail-parent-div-open
 
 .. raw:: html
 
@@ -29,6 +30,8 @@ competive risk analysis problems.
       <div class="sphx-glr-thumbnail-title">Estimating marginal cumulative incidence functions</div>
     </div>
 
+
+.. thumbnail-parent-div-close
 
 .. raw:: html
 

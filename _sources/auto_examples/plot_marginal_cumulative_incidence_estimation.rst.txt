@@ -11,7 +11,7 @@
         :class: sphx-glr-download-link-note
 
         :ref:`Go to the end <sphx_glr_download_auto_examples_plot_marginal_cumulative_incidence_estimation.py>`
-        to download the full example code
+        to download the full example code.
 
 .. rst-class:: sphx-glr-example-title
 
@@ -279,19 +279,19 @@ theoretical CIFs:
 
  .. code-block:: none
 
-    Integrated theoretical any event survival curve in 0.597 s
-    Integrated theoretical cumulative incidence curve for event 1 in 0.657 s
-    GB Incidence for event 1 fit in 0.458 s
-    GB Incidence for event 1 prediction in 0.084 s
-    Aalen-Johansen for event 1 fit in 5.220 s
-    Integrated theoretical cumulative incidence curve for event 2 in 5.314 s
-    GB Incidence for event 2 fit in 0.444 s
-    GB Incidence for event 2 prediction in 0.082 s
-    Aalen-Johansen for event 2 fit in 5.242 s
-    Integrated theoretical cumulative incidence curve for event 3 in 5.319 s
-    GB Incidence for event 3 fit in 0.431 s
-    GB Incidence for event 3 prediction in 0.082 s
-    Aalen-Johansen for event 3 fit in 5.303 s
+    Integrated theoretical any event survival curve in 0.614 s
+    Integrated theoretical cumulative incidence curve for event 1 in 0.678 s
+    GB Incidence for event 1 fit in 0.482 s
+    GB Incidence for event 1 prediction in 0.085 s
+    Aalen-Johansen for event 1 fit in 5.388 s
+    Integrated theoretical cumulative incidence curve for event 2 in 5.587 s
+    GB Incidence for event 2 fit in 0.456 s
+    GB Incidence for event 2 prediction in 0.085 s
+    Aalen-Johansen for event 2 fit in 5.373 s
+    Integrated theoretical cumulative incidence curve for event 3 in 5.457 s
+    GB Incidence for event 3 fit in 0.470 s
+    GB Incidence for event 3 prediction in 0.085 s
+    Aalen-Johansen for event 3 fit in 5.464 s
 
 
 
@@ -363,19 +363,19 @@ of censoring.
 
  .. code-block:: none
 
-    Integrated theoretical any event survival curve in 0.575 s
-    Integrated theoretical cumulative incidence curve for event 1 in 0.635 s
-    GB Incidence for event 1 fit in 0.448 s
-    GB Incidence for event 1 prediction in 0.084 s
-    Aalen-Johansen for event 1 fit in 5.306 s
-    Integrated theoretical cumulative incidence curve for event 2 in 5.409 s
-    GB Incidence for event 2 fit in 0.451 s
-    GB Incidence for event 2 prediction in 0.084 s
-    Aalen-Johansen for event 2 fit in 5.258 s
-    Integrated theoretical cumulative incidence curve for event 3 in 5.335 s
-    GB Incidence for event 3 fit in 0.420 s
-    GB Incidence for event 3 prediction in 0.086 s
-    Aalen-Johansen for event 3 fit in 5.210 s
+    Integrated theoretical any event survival curve in 0.607 s
+    Integrated theoretical cumulative incidence curve for event 1 in 0.670 s
+    GB Incidence for event 1 fit in 0.463 s
+    GB Incidence for event 1 prediction in 0.086 s
+    Aalen-Johansen for event 1 fit in 5.346 s
+    Integrated theoretical cumulative incidence curve for event 2 in 5.456 s
+    GB Incidence for event 2 fit in 0.454 s
+    GB Incidence for event 2 prediction in 0.085 s
+    Aalen-Johansen for event 2 fit in 5.377 s
+    Integrated theoretical cumulative incidence curve for event 3 in 5.459 s
+    GB Incidence for event 3 fit in 0.426 s
+    GB Incidence for event 3 prediction in 0.084 s
+    Aalen-Johansen for event 3 fit in 5.345 s
 
 
 
@@ -425,16 +425,16 @@ constraint:
 
  .. code-block:: none
 
-    Integrated theoretical any event survival curve in 0.576 s
-    Integrated theoretical cumulative incidence curve for event 1 in 0.636 s
-    GB Incidence for event 1 fit in 0.435 s
-    GB Incidence for event 1 prediction in 0.082 s
-    Integrated theoretical cumulative incidence curve for event 2 in 0.144 s
-    GB Incidence for event 2 fit in 0.443 s
-    GB Incidence for event 2 prediction in 0.082 s
-    Integrated theoretical cumulative incidence curve for event 3 in 0.143 s
-    GB Incidence for event 3 fit in 0.424 s
-    GB Incidence for event 3 prediction in 0.083 s
+    Integrated theoretical any event survival curve in 0.604 s
+    Integrated theoretical cumulative incidence curve for event 1 in 0.667 s
+    GB Incidence for event 1 fit in 0.440 s
+    GB Incidence for event 1 prediction in 0.085 s
+    Integrated theoretical cumulative incidence curve for event 2 in 0.151 s
+    GB Incidence for event 2 fit in 0.442 s
+    GB Incidence for event 2 prediction in 0.085 s
+    Integrated theoretical cumulative incidence curve for event 3 in 0.149 s
+    GB Incidence for event 3 fit in 0.433 s
+    GB Incidence for event 3 prediction in 0.084 s
 
 
 
@@ -450,7 +450,7 @@ uncertainty).
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 39.757 seconds)
+   **Total running time of the script:** (0 minutes 40.918 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_marginal_cumulative_incidence_estimation.py:
