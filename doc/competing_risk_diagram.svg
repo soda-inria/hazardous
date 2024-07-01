@@ -26,7 +26,7 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="1.410378"
-     inkscape:cx="428.96302"
+     inkscape:cx="429.67205"
      inkscape:cy="325.44467"
      inkscape:window-width="1920"
      inkscape:window-height="1131"
@@ -225,7 +225,7 @@
      style="white-space:pre;shape-inside:url(#rect9-7);display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:3.77953;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"><tspan
        x="410.52344"
        y="332.60991"
-       id="tspan817">Time
+       id="tspan1112">Time
 </tspan></text><path
      style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.910268;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#ArrowWideRounded-9);paint-order:markers fill stroke"
      d="m 142.06793,109.9447 c -6.37162,3.0171 -12.74321,6.03415 -19.11484,9.05122"
@@ -284,48 +284,48 @@
      transform="matrix(1.9150936,0,0,2.1735542,-173.01737,-15.234443)"><tspan
        x="153.68857"
        y="15.137673"
-       id="tspan819">End of Study</tspan></text><text
+       id="tspan1114">End of Study</tspan></text><text
      xml:space="preserve"
      transform="matrix(0.67242198,0,0,0.71099394,-121.02249,-176.33345)"
      id="text9-2"
      style="white-space:pre;shape-inside:url(#rect9-5);display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:3.77953;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"><tspan
        x="410.52344"
        y="332.60991"
-       id="tspan821">Competing
+       id="tspan1116">Competing
 </tspan><tspan
        x="410.52344"
        y="347.60991"
-       id="tspan823">Risks</tspan></text><text
+       id="tspan1118">Risks</tspan></text><text
      xml:space="preserve"
      transform="matrix(0.67242198,0,0,0.71099394,-121.2034,-155.18419)"
      id="text9-2-6"
      style="font-size:7.65312px;white-space:pre;shape-inside:url(#rect9-5-3);display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:3.77953;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"><tspan
        x="410.52344"
        y="328.65479"
-       id="tspan825">Multi-class:
+       id="tspan1120">Multi-class:
 </tspan><tspan
        x="410.52344"
        y="338.2212"
-       id="tspan827">different type of
+       id="tspan1122">different types of
 </tspan><tspan
        x="410.52344"
        y="347.7876"
-       id="tspan829">outcomes</tspan></text><text
+       id="tspan1124">outcomes</tspan></text><text
      xml:space="preserve"
      transform="matrix(0.67242198,0,0,0.71099394,-126.29272,-106.02409)"
      id="text9-2-6-5"
      style="font-size:7.65312px;white-space:pre;shape-inside:url(#rect9-5-3-7);display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:3.77953;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"><tspan
        x="410.52344"
        y="328.65479"
-       id="tspan831">Unobserved outcomes</tspan></text><text
+       id="tspan1126">Unobserved outcomes</tspan></text><text
      xml:space="preserve"
      transform="matrix(0.7151256,0,0,0.75645074,-144.01055,-142.69344)"
      id="text9"
      style="white-space:pre;shape-inside:url(#rect9);display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:3.77953;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke;opacity:1"><tspan
        x="410.52344"
        y="332.60991"
-       id="tspan833">Right
+       id="tspan1128">Right
 </tspan><tspan
        x="410.52344"
        y="347.60991"
-       id="tspan835">Censoring</tspan></text></svg>
+       id="tspan1130">Censoring</tspan></text></svg>

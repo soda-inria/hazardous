@@ -25,7 +25,7 @@ implemented in Python.
    **Competing risk settings**
 
    Predicting which event will occur, and when, from data where some of
-   the event have not yet been observed:
+   the events have not yet been observed:
 
    .. image:: competing_risk_diagram.svg
 
@@ -33,7 +33,7 @@ The model is **a gradient-boosting variant**, that offers prediction for
 survival and competing risks settings, fully compatible with
 `scikit-learn <https://scikit-learn.org>`_. It can be used with
 scikit-learn tools such as pipelines, column transformers,
-cross-validation, hyper-parameter seach tools, etc.
+cross-validation, hyper-parameter search tools, etc.
 
 .. This package will also offer neural network based estimators by leveraging
    `PyTorch <https://pytorch.org>`_ and `skorch
