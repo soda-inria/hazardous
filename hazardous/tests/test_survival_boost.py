@@ -3,7 +3,7 @@ import re
 import numpy as np
 import pandas as pd
 import pytest
-from numpy.testing import assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose, assert_array_equal, assert_array_less
 from sklearn.model_selection import GridSearchCV, train_test_split
 
 from hazardous import SurvivalBoost
@@ -47,6 +47,7 @@ def test_survival_boost_incidence_and_survival(seed):
     any_event_cif_pred = cif_pred[1:].sum(axis=0)
     assert_allclose(survival_pred, 1 - any_event_cif_pred)
     assert_allclose(survival_pred, cif_pred[0])
+    assert_allclose(cif_pred.sum(axis=0), 1.)
 
     ibs_gb_incidence = integrated_brier_score_incidence(
         y_train,
@@ -57,7 +58,14 @@ def test_survival_boost_incidence_and_survival(seed):
     )
     assert ibs_gb_incidence == pytest.approx(ibs_gb_surv)
 
-    # TODO: add assertions for each event CIF
+    # Check that the survival proba is globally decreasing.
+    assert_array_less(cif_pred[0, :, -1], cif_pred[0, :, 0])
+
+    # Check that the incidence proba are globally increasing.
+    assert_array_less(
+        cif_pred[1:, :, 0].sum(axis=0),
+        cif_pred[1:, :, -1].sum(axis=0),
+    )
 
     # TODO: add assertion about the .score method
 
