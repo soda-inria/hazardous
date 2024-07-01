@@ -1,12 +1,23 @@
 
-div.docutils.container.index-box {
+div.docutils.container.index-box, div.docutils.container.index-features {
     width: 400px;
-    float: right;
+}
+
+div.docutils.container.index-box {
     background-color: var(--pst-color-white-highlight);
     border-radius: 10px;
     color: black;
     padding: 5px;
     margin-left: 15px;
+    float: right;
+}
+
+@media (min-width: 792px) {
+    div.docutils.container.index-features {
+	position: absolute;
+	top: 80px;
+	right: 10px;
+    }
 }
 
 @media (max-width: 992px) {

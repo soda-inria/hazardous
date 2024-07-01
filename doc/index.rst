@@ -6,10 +6,19 @@
 HΛZΛRDOUS
 =========
 
-*Survival predictive analysis*
+Gradient-boosting survival analysis
+-----------------------------------------------
 
-This library provide a scalable **time-to-event and competing risk
-prediction model** implemented in Python.
+.. container:: index-features
+
+   * survival and competing risks
+
+   * scikit-learn compatible
+
+   * scalable gradient boosting
+
+A scalable **time-to-event and competing risk prediction model**
+implemented in Python.
 
 .. container:: index-box sd-card
 
@@ -20,12 +29,11 @@ prediction model** implemented in Python.
 
    .. image:: competing_risk_diagram.svg
 
-The estimators of this library build on top of `scikit-learn
-<https://scikit-learn.org>`_ components and extend the scikit-learn API to
-offer dedicated prediction methods for survival and competing risks analysis.
-
-They should be interoperable with scikit-learn tools such as pipelines, column
-transformers, cross-validation, hyper-parameter seach tools, etc.
+The model is **a gradient-boosting variant**, that offers prediction for
+survival and competing risks settings, fully compatible with
+`scikit-learn <https://scikit-learn.org>`_. It can be used with
+scikit-learn tools such as pipelines, column transformers,
+cross-validation, hyper-parameter seach tools, etc.
 
 .. This package will also offer neural network based estimators by leveraging
    `PyTorch <https://pytorch.org>`_ and `skorch
