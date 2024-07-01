@@ -308,7 +308,8 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
         .. math::
 
-        \sum_{k=1}^K \mathbb{P}(T^* \leq t \cap \Delta = k) + \mathbb{P}(T^* > t) = 1
+            \sum_{k=1}^K \mathbb{P}(T^* \leq t \cap \Delta = k)
+            + \mathbb{P}(T^* > t) = 1
 
         Returns
         -------
