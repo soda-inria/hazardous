@@ -24,8 +24,8 @@ implemented in Python.
 
    **Competing risk settings**
 
-   Predicting which event will occur, and when, from data where some of
-   the events have not yet been observed:
+   Predicting which event will occur, and when, from data where some
+   events have not yet been observed:
 
    .. image:: competing_risk_diagram.svg
 

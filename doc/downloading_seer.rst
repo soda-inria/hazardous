@@ -1,7 +1,7 @@
 
 .. _downloading_seer:
 
-How to get the SEER dataset
+Getting the SEER dataset
 ===========================
 
 .. currentmodule:: hazardous
