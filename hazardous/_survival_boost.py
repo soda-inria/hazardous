@@ -129,7 +129,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         )
 
 
-class GBMultiIncidence(BaseEstimator, ClassifierMixin):
+class SurvivalBoost(BaseEstimator, ClassifierMixin):
     """Cause-specific Cumulative Incidence Function (CIF) with GBDT.
 
     This model returns the cause-specific CIFs for each event type as well as

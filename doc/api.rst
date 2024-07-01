@@ -15,7 +15,7 @@ Estimators
     :template: class.rst
     :nosignatures:
 
-    GradientBoostingIncidence
+    SurvivalBoost
 
 
 Metrics

@@ -6,7 +6,7 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 from sklearn.model_selection import GridSearchCV, train_test_split
 
-from hazardous import GradientBoostingIncidence
+from hazardous import SurvivalBoost
 from hazardous.data import make_synthetic_competing_weibull
 from hazardous.metrics import (
     integrated_brier_score_incidence,
@@ -23,7 +23,7 @@ def test_monotonic_gradient_boosting_incidence(seed):
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
-    est = GradientBoostingIncidence(
+    est = SurvivalBoost(
         n_iter=3, event_of_interest="any", show_progressbar=False, random_state=seed
     )
     est.fit(X_train, y_train)
@@ -39,7 +39,7 @@ def test_monotonic_gradient_boosting_incidence(seed):
     )
     assert 0 < ibs_gb_surv < 0.5, ibs_gb_surv
 
-    # The score method of GradientBoostingIncidence with
+    # The score method of SurvivalBoost with
     # event_of_interest="any" is the IBS of the survival function (or the IBS
     # of the cumulative incidence function for the any event boolean marker).
     assert ibs_gb_surv == pytest.approx(-est.score(X_test, y_test))
@@ -64,7 +64,7 @@ def test_gradient_boosting_any_event_survival(seed):
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
-    est = GradientBoostingIncidence(
+    est = SurvivalBoost(
         n_iter=3, event_of_interest=3, show_progressbar=False, random_state=seed
     )
     est.fit(X_train, y_train)
@@ -84,7 +84,7 @@ def test_gradient_boosting_any_event_survival(seed):
         times=est.time_grid_,
         event_of_interest=est.event_of_interest,
     )
-    # The .score method of GradientBoostingIncidence with event_of_interest=3
+    # The .score method of SurvivalBoost with event_of_interest=3
     # is the IBS of the cumulative incidence function for the event of
     # interest.
     assert ibs_gb_incidence == pytest.approx(-est.score(X_test, y_test))
@@ -117,9 +117,7 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
-    est = GradientBoostingIncidence(
-        event_of_interest=3, show_progressbar=False, random_state=seed
-    )
+    est = SurvivalBoost(event_of_interest=3, show_progressbar=False, random_state=seed)
     grid_search = GridSearchCV(est, param_grid, cv=2, n_jobs=2)
     grid_search.fit(X_train, y_train)
     assert grid_search.best_params_ == {
