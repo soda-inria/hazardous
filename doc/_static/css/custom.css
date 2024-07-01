@@ -1,6 +1,6 @@
 
-div.docutils.container.index-box, div.docutils.container.index-features {
-    width: 400px;
+div.docutils.container.index-features {
+    width: 300px;
 }
 
 div.docutils.container.index-box {
@@ -10,13 +10,19 @@ div.docutils.container.index-box {
     padding: 5px;
     margin-left: 15px;
     float: right;
+    width: 400px;
+}
+
+/* Need to be able to have absolute positioning for the div inside */
+.bd-main .bd-content .bd-article-container .bd-article {
+    position: relative;
 }
 
 @media (min-width: 792px) {
     div.docutils.container.index-features {
 	position: absolute;
-	top: 80px;
-	right: 10px;
+	top: 10px;
+	right: 0px;
     }
 }
 

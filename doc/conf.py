@@ -49,3 +49,5 @@ intersphinx_mapping = {
 }
 
 numpydoc_show_class_members = False 
+
+html_title = "hazardous"
