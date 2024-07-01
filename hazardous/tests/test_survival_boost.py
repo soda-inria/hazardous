@@ -88,7 +88,7 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     # set are good (lower IBS is better, hence higher negative IBS is better).
     max_expected_ibs = 0.17  # found emprically with different seed
     assert grid_search.best_score_ > -max_expected_ibs
-    grid_search.best_estimator_.score(X_test, y_test) > -max_expected_ibs
+    assert grid_search.best_estimator_.score(X_test, y_test) > -max_expected_ibs
 
     # Check that some other parameter values lead to much poorer IBS.
     cv_results = pd.DataFrame(grid_search.cv_results_).sort_values("mean_test_score")
