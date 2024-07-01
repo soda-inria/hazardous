@@ -47,7 +47,7 @@ def test_survival_boost_incidence_and_survival(seed):
     any_event_cif_pred = cif_pred[1:].sum(axis=0)
     assert_allclose(survival_pred, 1 - any_event_cif_pred)
     assert_allclose(survival_pred, cif_pred[0])
-    assert_allclose(cif_pred.sum(axis=0), 1.)
+    assert_allclose(cif_pred.sum(axis=0), 1.0)
 
     ibs_gb_incidence = integrated_brier_score_incidence(
         y_train,
@@ -66,7 +66,6 @@ def test_survival_boost_incidence_and_survival(seed):
         cif_pred[1:, :, 0].sum(axis=0),
         cif_pred[1:, :, -1].sum(axis=0),
     )
-
     # TODO: add assertion about the .score method
 
 
