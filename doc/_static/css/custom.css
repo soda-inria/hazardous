@@ -1,0 +1,21 @@
+
+div.docutils.container.index-box {
+    width: 400px;
+    float: right;
+    background-color: var(--pst-color-white-highlight);
+    border-radius: 10px;
+    color: black;
+    padding: 5px;
+    margin-left: 15px;
+}
+
+@media (max-width: 992px) {
+    div.docutils.container.index-box {
+	max-width: 500px;
+	width: unset;
+	float: unset;
+	margin-left: auto;
+	margin-right: auto;
+    }
+}
+

@@ -6,10 +6,19 @@
 HΛZΛRDOUS
 =========
 
-*Predictive survival and competing risks analysis in Python*
+*Survival predictive analysis*
 
-The objective of this library is to provide a Python implementation of
-**time-to-event prediction models** in the presence of right-censored data.
+This library provide a scalable **time-to-event and competing risk
+prediction model** implemented in Python.
+
+.. container:: index-box sd-card
+
+   **Competing risk settings**
+
+   Predicting which event will occur, and when, from data where some of
+   the event have not yet been observed:
+
+   .. image:: competing_risk_diagram.svg
 
 The estimators of this library build on top of `scikit-learn
 <https://scikit-learn.org>`_ components and extend the scikit-learn API to
@@ -18,9 +27,9 @@ offer dedicated prediction methods for survival and competing risks analysis.
 They should be interoperable with scikit-learn tools such as pipelines, column
 transformers, cross-validation, hyper-parameter seach tools, etc.
 
-This package will also offer neural network based estimators by leveraging
-`PyTorch <https://pytorch.org>`_ and `skorch
-<https://skorch.readthedocs.io/>`_.
+.. This package will also offer neural network based estimators by leveraging
+   `PyTorch <https://pytorch.org>`_ and `skorch
+   <https://skorch.readthedocs.io/>`_.
 
 This library puts a focus on predictive accuracy rather than on inference.
 Quantifying the statistical association or causal effect of covariates with/on
