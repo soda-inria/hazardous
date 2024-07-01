@@ -9,10 +9,7 @@ def _common_test_steps(session):
         session.run("pytest", "-v", "--cov", "--pyargs", "hazardous")
 
 
-# TODO: add 3.12 as soon as numpy and scikit-learn upload 3.12 wheels
-# built against the pre-releases.
-# https://dev.to/hugovk/help-test-python-312-beta-1508
-@nox.session(python=["3.9", "3.10", "3.11"])
+@nox.session(python=["3.9", "3.10", "3.11", "3.12"])
 def test_latest_from_pypi(session):
     # Test the newest versions of the dependencies.
     session.install(".[test]")
