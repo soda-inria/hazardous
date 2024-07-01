@@ -258,7 +258,8 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                 raise ValueError(
                     "The time-horizon resampling of the data has caused some events "
                     f"to be unobserved in the training data at iteration {idx_iter}. "
-                    "Consider lowering the value of hard_zero_fraction."
+                    "Consider lowering the value of hard_zero_fraction (currently set "
+                    f"to {self.hard_zero_fraction})."
                 )
 
             if (idx_iter % self.n_iter_before_feedback == 0) and isinstance(

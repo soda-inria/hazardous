@@ -114,7 +114,8 @@ def test_censoring_rate(seed):
     msg = re.escape(
         "The time-horizon resampling of the data has caused some events "
         "to be unobserved in the training data at iteration 0. "
-        "Consider lowering the value of hard_zero_fraction."
+        "Consider lowering the value of hard_zero_fraction (currently set to "
+        "1.0)."
     )
     with pytest.raises(ValueError, match=msg):
         est.fit(X, y)
