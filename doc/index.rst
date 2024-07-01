@@ -7,7 +7,7 @@ HΛZΛRDOUS
 =========
 
 Gradient-boosting survival analysis
------------------------------------------------
+-----------------------------------
 
 .. container:: index-features
 
