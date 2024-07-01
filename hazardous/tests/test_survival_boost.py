@@ -144,3 +144,16 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     best_ibs = -cv_results.iloc[-1]["mean_test_score"]
     assert best_ibs == pytest.approx(-grid_search.best_score_)
     assert worst_ibs > 1.4 * best_ibs
+
+
+@pytest.mark.parametrize("seed", SEED_RANGE)
+def test_censoring_rate(seed):
+    X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
+    est = SurvivalBoost(
+        n_iter=1, hard_zero_fraction=1.0, show_progressbar=False, random_state=seed
+    )
+    msg = "The time-horizon resampling of the data has caused some events "
+    "to be unobserved in the training data at iteration 1."
+    "Consider lowering the value of hard_zero_fraction."
+    with pytest.raises(ValueError, match=msg):
+        est.fit(X, y)
