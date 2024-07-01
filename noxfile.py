@@ -16,7 +16,7 @@ def test_latest_from_pypi(session):
     _common_test_steps(session)
 
 
-@nox.session(python=["3.11"], venv_backend="mamba")
+@nox.session(python=["3.12"], venv_backend="mamba")
 def test_latest_from_conda_forge(session):
     # Test the newest versions of the dependencies from conda-forge.
     # XXX: hown to do the same with a single mamba install command?
