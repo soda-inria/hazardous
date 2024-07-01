@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.ensemble import HistGradientBoostingClassifier
@@ -10,6 +8,7 @@ from ._ipcw import AlternatingCensoringEst
 from .metrics._brier_score import (
     IncidenceScoreComputer,
     integrated_brier_score_incidence,
+    integrated_brier_score_survival,
 )
 from .utils import check_y_survival
 
@@ -176,7 +175,6 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         n_iter_before_feedback=20,
         ipcw_est=None,
         random_state=None,
-        uniform_sampling=True,
         n_times=1,
     ):
         self.hard_zero_fraction = hard_zero_fraction
@@ -191,7 +189,6 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         self.n_iter_before_feedback = n_iter_before_feedback
         self.ipcw_est = ipcw_est
         self.random_state = random_state
-        self.uniform_sampling = uniform_sampling
         self.n_times = n_times
 
     def fit(self, X, y, times=None):
@@ -232,7 +229,6 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             random_state=self.random_state,
             ipcw_est=ipcw_est,
             n_iter_before_feedback=self.n_iter_before_feedback,
-            uniform_sampling=self.uniform_sampling,
         )
 
         iterator = range(self.n_iter)
@@ -334,21 +330,8 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         return predicted_curves
 
     def predict_survival_function(self, X, times=None):
-        """Compute the event specific survival function.
-
-        Warning: this metric only makes sense when y_train["event"] is binary
-        (single event) or when setting event_of_interest='any'.
-        """
-        if (self.event_ids_ > 0).sum() > 1 and self.event_of_interest != "any":
-            warnings.warn(
-                "Values returned by predict_survival_function only make "
-                "sense when the model is trained with a binary event "
-                "indicator or when setting event_of_interest='any'. "
-                "Instead this model was fit on data with event ids "
-                f"{self.event_ids_.tolist()} and with "
-                f"event_of_interest={self.event_of_interest}."
-            )
-        return 1 - self.predict_cumulative_incidence(X, times=times)
+        """Compute the any-event survival function."""
+        return self.predict_cumulative_incidence(X, times=times)[0]
 
     def _build_base_estimator(self):
         return HistGradientBoostingClassifier(
@@ -386,21 +369,29 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         Returns
         -------
         score : float
-            The time-integrated Brier score (IBS) or INLL.
+            The negative of time-integrated Brier score (IBS) or INLL.
 
-        #TODO: implement time integrated NLL.
+        TODO: implement time integrated NLL and use as the default for the
+        .score method to match the objective function used at fit time.
         """
         predicted_curves = self.predict_cumulative_incidence(X)
         ibs_events = []
-        for idx, event in enumerate(self.event_ids_[1:]):
-            predicted_curves_for_event = predicted_curves[idx + 1]
-            ibs_event = integrated_brier_score_incidence(
-                y_train=self.weighted_targets_.y_train,
-                y_test=y,
-                y_pred=predicted_curves_for_event,
-                times=self.time_grid_,
-                event_of_interest=event,
-            )
-
+        for event_idx in self.event_ids_:
+            predicted_curves_for_event = predicted_curves[event_idx]
+            if event_idx == 0:
+                ibs_event = integrated_brier_score_survival(
+                    y_train=self.weighted_targets_.y_train,
+                    y_test=y,
+                    y_pred=predicted_curves_for_event,
+                    times=self.time_grid_,
+                )
+            else:
+                ibs_event = integrated_brier_score_incidence(
+                    y_train=self.weighted_targets_.y_train,
+                    y_test=y,
+                    y_pred=predicted_curves_for_event,
+                    times=self.time_grid_,
+                    event_of_interest=event_idx,
+                )
             ibs_events.append(ibs_event)
         return -np.mean(ibs_events)
