@@ -129,7 +129,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 
 
 class SurvivalBoost(BaseEstimator, ClassifierMixin):
-    """Cause-specific Cumulative Incidence Function (CIF) with GBDT.
+    r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT.
 
     This model returns the cause-specific CIFs for each event type as well as
     the survival function.
@@ -254,6 +254,13 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             self.estimator_.max_iter += 1
             self.estimator_.fit(X_with_time, y_targets, sample_weight=sample_weight)
 
+            if not np.array_equal(self.estimator_.classes_, self.event_ids_):
+                raise ValueError(
+                    "The time-horizon resampling of the data has caused some events "
+                    f"to be unobserved in the training data at iteration {idx_iter}. "
+                    "Consider lowering the value of hard_zero_fraction."
+                )
+
             if (idx_iter % self.n_iter_before_feedback == 0) and isinstance(
                 ipcw_est, AlternatingCensoringEst
             ):
@@ -297,7 +304,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         return self.predict_cumulative_incidence(X, times=times)
 
     def predict_cumulative_incidence(self, X, times=None):
-        """Estimate the cumulative incidence function for all events.
+        r"""Estimate the cumulative incidence function for all events.
 
         .. math::
 
