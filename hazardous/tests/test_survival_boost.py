@@ -117,14 +117,14 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     param_grid = {
         "n_iter": [1, 10],
         "max_leaf_nodes": [2, 10],
-        "hard_zero_fraction": [0.2, 1.0],
+        "hard_zero_fraction": [0.2, 0.5],
     }
     X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
     est = SurvivalBoost(show_progressbar=False, random_state=seed)
-    grid_search = GridSearchCV(est, param_grid, cv=2, n_jobs=2)
+    grid_search = GridSearchCV(est, param_grid, cv=2, error_score="raise")
     grid_search.fit(X_train, y_train)
     assert grid_search.best_params_ == {
         "n_iter": 10,
