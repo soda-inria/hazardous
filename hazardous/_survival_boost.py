@@ -294,9 +294,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                 time_horizon = self.time_horizon
 
         times = np.asarray([time_horizon])
-        cif = self.predict_cumulative_incidence(X, times=times)
-
-        return cif
+        return self.predict_cumulative_incidence(X, times=times)
 
     def predict_cumulative_incidence(self, X, times=None):
         """Estimate the cumulative incidence function for all events.
