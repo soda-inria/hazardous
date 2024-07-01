@@ -7,7 +7,6 @@ from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
 from ._ipcw import AlternatingCensoringEst
-from ._kaplan_meier import KaplanMeierEstimator
 from .metrics._brier_score import (
     IncidenceScoreComputer,
     integrated_brier_score_incidence,
@@ -32,7 +31,6 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         random_state=None,
         ipcw_est=None,
         n_iter_before_feedback=20,
-        uniform_sampling=True,
     ):
         self.rng = check_random_state(random_state)
         self.hard_zero_fraction = hard_zero_fraction
@@ -45,9 +43,6 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
         self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
-        self.uniform_sampling = uniform_sampling
-        if not uniform_sampling:
-            self.time_sampler = KaplanMeierEstimator().fit(self.y_train)
 
     def draw(self, ipcw_training=False, X=None):
         # Sample time horizons uniformly on the observed time range:
@@ -57,14 +52,9 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         # Sample from t_min=0 event if never observed in the training set
         # because we want to make sure that the model learns to predict a 0
         # incidence at t=0.
-        if self.uniform_sampling:
-            t_min = 0.0
-            t_max = duration.max()
-            times = self.rng.uniform(t_min, t_max, n_samples)
-        else:
-            q_min, q_max = 0.0, 1.0
-            quantiles = self.rng.uniform(q_min, q_max, n_samples)
-            times = self.time_sampler.predict_quantile(quantiles)
+        t_min = 0.0
+        t_max = duration.max()
+        times = self.rng.uniform(t_min, t_max, n_samples)
 
         # Add some some hard zeros to make sure that the model learns to
         # predict 0 incidence at t=0.
