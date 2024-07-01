@@ -18,7 +18,7 @@ SEED_RANGE = range(1)
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
-def test_monotonic_gradient_boosting_incidence(seed):
+def test_survival_boost_incidence_and_survival(seed):
     X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
 
@@ -46,6 +46,8 @@ def test_monotonic_gradient_boosting_incidence(seed):
 
     any_event_cif_pred = cif_pred[1:].sum(axis=0)
     assert_allclose(survival_pred, 1 - any_event_cif_pred)
+    assert_allclose(survival_pred, cif_pred[0])
+
     ibs_gb_incidence = integrated_brier_score_incidence(
         y_train,
         y_test,
@@ -58,56 +60,6 @@ def test_monotonic_gradient_boosting_incidence(seed):
     # TODO: add assertions for each event CIF
 
     # TODO: add assertion about the .score method
-
-
-@pytest.mark.parametrize("seed", SEED_RANGE)
-def test_gradient_boosting_any_event_survival(seed):
-    X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
-    all_event_ids = [0, 1, 2, 3]
-    assert sorted(y["event"].unique()) == all_event_ids
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
-    est = SurvivalBoost(n_iter=3, show_progressbar=False, random_state=seed)
-    est.fit(X_train, y_train)
-    assert_array_equal(est.event_ids_, [0, 1, 2, 3])
-
-    # Check that the survival function is the complement of the cumulative
-    # incidence function for any event.
-    cif_pred = est.predict_cumulative_incidence(X_test)
-    assert cif_pred.shape == (
-        len(all_event_ids),
-        X_test.shape[0],
-        est.time_grid_.shape[0],
-    )
-    assert np.all(cif_pred >= 0), cif_pred.min()
-    assert np.all(cif_pred <= 1), cif_pred.max()
-
-    event_of_interest = 3
-    ibs_gb_incidence_3 = integrated_brier_score_incidence(
-        y_train,
-        y_test,
-        cif_pred[event_of_interest],
-        times=est.time_grid_,
-        event_of_interest=event_of_interest,
-    )
-    # The .score method of SurvivalBoost with event_of_interest=3
-    # is the IBS of the cumulative incidence function for the event of
-    # interest.
-    assert ibs_gb_incidence_3 == pytest.approx(-est.score(X_test, y_test))
-
-    # Asking to predict a cause-specific survival function for a specific event
-    # of interest is mathematically possible but does not really make sense,
-    # hence the warning.
-    expected_msg = re.escape(
-        "Values returned by predict_survival_function only make "
-        "sense when the model is trained with a binary event "
-        "indicator or when setting event_of_interest='any'. "
-    )
-    with pytest.warns(UserWarning, match=expected_msg):
-        survival_pred = est.predict_survival_function(X_test)
-
-    # Cause-specific "survival" is the complement of the sum of cause-specific CIFs.
-    assert_allclose(survival_pred, 1 - cif_pred[1:].sum(axis=0))
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
@@ -152,8 +104,10 @@ def test_censoring_rate(seed):
     est = SurvivalBoost(
         n_iter=1, hard_zero_fraction=1.0, show_progressbar=False, random_state=seed
     )
-    msg = "The time-horizon resampling of the data has caused some events "
-    "to be unobserved in the training data at iteration 1."
-    "Consider lowering the value of hard_zero_fraction."
+    msg = re.escape(
+        "The time-horizon resampling of the data has caused some events "
+        "to be unobserved in the training data at iteration 0. "
+        "Consider lowering the value of hard_zero_fraction."
+    )
     with pytest.raises(ValueError, match=msg):
         est.fit(X, y)
