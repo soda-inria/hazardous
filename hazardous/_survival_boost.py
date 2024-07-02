@@ -292,8 +292,10 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         Returns
         -------
         y_proba : ndarray of shape (n_events + 1, n_samples)
-            The first column holds the survival probability to any event and others the
-            incidence probabilities for each event.
+            The estimated probabilities at the given time horizon. The first entry
+            at index 0 represents the survival probability (none of the events
+            occurring), whereas the remaining entries correspond to the incidence
+            probabilities for each specific event.
         """
         if time_horizon is None:
             if self.time_horizon is None:
