@@ -4,7 +4,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
-from ._ipcw import AlternatingCensoringEst
+from ._ipcw import AlternatingCensoringEstimator
 from .metrics._brier_score import (
     IncidenceScoreComputer,
     integrated_brier_score_incidence,
@@ -219,7 +219,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             self.time_grid_.sort()
 
         if self.ipcw_est is None:
-            ipcw_est = AlternatingCensoringEst(incidence_est=self.estimator_)
+            ipcw_est = AlternatingCensoringEstimator(incidence_est=self.estimator_)
         else:
             ipcw_est = self.ipcw_est
 
@@ -263,7 +263,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                 )
 
             if (idx_iter % self.n_iter_before_feedback == 0) and isinstance(
-                ipcw_est, AlternatingCensoringEst
+                ipcw_est, AlternatingCensoringEstimator
             ):
                 self.weighted_targets_.fit(X)
 

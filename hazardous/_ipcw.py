@@ -145,7 +145,7 @@ class IPCWEstimator(BaseIPCW):
         return self.censoring_survival_func_(times)
 
 
-class AlternatingCensoringEst(BaseIPCW):
+class AlternatingCensoringEstimator(BaseIPCW):
     """IPCW estimator for Debiased Gradient Boosting Incidence.
 
     Predict :math:`\hat{G}(t | X = x) = p(C > t | X = x)` using
