@@ -132,14 +132,14 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
     r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT.
 
     This model estimates the cause-specific Cumulative Incidence Function (CIF)
-    using a Gradient Boosting Decision Tree (GBDT) classifier. The CIF is the
-    probability of observing an event of a specific type before a given time
-    point. The model is trained on a dataset with right-censored observations
-    and competing risks. The model returns the survival function to any
-    event as well as the CIF for each event type.
+    of each event of interest as well the surival funciton to any event using a
+    Gradient Boosting Decision Tree (GBDT) classifier. The CIF is the
+    probability of observing an event of a specific type before a given time.
 
-    The Cumulative Incidence Function for each event type :math:`k` at
-    each time is defined as:
+    The models handles survival analysis and competing risks data.
+
+    The Cumulative Incidence Function for each event type :math:`k` at each time
+    is defined as:
 
     .. math::
 
@@ -158,10 +158,18 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
 
     Under the hood, this class uses randomly sampled reference time horizons
-    concatenated as an extra input column to the underlying HGB classifier.
-    At boosting iteration, a new tree is trained on a
-    copy of the original feature matrix X augmented with a new independent sample
-    of time horizons.
+    concatenated as an extra input column to the underlying HGB classifier. At
+    boosting iteration, a new tree is trained on a copy of the original feature
+    matrix X augmented with a new independent sample of time horizons. The
+    number of time horizons sampled at each iteration is controlled by the
+    `n_times` parameter.
+
+    To predict the survival function and the CIF, the model uses an alternating
+    optimization. The censoring-adjusted incidence estimator is trained with a
+    fixed number of iterations before the feedback loop is triggered. The
+    feedback loop is triggered every `n_iter_before_feedback` iterations. The
+    feedback loop updates the censoring-adjusted incidence estimator with the
+    current model predictions.
 
     """
 
@@ -199,6 +207,35 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         self.n_times = n_times
 
     def fit(self, X, y, times=None):
+        """Fit the model.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The input samples.
+
+        y : dict, {array-like, dataframe} of shape (n_samples, 2).
+            The target values. If a dictionary, it must have keys "event" and
+            "duration". If an record array, it must have a dtype with two fields
+            named "event" and "duration". If a dataframe, it must have columns
+            named "event" and "duration". "event" is an integer array of shape
+            (n_samples,) indicating which event was observed (and 0 means that
+            the sample was censored). "duration" is a float array of shape
+            (n_samples,) indicating the time of the first event or the time of
+            censoring.
+
+        times : array-like of shape (n_times,), default=None
+            The time horizons used to predict the survival function and the CIF.
+            If None, the default time grid is computed from the observed event
+            times in the training data.
+
+
+        Returns
+        -------
+        self : object
+            Returns an instance of self.
+        """
+
         X = check_array(X, force_all_finite="allow-nan")
         event, duration = check_y_survival(y)
 
@@ -363,13 +400,14 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         )
 
     def score(self, X, y):
-        """Return IBS or competing_risks loss (proper scoring rule).
+        """Return the mean of IBS for each event of interest and survival.
 
-        This returns the negative of a proper scoring rule, so that the higher
-        the value, the better the model to be consistent with the scoring
-        convention of scikit-learn to make it possible to use this class with
-        scikit-learn model selection utilities such as GridSearchCV and
-        RandomizedSearchCV.
+        This returns the negative of the mean of the Integrated Brier Score
+        (IBS) (a proper scoring rule) of each competing event as well as the IBS
+        of the survival to any event. So, the higher the value, the better the
+        model to be consistent with the scoring convention of scikit-learn to
+        make it possible to use this class with scikit-learn model selection
+        utilities such as GridSearchCV and RandomizedSearchCV.
 
         The `loss` parameter passed to the constructor determines whether the
         negative IBS or negative INLL is returned.
