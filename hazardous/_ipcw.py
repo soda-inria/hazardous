@@ -89,23 +89,23 @@ class KaplanMeierIPCW:
         return self
 
     def compute_ipcw_at(self, times, X=None, ipcw_training=False):
-        """Estimate inverse censoring weight probability at times.
+        """Estimate inverse probability of censoring weights at given time horizons.
 
-        Linearly interpolate the censoring survival function and return the
-        inverse values.
+        Compute the inverse of the linearly interpolated censoring survival
+        function.
 
         Parameters
         ----------
-        X : pandas.DataFrame of shape (n_samples, n_features)
-            The input data for conditional estimators.
-
         times : np.ndarray of shape (n_samples,)
             The input times for which to predict the IPCW for each sample.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            The input data for a conditional estimator. Unused for a marginal estimator.
 
         Returns
         -------
         ipcw : np.ndarray of shape (n_samples,)
-            The IPCW for each sample at each sample time.
+            The IPCW for each sample at each time horizon.
         """
         check_is_fitted(self, "min_censoring_prob_")
 
@@ -118,10 +118,9 @@ class KaplanMeierIPCW:
         return 1 / cs_prob
 
     def compute_censoring_survival_proba(self, times, X=None, ipcw_training=False):
-        """Estimate inverse censoring weight probability at times.
+        """Estimate probability of not experiencing censoring at times.
 
-        Linearly interpolate the censoring survival function and return the
-        inverse values.
+        Linearly interpolate the censoring survival function.
 
         Parameters
         ----------
