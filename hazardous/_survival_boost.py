@@ -1,3 +1,5 @@
+from numbers import Real
+
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.ensemble import HistGradientBoostingClassifier
@@ -301,7 +303,9 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             else:
                 time_horizon = self.time_horizon
 
-        times = np.asarray([time_horizon])
+        if isinstance(time_horizon, Real):
+            time_horizon = [time_horizon]
+        times = np.asarray(time_horizon)
         return self.predict_cumulative_incidence(X, times=times)
 
     def predict_cumulative_incidence(self, X, times=None):
