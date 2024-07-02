@@ -140,7 +140,7 @@ class KaplanMeierIPCW(BaseEstimator):
 
 
 class AlternatingCensoringEstimator(KaplanMeierIPCW):
-    """IPCW estimator for Debiased Gradient Boosting Incidence.
+    r"""IPCW estimator for Debiased Gradient Boosting Incidence.
 
     Predict :math:`\hat{G}(t | X = x) = p(C > t | X = x)` using
     :math:`1/\hat{S}(t | X = x) = 1/p(T^* > t | X = x)` as IPCW.
@@ -217,7 +217,7 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
         return self
 
     def compute_censoring_survival_proba(self, times, X=None, ipcw_training=False):
-        """Predict the censoring probability at some given times.
+        r"""Predict the censoring probability at some given times.
 
         The probabilities returned by the incidence estimator are
         :math:`\hat{S}(t| X = x) = P(T^* > t | X = x)` and
