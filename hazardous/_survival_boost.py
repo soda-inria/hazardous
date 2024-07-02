@@ -114,7 +114,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
                 ipcw_training=True,
                 X=X,
             )
-            self.ipcw_est.fit_censoring_est(
+            self.ipcw_est.fit_censoring_estimator(
                 X,
                 y_targets,
                 times=sampled_times,
