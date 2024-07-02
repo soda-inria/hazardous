@@ -284,15 +284,16 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         ----------
         X : array-like of shape (n_samples, n_features)
             The input samples.
-        time_horizon : int, float or array-like, default=None
+        time_horizon : int or float, default=None
             The time horizon at which to estimate the probabilities. If `None`, the
             `time_horizon` passed at the constructor is used. Therefore, this
             parameter allows to override the `time_horizon` set at the constructor.
 
         Returns
         -------
-        incidence_probabilities : ndarray of shape (n_events + 1, n_samples, n_times)
-            The incidence probabilities for each event at the given time horizon.
+        y_proba : ndarray of shape (n_events + 1, n_samples)
+            The first column holds the survival probability to any event and others the
+            incidence probabilities for each event.
         """
         if time_horizon is None:
             if self.time_horizon is None:
@@ -305,10 +306,14 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             else:
                 time_horizon = self.time_horizon
 
-        if isinstance(time_horizon, Real):
-            time_horizon = [time_horizon]
-        times = np.asarray(time_horizon)
-        return self.predict_cumulative_incidence(X, times=times)
+        if not isinstance(time_horizon, Real):
+            raise TypeError(
+                "The time_horizon parameter must be a real number. Use "
+                "predict_cumulative_incidence instead of predict_proba if you want "
+                "to predict at several time horizons."
+            )
+        times = np.asarray([time_horizon])
+        return self.predict_cumulative_incidence(X, times=times).squeeze()
 
     def predict_cumulative_incidence(self, X, times=None):
         r"""Estimate the cumulative incidence function for all events.

@@ -93,31 +93,18 @@ def test_survival_boost_predict_proba(seed):
     with pytest.raises(ValueError, match=err_msg):
         est.predict_proba(X_test)
 
-    time_horizon = 0
-    y_pred = est.predict_proba(X_test, time_horizon=time_horizon)
-    assert y_pred.shape == (n_events, X_test.shape[0], 1)
-    assert_allclose(y_pred.sum(axis=0), 1.0)
-
-    time_horizon = [0, 10]
-    y_pred = est.predict_proba(X_test, time_horizon=time_horizon)
-    assert y_pred.shape == (n_events, X_test.shape[0], len(time_horizon))
-    assert_allclose(y_pred.sum(axis=0), 1.0)
+    err_msg = "The time_horizon parameter must be a real number."
+    with pytest.raises(TypeError, match=err_msg):
+        est.predict_proba(X_test, time_horizon=[0, 1])
 
     time_horizon = 0
-    est.set_params(time_horizon=time_horizon)
-    y_pred = est.predict_proba(X_test)
-    assert y_pred.shape == (n_events, X_test.shape[0], 1)
-    assert_allclose(y_pred.sum(axis=0), 1.0)
-
-    time_horizon = [0, 10]
-    est.set_params(time_horizon=time_horizon)
-    y_pred = est.predict_proba(X_test)
-    assert y_pred.shape == (n_events, X_test.shape[0], len(time_horizon))
-    assert_allclose(y_pred.sum(axis=0), 1.0)
-
-    time_horizon = [0, 10, 20]
     y_pred = est.predict_proba(X_test, time_horizon=time_horizon)
-    assert y_pred.shape == (n_events, X_test.shape[0], len(time_horizon))
+    assert y_pred.shape == (n_events, X_test.shape[0])
+    assert_allclose(y_pred.sum(axis=0), 1.0)
+
+    est.set_params(time_horizon=time_horizon)
+    y_pred = est.predict_proba(X_test)
+    assert y_pred.shape == (n_events, X_test.shape[0])
     assert_allclose(y_pred.sum(axis=0), 1.0)
 
 
