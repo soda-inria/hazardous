@@ -74,10 +74,9 @@ def test_survival_boost_predict_proba(seed):
 
     - we raise an error when no `time_horizon` is set in the constructor nor
       passed to `predict_proba`.
+    - we raise an error when `time_horizon` is not a real number.
     - we can pass `time_horizon` as a parameter to `predict_proba`.
     - we can set `time_horizon` as a constructor parameter of `SurvivalBoost`.
-    - the `time_horizon` parameter passed to `predict_proba` is prioritized
-      over the constructor parameter.
     """
     X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
