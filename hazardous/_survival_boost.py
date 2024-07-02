@@ -18,6 +18,11 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 
     Parameters
     ----------
+    hard_zero_fraction : float, default=0.1
+        The fractions of the total number of training samples that are going to be
+        set to zeros such that the model learns to predict 0 incidence at `t=0`.
+
+
     random_state : int, RandomState instance or None, default=None
         Controls the randomness of the uniform time sampler
     """
@@ -54,9 +59,8 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         t_max = duration.max()
         times = self.rng.uniform(t_min, t_max, n_samples)
 
-        # Add some some hard zeros to make sure that the model learns to
+        # Add some hard zeros to make sure that the model learns to
         # predict 0 incidence at t=0.
-
         n_hard_zeros = max(int(self.hard_zero_fraction * n_samples), 1)
         hard_zero_indices = self.rng.choice(n_samples, n_hard_zeros, replace=False)
         times[hard_zero_indices] = 0.0
@@ -170,6 +174,30 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
     feedback loop is triggered every `n_iter_before_feedback` iterations. The
     feedback loop updates the censoring-adjusted incidence estimator with the
     current model predictions.
+
+    Parameters
+    ----------
+    hard_zero_fraction : float, default=0.1
+        The fractions of the total number of training samples that are going to be
+        set to zeros such that the model learns to predict 0 incidence at `t=0`.
+    n_iter : int, default=100
+        The number of boosting iterations.
+    learning_rate : float, default=0.05
+        The learning rate, also known as shrinkage. This is used as a multiplicative
+        factor for the leaves values. Use 1 for no shrinkage.
+    n_iter : int, default=100
+        The number of iterations of the boosting process.
+    max_leaf_nodes : int or None, default=31
+        The maximum number of leaves for each tree. Must be strictly greater than 1. If
+        None, there is no maximum limit.
+    max_depth : int, default=None
+        The maximum depth of each tree. The depth of a tree is the number of edges to go
+        from the root to the deepest leaf. Depth isn't constrained by default.
+    min_samples_leaf : int, default=50
+        The minimum number of samples per leaf.
+    show_progressbar : bool, default=True
+        Whether to show a progress bar during the training process.
+    n_time_grid_steps : int, default=100
 
     """
 
