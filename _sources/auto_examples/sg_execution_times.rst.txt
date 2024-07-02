@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:40.118** total execution time for 1 file **from auto_examples**:
+**00:39.904** total execution time for 1 file **from auto_examples**:
 
 .. container::
 
@@ -33,5 +33,5 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_auto_examples_plot_marginal_cumulative_incidence_estimation.py` (``plot_marginal_cumulative_incidence_estimation.py``)
-     - 00:40.118
+     - 00:39.904
      - 0.0
