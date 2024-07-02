@@ -1,14 +1,13 @@
 import numpy as np
 from lifelines import KaplanMeierFitter
 from scipy.interpolate import interp1d
-from sklearn.base import BaseEstimator
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.validation import check_is_fitted
 
 from .utils import check_y_survival
 
 
-class KaplanMeierIPCW(BaseEstimator):
+class KaplanMeierIPCW:
     """Estimate the Inverse Probability of Censoring Weight (IPCW).
 
     This class estimates the inverse of the probability of "survival" to
@@ -40,15 +39,19 @@ class KaplanMeierIPCW(BaseEstimator):
         self.epsilon_censoring_prob = epsilon_censoring_prob
 
     def fit(self, y, X=None):
-        """Compute the censoring survival function using Kaplan Meier
-        and store it as an interpolation function.
+        """Marginal estimation of the censoring survival function
+
+        In addition to running the Kaplan-Meier estimator on the negated event
+        labels (1 for censoring, 0 for any event), this methods also fits
+        interpolation function to be able to make prediction at any time.
 
         Parameters
         ----------
-        y : np.array, dictionnary or dataframe
+        y : np.array, dictionary or dataframe
             The target, consisting in the 'event' and 'duration' columns.
 
         X : None
+            Unused since this estimator is marginal.
 
         Returns
         -------
