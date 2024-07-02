@@ -284,7 +284,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         ----------
         X : array-like of shape (n_samples, n_features)
             The input samples.
-        time_horizon : float or array-like, default=None
+        time_horizon : int, float or array-like, default=None
             The time horizon at which to estimate the probabilities. If `None`, the
             `time_horizon` passed at the constructor is used. Therefore, this
             parameter allows to override the `time_horizon` set at the constructor.
