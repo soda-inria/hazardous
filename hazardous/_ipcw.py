@@ -8,12 +8,53 @@ from sklearn.utils.validation import check_is_fitted
 from .utils import check_y_survival
 
 
-class BaseIPCW(BaseEstimator):
+class KaplanMeierIPCW(BaseEstimator):
+    """Estimate the Inverse Probability of Censoring Weight (IPCW).
+
+    This class estimates the inverse of the probability of "survival" to
+    censoring using the Kaplan-Meier estimator on a binary indicator for
+    censoring, that is the negative of the binary indicator for any-event
+    occurrence. This estimator assumes that the censoring distribution is
+    independent of the covariates X. If this assumption is not met, the
+    estimator will be biased and you may want to use a conditional estimator
+    instead.
+
+    This is useful to correct for the bias introduced by right censoring in
+    survival analysis when computing model evaluation metrics such as the Brier
+    score or the concordance index.
+
+    Note that the name IPCW name is a bit misleading: IPCW values are the
+    inverse of the probability of remaining censoring-free (or uncensored) at a
+    given time: at t=0, the probability of being censored is 0, therefore the
+    probability of being uncensored is 1.0, and its inverse is also 1.0.
+
+    By construction, IPCW values are always larger or equal to 1.0 and can only
+    increase with time. If no observations are censored, the IPCW values are
+    uniformly 1.0.
+
+    Note: this estimator extrapolates with a constant value equal to the last
+    IPCW value beyond the last observed time.
+    """
+
     def __init__(self, epsilon_censoring_prob=0.05):
         self.epsilon_censoring_prob = epsilon_censoring_prob
 
     def fit(self, y, X=None):
-        del X
+        """Compute the censoring survival function using Kaplan Meier
+        and store it as an interpolation function.
+
+        Parameters
+        ----------
+        y : np.array, dictionnary or dataframe
+            The target, consisting in the 'event' and 'duration' columns.
+
+        X : None
+
+        Returns
+        -------
+        self : object
+            Fitted estimator.
+        """
         event, duration = check_y_survival(y)
         censoring = event == 0
 
@@ -35,7 +76,13 @@ class BaseIPCW(BaseEstimator):
             min_censoring_prob,
             self.epsilon_censoring_prob,
         )
-
+        self.censoring_survival_func_ = interp1d(
+            self.unique_times_,
+            self.censoring_survival_probs_,
+            kind="previous",
+            bounds_error=False,
+            fill_value="extrapolate",
+        )
         return self
 
     def compute_ipcw_at(self, times, X=None, ipcw_training=False):
@@ -68,62 +115,6 @@ class BaseIPCW(BaseEstimator):
         return 1 / cs_prob
 
     def compute_censoring_survival_proba(self, times, X=None, ipcw_training=False):
-        raise NotImplementedError()
-
-
-class IPCWEstimator(BaseIPCW):
-    """Estimate the Inverse Probability of Censoring Weight (IPCW).
-
-    This class estimates the inverse of the probability of "survival" to
-    censoring using the Kaplan-Meier estimator on a binary indicator for
-    censoring, that is the negative of the binary indicator for any-event
-    occurrence.
-
-    This is useful to correct for the bias introduced by right censoring in
-    survival analysis when computing model evaluation metrics such as the Brier
-    score or the concordance index.
-
-    Note that the name IPCW name is a bit misleading: IPCW values are the
-    inverse of the probability of remaining censoring-free (or uncensored) at a
-    given time: at t=0, the probability of being censored is 0, therefore the
-    probability of being uncensored is 1.0, and its inverse is also 1.0.
-
-    By construction, IPCW values are always larger or equal to 1.0 and can only
-    increase with time. If no observations are censored, the IPCW values are
-    uniformly 1.0.
-
-    Note: this estimator extrapolates with a constant value equal to the last
-    IPCW value beyond the last observed time.
-    """
-
-    def fit(self, y, X=None):
-        """Compute the censoring survival function using Kaplan Meier
-        and store it as an interpolation function.
-
-        Parameters
-        ----------
-        y : np.array, dictionnary or dataframe
-            The target, consisting in the 'event' and 'duration' columns.
-
-        X : None
-
-        Returns
-        -------
-        self : object
-            Fitted estimator.
-        """
-        del X
-        super().fit(y)
-        self.censoring_survival_func_ = interp1d(
-            self.unique_times_,
-            self.censoring_survival_probs_,
-            kind="previous",
-            bounds_error=False,
-            fill_value="extrapolate",
-        )
-        return self
-
-    def compute_censoring_survival_proba(self, times, X=None, ipcw_training=False):
         """Estimate inverse censoring weight probability at times.
 
         Linearly interpolate the censoring survival function and return the
@@ -135,17 +126,20 @@ class IPCWEstimator(BaseIPCW):
             The input times for which to predict the IPCW.
 
         X : None
+            Unused.
+
+        ipcw_training : bool, default=False
+            Unused.
 
         Returns
         -------
         ipcw : np.ndarray of shape (n_times,)
             The IPCW for times
         """
-        del X, ipcw_training
         return self.censoring_survival_func_(times)
 
 
-class AlternatingCensoringEstimator(BaseIPCW):
+class AlternatingCensoringEstimator(KaplanMeierIPCW):
     """IPCW estimator for Debiased Gradient Boosting Incidence.
 
     Predict :math:`\hat{G}(t | X = x) = p(C > t | X = x)` using
@@ -267,7 +261,9 @@ class AlternatingCensoringEstimator(BaseIPCW):
 
     def check_cold_start_ipcw_est(self):
         if self.cold_start_ipcw_est is None:
-            self.cold_start_ipcw_estimator_ = IPCWEstimator()
+            self.cold_start_ipcw_estimator_ = KaplanMeierIPCW(
+                epsilon_censoring_prob=self.epsilon_censoring_prob
+            )
 
     def _build_censoring_estimator(self):
         return HistGradientBoostingClassifier(

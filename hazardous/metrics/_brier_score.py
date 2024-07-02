@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 
-from .._ipcw import IPCWEstimator
+from .._ipcw import KaplanMeierIPCW
 from ..utils import check_event_of_interest, check_y_survival
 
 
@@ -50,7 +50,7 @@ class IncidenceScoreComputer:
         # Estimate the censoring distribution from the training set
         # using Kaplan-Meier.
         if ipcw_est is None:
-            ipcw_est = IPCWEstimator()
+            ipcw_est = KaplanMeierIPCW()
         self.ipcw_est = ipcw_est.fit(y)
 
     def brier_score_survival(self, y_true, y_pred, times):

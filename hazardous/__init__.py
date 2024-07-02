@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ._ipcw import IPCWEstimator
+from ._ipcw import KaplanMeierIPCW
 from ._survival_boost import SurvivalBoost
 
 with open(Path(__file__).parent / "VERSION.txt") as _fh:
@@ -10,5 +10,5 @@ with open(Path(__file__).parent / "VERSION.txt") as _fh:
 __all__ = [
     "metrics",
     "SurvivalBoost",
-    "IPCWEstimator",
+    "KaplanMeierIPCW",
 ]

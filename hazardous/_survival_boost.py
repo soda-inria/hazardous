@@ -131,10 +131,15 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 class SurvivalBoost(BaseEstimator, ClassifierMixin):
     r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT.
 
-    This model returns the cause-specific CIFs for each event type as well as
-    the survival function.
+    This model estimates the cause-specific Cumulative Incidence Function (CIF)
+    using a Gradient Boosting Decision Tree (GBDT) classifier. The CIF is the
+    probability of observing an event of a specific type before a given time
+    point. The model is trained on a dataset with right-censored observations
+    and competing risks. The model returns the survival function to any
+    event as well as the CIF for each event type.
 
-    Cumulative Incidence Function for each event type :math:`k`:
+    The Cumulative Incidence Function for each event type :math:`k` at
+    each time is defined as:
 
     .. math::
 
@@ -143,11 +148,13 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
     and :math:`E` is a random variable over the :math:`[1, K]` domain for the
     uncensored event type.
 
+    The Survival Function can be defined as:
+
     .. math::
 
         S(t) = \mathbb{P}(T > t) = 1 - \mathbb{P}(T \leq t)
         = 1 - \sum_{k=1}^K \mathbb{P}(T \leq t, E=k)
-        \approx 1 - \sum_{k=1}^K \hat{F}_k(t)
+        = 1 - F_k(t)
 
 
     Under the hood, this class uses randomly sampled reference time horizons
@@ -305,8 +312,12 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         return self.predict_cumulative_incidence(X, times=times)
 
     def predict_cumulative_incidence(self, X, times=None):
-        r"""Estimate the cumulative incidence function for all events.
+        r"""Estimate the survival function and the cumulative incidence function
+        for each event type at some given times.
 
+        The survival function is the probability of observing no event before a
+        given time point. The cumulative incidence function for each event type
+        :math:`k` at each time is defined as:
         .. math::
 
             \sum_{k=1}^K \mathbb{P}(T^* \leq t \cap \Delta = k)
