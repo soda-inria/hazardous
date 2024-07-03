@@ -22,9 +22,23 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         The fractions of the total number of training samples that are going to be
         set to zeros such that the model learns to predict 0 incidence at `t=0`.
 
+    ipcw_est : object, default=None
+        The estimator used to estimate the Inverse Probability of Censoring Weighting
+        (IPCW). If `None`, an instance of `KaplanMeierIPCW` is used.
+
+    n_iter_before_feedback : int, default=20
+        The number of iterations used to fit incrementally `ipcw_est`.
 
     random_state : int, RandomState instance or None, default=None
-        Controls the randomness of the uniform time sampler
+        Controls the randomness of the uniform time sampler.
+
+    Attributes
+    ----------
+    inv_any_survival_train : ndarray of shape (n_samples,)
+        The IPCW for each sample at each time horizon before fitting the IPCW estimator.
+
+    ipcw_train : ndarray of shape (n_samples,)
+        The IPCW for each sample at each time horizon after fitting the IPCW estimator.
     """
 
     def __init__(
