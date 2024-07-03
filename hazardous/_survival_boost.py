@@ -287,18 +287,16 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
         time_horizon : int or float, default=None
             The time horizon at which to estimate the probabilities. If `None`, the
-            `time_horizon` passed at the constructor is used. Therefore, this
-            parameter allows to override the `time_horizon` parameter passed to
-            the constructor.
+            `time_horizon` passed at the constructor is used.
 
         Returns
         -------
         y_proba : ndarray of shape (n_samples, n_events + 1)
             The estimated probabilities at the given time horizon. The column
-            indexed 0 stores the estimated probabilities of staying event-free at the
-            requested time horizon for each observation described the matching row
-            of X. The remaining columns store the estimated cumulated incidence (or
-            probability) for each event.
+            indexed 0 stores the estimated probabilities of staying event-free at
+            the requested time horizon for each observation described by the matching
+            row of X. The remaining columns store the estimated cumulated incidence
+            (or probability) for each event.
         """
         if time_horizon is None:
             if self.time_horizon is None:
