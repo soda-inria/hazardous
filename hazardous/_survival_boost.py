@@ -360,9 +360,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                 "to predict at several time horizons."
             )
         times = np.asarray([time_horizon])
-        # TODO: it will be more natural for predict_cumulative_incidence to have a shape
-        # of (n_samples, n_events + 1, n_times) and thus avoid transposing here.
-        return self.predict_cumulative_incidence(X, times=times).squeeze().T
+        return self.predict_cumulative_incidence(X, times=times).squeeze()
 
     def predict_cumulative_incidence(self, X, times=None):
         r"""Estimate the survival function and the cumulative incidence function
@@ -376,11 +374,23 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             \sum_{k=1}^K \mathbb{P}(T^* \leq t \cap \Delta = k)
             + \mathbb{P}(T^* > t) = 1
 
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The input samples.
+
+        times : array-like, default=None
+            The time horizons at which to estimate the probabilities. If `None`, it uses
+            the grid generated during `fit` based on the parameter `n_time_grid_steps`.
+
         Returns
         -------
-        predicted_curves : array-like of shape (n_samples, n_events + 1)
-            The first column holds the survival probability to any event and others the
-            incicence probabilities for each event.
+        predicted_curves : ndarray of shape (n_samples, n_events + 1, n_times)
+            The estimated probabilities at different time horizons. The column
+            indexed 0 stores the estimated probabilities of staying event-free at
+            the requested time horizons for each observation described by the matching
+            row of X. The remaining columns store the estimated cumulated incidence
+            (or probability) for each event.
         """
         if times is None:
             times = self.time_grid_
@@ -396,13 +406,29 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             predictions_at_t = self.estimator_.predict_proba(X_with_time)
             predictions_at_all_times.append(predictions_at_t)
 
-        predicted_curves = np.array(predictions_at_all_times).swapaxes(2, 0)
-
-        return predicted_curves
+        predicted_curves = np.array(predictions_at_all_times)
+        # roll axis to get a shape (n_samples, n_events + 1, n_times)
+        return np.rollaxis(predicted_curves, 1).swapaxes(1, 2)
 
     def predict_survival_function(self, X, times=None):
-        """Compute the any-event survival function."""
-        return self.predict_cumulative_incidence(X, times=times)[0]
+        """Compute the any-event survival function.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The input samples.
+
+        times : array-like, default=None
+            The time horizons at which to estimate the probabilities. If `None`, it uses
+            the grid generated during `fit` based on the parameter `n_time_grid_steps`.
+
+        Returns
+        -------
+        predicted_curves : ndarray of shape (n_samples, n_times)
+            The estimated probabilities of staying event-free at different time
+            horizons.
+        """
+        return self.predict_cumulative_incidence(X, times=times)[:, 0, :]
 
     def _build_base_estimator(self):
         return HistGradientBoostingClassifier(
