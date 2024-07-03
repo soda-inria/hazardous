@@ -297,7 +297,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             The estimated probabilities at the given time horizon. The column
             indexed 0 stores the estimated probabilities of staying event-free at the
             requested time horizon for each observation described the matching row
-            of X. The remaining columns store the estimated cumulated incidence (or 
+            of X. The remaining columns store the estimated cumulated incidence (or
             probability) for each event.
         """
         if time_horizon is None:
@@ -318,7 +318,9 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                 "to predict at several time horizons."
             )
         times = np.asarray([time_horizon])
-        return self.predict_cumulative_incidence(X, times=times).squeeze()
+        # TODO: it will be more natural for predict_cumulative_incidence to have a shape
+        # of (n_samples, n_events + 1, n_times) and thus avoid transposing here.
+        return self.predict_cumulative_incidence(X, times=times).squeeze().T
 
     def predict_cumulative_incidence(self, X, times=None):
         r"""Estimate the cumulative incidence function for all events.

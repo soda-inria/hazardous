@@ -98,8 +98,8 @@ def test_survival_boost_predict_proba(seed):
 
     time_horizon = 0
     y_pred = est.predict_proba(X_test, time_horizon=time_horizon)
-    assert y_pred.shape == (n_events, X_test.shape[0])
-    assert_allclose(y_pred.sum(axis=0), 1.0)
+    assert y_pred.shape == (X_test.shape[0], n_events)
+    assert_allclose(y_pred.sum(axis=1), 1.0)
 
     est.set_params(time_horizon=time_horizon)
     y_pred = est.predict_proba(X_test)
