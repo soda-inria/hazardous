@@ -20,6 +20,25 @@ DEFAULT_SCALE_RANGES = (
 
 
 def _censor(y, relative_scale, random_state=None):
+    """Censoring a population based on a relative scale.
+
+    Individuals are censored by sampling a censoring time from
+    a Weibull distribution with shape 1 and scale equal to
+    the mean duration of the target event times the
+    ``censoring_relative_scale``.
+
+    Parameters
+    ----------
+    y: ndarray
+        The target population.
+    relative_scale: float
+        Relative scale of the censoring. Setting it to 0 or None
+        disables censoring, setting it to a small value (e.g. 0.5
+        instead of 1.5) will result in a larger fraction of
+        censored individuals.
+
+    """
+
     if relative_scale == 0 or relative_scale is None:
         return y
 
@@ -59,13 +78,48 @@ def make_synthetic_competing_weibull(
     event (competing risks setting) and its event identifier and duration are
     returned as the target dataframe.
 
-    A fraction of the individuals are censored by sampling a censoring time
-    from a Weibull distribution with shape 1 and scale equal to the mean
-    duration of the target event times the ``censoring_relative_scale``.
+    A fraction of the individuals are censored if ``censoring_relative_scale``
+    is not None or 0.
 
-    Setting ``censoring_relative_scale`` to 0 or None disables censoring.
-    Setting it to a small value (e.g. 0.5 instead of 1.5) will result in a
-    larger fraction of censored individuals.
+    Parameters
+    ----------
+    n_events: int, default=3
+        Number of events.
+    n_samples: int, default=3000
+        Number of samples by event type.
+    return_X_y: bool, default=False
+        If True, returns ``(data, target)`` instead of a Bunch object.
+    feature_rounding: int or None, default=2
+        Round the feature values. If None, no rounding will be applied.
+    target_rounding: int or None, default=1
+        Round the target values. If None, no rounding will be applied.
+    shape_ranges: tuple of shape (2, n_events)
+        The lower and upper boundary of the shape, `n_samples` shape
+        values for `n_events` will be drawn from a uniform distribution.
+    scale_ranges: tuple of shape (2, n_events)
+        The lower and upper boundary of the scale, `n_samples` scale
+        values for `n_events` will be drawn from a uniform distribution.
+    base_scale: int, default=1000
+        Scaling parameter of the ``scale_range``.
+    censoring_relative_scale: float, default=1.5
+        Relative scale of the censoring level. Individuals are censored by
+        sampling a censoring time from a Weibull distribution with shape 1
+        and scale equal to the mean duration of the target event times
+        the ``censoring_relative_scale``.
+        Setting ``censoring_relative_scale`` to 0 or None disables censoring.
+        Setting it to a small value (e.g. 0.5 instead of 1.5) will result in a
+        larger fraction of censored individuals.
+    random_state : int, RandomState instance or None, default=None
+        Controls the randomness of the uniform time sampler.
+
+    Returns
+    -------
+    (data, target): tuple if ``return_X_y`` is True
+        A tuple of two ndarray. The first containing a 2D array of shape
+        (n_samples, n_features) with each row representing one sample
+        and each column representing the events. The second ndarray
+        of shape (n_samples,) containing the target samples.
+
     """
     rng = check_random_state(random_state)
     all_features = []
@@ -101,4 +155,4 @@ def make_synthetic_competing_weibull(
         return X, y
 
     frame = pd.concat([X, y], axis=1)
-    return Bunch(data=frame[X.columns], target=X[y.columns], frame=frame)
+    return Bunch(data=frame[X.columns], target=frame[y.columns], frame=frame)
