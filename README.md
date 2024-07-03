@@ -23,9 +23,11 @@ and run the `examples/` to get started.
 
 ## Development and testing
 
-Install in "editable" mode in your current Python env:
+Install in "editable" mode in your current Python env (after a standard installation to install the dependencies):
 
 ```
+pip install flit
+pip install . -v
 pip install -e ".[dev]" --no-build-isolation -v
 pre-commit install
 ```

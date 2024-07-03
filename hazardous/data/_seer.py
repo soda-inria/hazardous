@@ -147,7 +147,7 @@ def load_seer(
     # posteriori?
     # In particular this should help remove a pandas warning for column 22.
     original_data = data = pd.read_csv(
-        input_path, sep="\t", header=None, names=COLUMN_NAMES
+        input_path, sep="\t", header=None, names=COLUMN_NAMES, low_memory=False
     )
 
     if survtrace_preprocessing:
