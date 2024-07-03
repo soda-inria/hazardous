@@ -220,11 +220,15 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         of Censoring Weighting (IPCW) estimator before feeding back the weights to the
         incidence estimator.
 
+    ipcw_est : object, default=None
+        The estimator used to estimate the Inverse Probability of Censoring Weighting
+        (IPCW). If `None`, an instance of `AlternatingCensoringEst` is used.
+
     random_state : int, RandomState instance or None, default=None
         Controls the randomness of the uniform time sampler.
 
     n_times : int, default=1
-        The number of times to sample the time horizons for each iteration.
+        The number of times to sample the time horizons for each training sample.
     """
 
     def __init__(
