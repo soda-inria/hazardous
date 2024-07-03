@@ -25,7 +25,7 @@ def _censor(y, relative_scale, random_state=None):
     Individuals are censored by sampling a censoring time from
     a Weibull distribution with shape 1 and scale equal to
     the mean duration of the target event times the
-    ``censoring_relative_scale``.
+    ``relative_scale``.
 
     Parameters
     ----------
@@ -86,17 +86,17 @@ def make_synthetic_competing_weibull(
     n_events: int, default=3
         Number of events.
     n_samples: int, default=3000
-        Number of samples by event type.
+        Number of individuals in the population.
     return_X_y: bool, default=False
         If True, returns ``(data, target)`` instead of a Bunch object.
     feature_rounding: int or None, default=2
         Round the feature values. If None, no rounding will be applied.
     target_rounding: int or None, default=1
         Round the target values. If None, no rounding will be applied.
-    shape_ranges: tuple of shape (2, n_events)
+    shape_ranges: tuple of shape (n_events, 2)
         The lower and upper boundary of the shape, `n_samples` shape
         values for `n_events` will be drawn from a uniform distribution.
-    scale_ranges: tuple of shape (2, n_events)
+    scale_ranges: tuple of shape (n_events, 2)
         The lower and upper boundary of the scale, `n_samples` scale
         values for `n_events` will be drawn from a uniform distribution.
     base_scale: int, default=1000
@@ -115,10 +115,10 @@ def make_synthetic_competing_weibull(
     Returns
     -------
     (data, target): tuple if ``return_X_y`` is True
-        A tuple of two ndarray. The first containing a 2D array of shape
+        A tuple of two dataframes. The first containing a 2D array of shape
         (n_samples, n_features) with each row representing one sample
-        and each column representing the events. The second ndarray
-        of shape (n_samples,) containing the target samples.
+        and each column representing the events. The second dataframe
+        of shape (n_samples, 2) containing the target samples.
 
     """
     rng = check_random_state(random_state)
