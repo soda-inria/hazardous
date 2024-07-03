@@ -66,7 +66,60 @@ def test_survival_boost_incidence_and_survival(seed):
         cif_pred[1:, :, 0].sum(axis=0),
         cif_pred[1:, :, -1].sum(axis=0),
     )
-    # TODO: add assertion about the .score method
+
+
+@pytest.mark.parametrize("seed", SEED_RANGE)
+def test_survival_boost_predict_proba(seed):
+    """Check the behaviour of the `predict_proba` method. Notably, we check:
+
+    - we raise an error when no `time_horizon` is set in the constructor nor
+      passed to `predict_proba`.
+    - we raise an error when `time_horizon` is not a real number.
+    - we can pass `time_horizon` as a parameter to `predict_proba`.
+    - we can set `time_horizon` as a constructor parameter of `SurvivalBoost`.
+    - check that passing `time_horizon` to `predict_proba` overrides the
+      constructor parameter.
+    """
+    X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
+    assert sorted(y["event"].unique()) == [0, 1, 2, 3]
+    n_events = 4
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
+    est = SurvivalBoost(n_iter=3, show_progressbar=False, random_state=seed)
+    est.fit(X_train, y_train)
+
+    err_msg = (
+        "The time_horizon parameter is required to use SurvivalBoost as a classifier."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        est.predict_proba(X_test)
+
+    err_msg = "The time_horizon parameter must be a real number."
+    with pytest.raises(TypeError, match=err_msg):
+        est.predict_proba(X_test, time_horizon=[0, 1])
+
+    time_horizon = 0
+    y_pred = est.predict_proba(X_test, time_horizon=time_horizon)
+    assert y_pred.shape == (X_test.shape[0], n_events)
+    assert_allclose(y_pred.sum(axis=1), 1.0)
+
+    est.set_params(time_horizon=time_horizon)
+    y_pred = est.predict_proba(X_test)
+    assert y_pred.shape == (X_test.shape[0], n_events)
+    assert_allclose(y_pred.sum(axis=1), 1.0)
+
+    time_horizon_0, time_horizon_1_000 = 0, 1_000
+    y_pred_overridden = (
+        est.set_params(time_horizon=time_horizon_0)
+        .fit(X_train, y_train)
+        .predict_proba(X_test, time_horizon=time_horizon_1_000)
+    )
+    y_pred_default = (
+        est.set_params(time_horizon=time_horizon_1_000)
+        .fit(X_train, y_train)
+        .predict_proba(X_test)
+    )
+    assert_allclose(y_pred_overridden, y_pred_default)
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)

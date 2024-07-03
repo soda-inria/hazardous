@@ -1,3 +1,5 @@
+from numbers import Real
+
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.ensemble import HistGradientBoostingClassifier
@@ -322,17 +324,23 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
     def predict_proba(self, X, time_horizon=None):
         """Estimate the probability of all incidences for a specific time horizon.
 
-        See the docstring for the `time_horizon` parameter for more details.
-
-        Returns a (n_events + 1)d array with shape (X.shape[0], n_events + 1).
-        The first column holds the survival probability to any event and others the
-        incicence probabilities for each event.
-
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
             The input samples.
-        time_horizon : float or list, default=None
+
+        time_horizon : int or float, default=None
+            The time horizon at which to estimate the probabilities. If `None`, the
+            `time_horizon` passed at the constructor is used.
+
+        Returns
+        -------
+        y_proba : ndarray of shape (n_samples, n_events + 1)
+            The estimated probabilities at the given time horizon. The column
+            indexed 0 stores the estimated probabilities of staying event-free at
+            the requested time horizon for each observation described by the matching
+            row of X. The remaining columns store the estimated cumulated incidence
+            (or probability) for each event.
         """
         if time_horizon is None:
             if self.time_horizon is None:
@@ -345,8 +353,16 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             else:
                 time_horizon = self.time_horizon
 
+        if not isinstance(time_horizon, Real):
+            raise TypeError(
+                "The time_horizon parameter must be a real number. Use "
+                "predict_cumulative_incidence instead of predict_proba if you want "
+                "to predict at several time horizons."
+            )
         times = np.asarray([time_horizon])
-        return self.predict_cumulative_incidence(X, times=times)
+        # TODO: it will be more natural for predict_cumulative_incidence to have a shape
+        # of (n_samples, n_events + 1, n_times) and thus avoid transposing here.
+        return self.predict_cumulative_incidence(X, times=times).squeeze().T
 
     def predict_cumulative_incidence(self, X, times=None):
         r"""Estimate the survival function and the cumulative incidence function
