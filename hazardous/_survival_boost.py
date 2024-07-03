@@ -133,7 +133,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 
 
 class SurvivalBoost(BaseEstimator, ClassifierMixin):
-    r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT.
+    r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT [1]_.
 
     This model estimates the cause-specific Cumulative Incidence Function (CIF)
     of each event of interest as well the surival funciton to any event using a
@@ -228,7 +228,41 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         Controls the randomness of the uniform time sampler.
 
     n_times : int, default=1
-        The number of times to sample the time horizons for each training sample.
+        The number of times to sample the time horizons for each training sample at
+        each iteration.
+
+    Attributes
+    ----------
+    estimator_ : HistGradientBoostingClassifier
+        The base estimator used to fit the CIF and survival function.
+
+    classes_ : ndarray of shape (n_classes,)
+        The events seen during training.
+
+    time_grid_ : ndarray of shape (n_time_grid_steps,)
+        The time horizons used to predict the survival function and the CIF.
+
+    weighted_targets_ : WeightedMultiClassTargetSampler
+        The weighted targets used to train the model.
+
+    References
+    ----------
+    .. [1]  J. Alberge, V. Maladière, O. Grisel, J. Abécassis, G. Varoquaux,
+            "Teaching Models To Survive: Proper Scoring Rule and Stochastic Optimization
+            with Competing Risks", 2024.
+            https://arxiv.org/pdf/2406.14085
+
+    Examples
+    --------
+    >>> from hazardous.data import make_synthetic_competing_weibull
+    >>> from sklearn.model_selection import train_test_split
+    >>> from hazardous import SurvivalBoost
+    >>> X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=0)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    >>> survival_booster = SurvivalBoost(
+    ...     n_iter=3, show_progressbar=False, random_state=0
+    ... ).fit(X_train, y_train)
+    >>> survival_pred = survival_booster.predict_survival_function(X_test)
     """
 
     def __init__(
@@ -272,7 +306,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         X : array-like of shape (n_samples, n_features)
             The input samples.
 
-        y : dict, {array-like, dataframe} of shape (n_samples, 2).
+        y : dict, {array-like, dataframe} of shape (n_samples, 2)
             The target values. If a dictionary, it must have keys "event" and
             "duration". If an record array, it must have a dtype with two fields
             named "event" and "duration". If a dataframe, it must have columns
@@ -286,7 +320,6 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             The time horizons used to predict the survival function and the CIF.
             If None, the default time grid is computed from the observed event
             times in the training data.
-
 
         Returns
         -------
