@@ -199,7 +199,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
     boosting iteration, a new tree is trained on a copy of the original feature
     matrix X augmented with a new independent sample of time horizons. The
     number of time horizons sampled at each iteration is controlled by the
-    `n_times` parameter.
+    `n_horizons_per_observation` parameter.
 
     To predict the survival function and the CIF, the model uses an alternating
     optimization. The censoring-adjusted incidence estimator is trained with a
@@ -262,9 +262,9 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
     random_state : int, RandomState instance or None, default=None
         Controls the randomness of the uniform time sampler.
 
-    n_times : int, default=1
-        The number of times to sample the time horizons for each training sample at
-        each iteration.
+    n_horizons_per_observation : int, default=3
+        The number of time horizons to sample for each individual in the
+        training at each stochastic boosting iteration (epoch).
 
     Attributes
     ----------
@@ -317,7 +317,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         n_iter_before_feedback=20,
         ipcw_est=None,
         random_state=None,
-        n_times=1,
+        n_horizons_per_observation=3,
     ):
         self.hard_zero_fraction = hard_zero_fraction
         self.n_iter = n_iter
@@ -331,7 +331,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         self.n_iter_before_feedback = n_iter_before_feedback
         self.ipcw_est = ipcw_est
         self.random_state = random_state
-        self.n_times = n_times
+        self.n_horizons_per_observation = n_horizons_per_observation
 
     def fit(self, X, y, times=None):
         """Fit the model.
@@ -409,7 +409,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             X_with_time = np.empty((0, X.shape[1] + 1))
             y_targets = np.empty((0,))
             sample_weight = np.empty((0,))
-            for _ in range(self.n_times):
+            for _ in range(self.n_horizons_per_observation):
                 (
                     sampled_times_,
                     y_targets_,

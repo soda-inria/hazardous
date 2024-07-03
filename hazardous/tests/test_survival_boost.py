@@ -135,7 +135,9 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
-    est = SurvivalBoost(show_progressbar=False, random_state=seed)
+    est = SurvivalBoost(
+        show_progressbar=False, n_horizons_per_observation=1, random_state=seed
+    )
     grid_search = GridSearchCV(est, param_grid, cv=2, error_score="raise")
     grid_search.fit(X_train, y_train)
     assert grid_search.best_params_ == {
