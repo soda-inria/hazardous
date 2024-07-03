@@ -19,8 +19,10 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
     Parameters
     ----------
     hard_zero_fraction : float, default=0.1
-        The fractions of the total number of training samples that are going to be
-        set to zeros such that the model learns to predict 0 incidence at `t=0`.
+        The fraction of observations that are assigned a time horizon set to exact
+        zeros when doing one epoch of fitting. Increasing this value helps the model
+        learn to predict 0 incidence at `t=0` at the cost of reducing the effective
+        sample size for the non-zero time horizons.
 
     ipcw_est : object, default=None
         The estimator used to estimate the Inverse Probability of Censoring Weighting
@@ -192,8 +194,10 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
     Parameters
     ----------
     hard_zero_fraction : float, default=0.1
-        The fractions of the total number of training samples that are going to be
-        set to zeros such that the model learns to predict 0 incidence at `t=0`.
+        The fraction of observations that are assigned a time horizon set to exact
+        zeros when doing one epoch of fitting. Increasing this value helps the model
+        learn to predict 0 incidence at `t=0` at the cost of reducing the effective
+        sample size for the non-zero time horizons.
 
     n_iter : int, default=100
         The number of boosting iterations.
