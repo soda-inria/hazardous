@@ -123,3 +123,6 @@ max-complexity = 10
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
 doctest_optionflags = "NORMALIZE_WHITESPACE ELLIPSIS"
+testpaths = [
+    "hazardous",
+]
