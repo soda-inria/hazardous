@@ -54,6 +54,7 @@ scale_ranges = (
 
 X_uncensored, y_uncensored = make_synthetic_competing_weibull(
     n_samples=n_samples,
+    n_events=n_events,
     censoring_relative_scale=0,
     return_X_y=True,
     shape_ranges=shape_ranges,
@@ -213,6 +214,7 @@ plot_cumulative_incidence_functions(
 # of censoring.
 X_censored, y_censored = make_synthetic_competing_weibull(
     n_samples=n_samples,
+    n_events=n_events,
     censoring_relative_scale=1.5,
     return_X_y=True,
     shape_ranges=shape_ranges,
