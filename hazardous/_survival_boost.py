@@ -517,7 +517,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
         predicted_curves = np.array(predictions_at_all_times)
         # roll axis to get a shape (n_samples, n_events + 1, n_times)
-        return np.rollaxis(predicted_curves, 1).swapaxes(1, 2)
+        return np.transpose(predicted_curves, axes=(1, 2, 0))
 
     def predict_survival_function(self, X, times=None):
         """Compute the any-event survival function.
