@@ -20,8 +20,29 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 
     Parameters
     ----------
+    hard_zero_fraction : float, default=0.1
+        The fraction of observations that are assigned a time horizon set to exact
+        zeros when doing one epoch of fitting. Increasing this value helps the model
+        learn to predict 0 incidence at `t=0` at the cost of reducing the effective
+        sample size for the non-zero time horizons.
+
+    ipcw_est : object, default=None
+        The estimator used to estimate the Inverse Probability of Censoring Weighting
+        (IPCW). If `None`, an instance of `KaplanMeierIPCW` is used.
+
+    n_iter_before_feedback : int, default=20
+        The number of iterations used to fit incrementally `ipcw_est`.
+
     random_state : int, RandomState instance or None, default=None
-        Controls the randomness of the uniform time sampler
+        Controls the randomness of the uniform time sampler.
+
+    Attributes
+    ----------
+    inv_any_survival_train : ndarray of shape (n_samples,)
+        The IPCW for each sample at each time horizon before fitting the IPCW estimator.
+
+    ipcw_train : ndarray of shape (n_samples,)
+        The IPCW for each sample at each time horizon after fitting the IPCW estimator.
     """
 
     def __init__(
@@ -56,9 +77,8 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         t_max = duration.max()
         times = self.rng.uniform(t_min, t_max, n_samples)
 
-        # Add some some hard zeros to make sure that the model learns to
+        # Add some hard zeros to make sure that the model learns to
         # predict 0 incidence at t=0.
-
         n_hard_zeros = max(int(self.hard_zero_fraction * n_samples), 1)
         hard_zero_indices = self.rng.choice(n_samples, n_hard_zeros, replace=False)
         times[hard_zero_indices] = 0.0
@@ -131,7 +151,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 
 
 class SurvivalBoost(BaseEstimator, ClassifierMixin):
-    r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT.
+    r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT [1]_.
 
     This model estimates the cause-specific Cumulative Incidence Function (CIF)
     of each event of interest as well the surival funciton to any event using a
@@ -173,6 +193,96 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
     feedback loop updates the censoring-adjusted incidence estimator with the
     current model predictions.
 
+    Parameters
+    ----------
+    hard_zero_fraction : float, default=0.1
+        The fraction of observations that are assigned a time horizon set to exact
+        zeros when doing one epoch of fitting. Increasing this value helps the model
+        learn to predict 0 incidence at `t=0` at the cost of reducing the effective
+        sample size for the non-zero time horizons.
+
+    n_iter : int, default=100
+        The number of boosting iterations.
+
+    learning_rate : float, default=0.05
+        The learning rate, also known as shrinkage. This is used as a multiplicative
+        factor for the leaves values. Use 1 for no shrinkage.
+
+    n_iter : int, default=100
+        The number of iterations of the boosting process.
+
+    max_leaf_nodes : int or None, default=31
+        The maximum number of leaves for each tree. Must be strictly greater than 1. If
+        None, there is no maximum limit.
+
+    max_depth : int, default=None
+        The maximum depth of each tree. The depth of a tree is the number of edges to go
+        from the root to the deepest leaf. Depth isn't constrained by default.
+
+    min_samples_leaf : int, default=50
+        The minimum number of samples per leaf.
+
+    show_progressbar : bool, default=True
+        Whether to show a progress bar during the training process.
+
+    n_time_grid_steps : int, default=100
+        The number of time horizons to sample uniformly between the minimum and maximum
+        observed event times. Note that the generated grid `time_grid_` can be
+        overridden in the method `predict_cumulative_incidence` and
+        `predict_survival_function` by setting the parameter `times`.
+
+    time_horizon : int or float, default=None
+        The time horizon at which to estimate the probabilities. If `None`, the
+        `time_horizon` should be specified when calling the method `predict_proba`.
+
+    n_iter_before_feedback : int, default=20
+        The number of iterations at which we alternate to fit the Inverse Probability
+        of Censoring Weighting (IPCW) estimator before feeding back the weights to the
+        incidence estimator.
+
+    ipcw_est : object, default=None
+        The estimator used to estimate the Inverse Probability of Censoring Weighting
+        (IPCW). If `None`, an instance of `AlternatingCensoringEst` is used.
+
+    random_state : int, RandomState instance or None, default=None
+        Controls the randomness of the uniform time sampler.
+
+    n_times : int, default=1
+        The number of times to sample the time horizons for each training sample at
+        each iteration.
+
+    Attributes
+    ----------
+    estimator_ : HistGradientBoostingClassifier
+        The base estimator used to fit the CIF and survival function.
+
+    classes_ : ndarray of shape (n_classes,)
+        The events seen during training.
+
+    time_grid_ : ndarray of shape (n_time_grid_steps,)
+        The time horizons used to predict the survival function and the CIF.
+
+    weighted_targets_ : WeightedMultiClassTargetSampler
+        The weighted targets used to train the model.
+
+    References
+    ----------
+    .. [1]  J. Alberge, V. Maladière, O. Grisel, J. Abécassis, G. Varoquaux,
+            "Teaching Models To Survive: Proper Scoring Rule and Stochastic Optimization
+            with Competing Risks", 2024.
+            https://arxiv.org/pdf/2406.14085
+
+    Examples
+    --------
+    >>> from hazardous.data import make_synthetic_competing_weibull
+    >>> from sklearn.model_selection import train_test_split
+    >>> from hazardous import SurvivalBoost
+    >>> X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=0)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    >>> survival_booster = SurvivalBoost(
+    ...     n_iter=3, show_progressbar=False, random_state=0
+    ... ).fit(X_train, y_train)
+    >>> survival_pred = survival_booster.predict_survival_function(X_test)
     """
 
     def __init__(
@@ -216,7 +326,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         X : array-like of shape (n_samples, n_features)
             The input samples.
 
-        y : dict, {array-like, dataframe} of shape (n_samples, 2).
+        y : dict, {array-like, dataframe} of shape (n_samples, 2)
             The target values. If a dictionary, it must have keys "event" and
             "duration". If an record array, it must have a dtype with two fields
             named "event" and "duration". If a dataframe, it must have columns
@@ -230,7 +340,6 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             The time horizons used to predict the survival function and the CIF.
             If None, the default time grid is computed from the observed event
             times in the training data.
-
 
         Returns
         -------
