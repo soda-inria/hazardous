@@ -47,6 +47,8 @@ doc = [
     "matplotlib",
     "pillow",  # to scrape images from the examples
     "numpydoc",
+    "pycox",
+    "scikit-survival",
 ]
 
 [project.urls]
