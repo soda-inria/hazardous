@@ -77,6 +77,8 @@ def test_survival_boost_predict_proba(seed):
     - we raise an error when `time_horizon` is not a real number.
     - we can pass `time_horizon` as a parameter to `predict_proba`.
     - we can set `time_horizon` as a constructor parameter of `SurvivalBoost`.
+    - check that passing `time_horizon` to `predict_proba` overrides the
+      constructor parameter.
     """
     X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
@@ -105,6 +107,19 @@ def test_survival_boost_predict_proba(seed):
     y_pred = est.predict_proba(X_test)
     assert y_pred.shape == (X_test.shape[0], n_events)
     assert_allclose(y_pred.sum(axis=1), 1.0)
+
+    time_horizon_0, time_horizon_1_000 = 0, 1_000
+    y_pred_overridden = (
+        est.set_params(time_horizon=time_horizon_0)
+        .fit(X_train, y_train)
+        .predict_proba(X_test, time_horizon=time_horizon_1_000)
+    )
+    y_pred_default = (
+        est.set_params(time_horizon=time_horizon_1_000)
+        .fit(X_train, y_train)
+        .predict_proba(X_test)
+    )
+    assert_allclose(y_pred_overridden, y_pred_default)
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
