@@ -475,7 +475,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         predicted_curves = self.predict_cumulative_incidence(X)
         ibs_events = []
         for event_idx in self.event_ids_:
-            predicted_curves_for_event = predicted_curves[event_idx]
+            predicted_curves_for_event = predicted_curves[:, event_idx]
             if event_idx == 0:
                 ibs_event = integrated_brier_score_survival(
                     y_train=self.weighted_targets_.y_train,

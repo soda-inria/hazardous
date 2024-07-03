@@ -123,7 +123,7 @@ def test_survival_boost_predict_proba(seed):
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
-def test_gradient_boosting_incidence_parameter_tuning(seed):
+def test_survival_boost_parameter_tuning(seed):
     # Minimal parameter grid with one poor and one good value for each
     # parameter to tune.
     param_grid = {
