@@ -18,6 +18,12 @@ from .utils import check_y_survival
 class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
     """Weighted targets for censoring-adjusted incidence estimation.
 
+    This class samples time horizons and computes the corresponding weighted
+    targets for the training of the multi-class incidence estimator. The
+    weighted targets are the incidence of each event type at the sampled time
+    horizons. The weights are the inverse of the censoring survival function at
+    the sampled time horizons.
+
     Parameters
     ----------
     hard_zero_fraction : float, default=0.1
@@ -34,7 +40,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         The number of iterations used to fit incrementally `ipcw_est`.
 
     random_state : int, RandomState instance or None, default=None
-        Controls the randomness of the uniform time sampler.
+        Control the randomness of the time horizon sampler.
 
     Attributes
     ----------
@@ -67,41 +73,46 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 
     def draw(self, ipcw_training=False, X=None):
         # Sample time horizons uniformly on the observed time range:
-        duration = self.duration_train
-        n_samples = duration.shape[0]
+        observation_durations = self.duration_train
+        n_samples = observation_durations.shape[0]
 
         # Sample from t_min=0 event if never observed in the training set
         # because we want to make sure that the model learns to predict a 0
         # incidence at t=0.
         t_min = 0.0
-        t_max = duration.max()
-        times = self.rng.uniform(t_min, t_max, n_samples)
+        t_max = observation_durations.max()
+        sampled_time_horizons = self.rng.uniform(t_min, t_max, n_samples)
 
         # Add some hard zeros to make sure that the model learns to
         # predict 0 incidence at t=0.
         n_hard_zeros = max(int(self.hard_zero_fraction * n_samples), 1)
         hard_zero_indices = self.rng.choice(n_samples, n_hard_zeros, replace=False)
-        times[hard_zero_indices] = 0.0
+        sampled_time_horizons[hard_zero_indices] = 0.0
 
         if ipcw_training:
             # During the training of the ICPW, we estimate G(t) = P(C > t)
-            # 1 / S(t) = 1 / P(T^* > t) as sample weight.
+            # 1 / S(t) = 1 / P(T^* > t) as sample weight. t is an arbitrary
+            # time horizon.
             # Since 1 = P(C <= t) + P(C > t), our training target is the censoring
             # incidence, whose value is:
-            # * 1 when the censoring event has happened
-            # * 0 when the censoring hasn't happened yet
-            # * 0 when an any event has happened (the sample weight is zero).
+            # * 1 when the observation was censored: no event happened during
+            #   the observation period and the observation duration was lower
+            #   than the sampled time horizon;
+            # * 0 for a censored observation with a duration larger than the
+            #   sampled time horizon;
+            # * 0 when an event has happened before the sampled time horizon.
+            #   The sample weight is zero in that case.
 
             if not hasattr(self, "inv_any_survival_train"):
                 self.inv_any_survival_train = self.ipcw_est.compute_ipcw_at(
                     self.duration_train, ipcw_training=True, X=X
                 )
 
-            all_time_censoring = self.any_event_train == 0
+            censored_observations = self.any_event_train == 0
             y_targets, sample_weight = self._weighted_binary_targets(
-                all_time_censoring,
-                duration,
-                times,
+                censored_observations,
+                observation_durations,
+                sampled_time_horizons,
                 ipcw_y_duration=self.inv_any_survival_train,
                 ipcw_training=True,
                 X=X,
@@ -109,22 +120,26 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         else:
             # During the training of the multi incidence estimator, we estimate
             # P(T^* <= t & Delta = k) using 1 / P(C > t) as sample weight.
+            # t is an arbitrary time horizon.
             # Since 1 = P(T^* <= t) + P(T^* > t), our training target is the
             # multi event incidence, whose value is:
-            # * k when the event k has happened first
-            # * 0 when no event has happened yet
-            # * 0 when the censoring has happened first (the sample weight is zero).
+            # * k when the event k has happened first and before the time
+            #   horizon;
+            # * 0 when no event has happened at the sampled time horizon;
+            # * 0 when the observation was censored with a duration smaller
+            #   than the sampled time horizon. The sample weight is zero in
+            #   that case.
             y_binary, sample_weight = self._weighted_binary_targets(
                 self.any_event_train,
-                duration,
-                times,
+                observation_durations,
+                sampled_time_horizons,
                 ipcw_y_duration=self.ipcw_train,
                 ipcw_training=False,
                 X=X,
             )
             y_targets = y_binary * self.event_train
 
-        return times.reshape(-1, 1), y_targets, sample_weight
+        return sampled_time_horizons.reshape(-1, 1), y_targets, sample_weight
 
     def fit(self, X):
         self.inv_any_survival_train = self.ipcw_est.compute_ipcw_at(
@@ -132,14 +147,14 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         )
 
         for _ in range(self.n_iter_before_feedback):
-            sampled_times, y_targets, sample_weight = self.draw(
+            sampled_time_horizons, y_targets, sample_weight = self.draw(
                 ipcw_training=True,
                 X=X,
             )
             self.ipcw_est.fit_censoring_estimator(
                 X,
                 y_targets,
-                times=sampled_times,
+                times=sampled_time_horizons,
                 sample_weight=sample_weight,
             )
 
