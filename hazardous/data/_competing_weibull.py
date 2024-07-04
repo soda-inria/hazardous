@@ -101,4 +101,4 @@ def make_synthetic_competing_weibull(
         return X, y
 
     frame = pd.concat([X, y], axis=1)
-    return Bunch(data=frame[X.columns], target=X[y.columns], frame=frame)
+    return Bunch(data=frame[X.columns], target=frame[y.columns], frame=frame)
