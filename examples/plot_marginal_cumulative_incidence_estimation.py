@@ -180,8 +180,12 @@ def plot_cumulative_incidence_functions(y, survival_boost=None, aj=None):
             ax.set(title=f"Event {event_id}")
 
         if aj is not None:
+            # Randomly break tied durations, to silence a warning raised by the
+            # Aalen-Johansen estimator.
+            rng = np.random.default_rng(0)
+            jitter = rng.normal(scale=1e-3, size=y.shape[0])
             tic = perf_counter()
-            aj.fit(y["duration"], y["event"], event_of_interest=event_id)
+            aj.fit(y["duration"] + jitter, y["event"], event_of_interest=event_id)
             duration = perf_counter() - tic
             print(f"Aalen-Johansen for event {event_id} fit in {duration:.3f} s")
             aj.plot(label="Aalen-Johansen", ax=ax)
