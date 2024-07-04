@@ -6,7 +6,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
-from ._ipcw import AlternatingCensoringEstimator
+from ._ipcw import AlternatingCensoringEstimator, KaplanMeierIPCW
 from .metrics._brier_score import (
     IncidenceScoreComputer,
     integrated_brier_score_incidence,
@@ -251,14 +251,26 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         The time horizon at which to estimate the probabilities. If `None`, the
         `time_horizon` should be specified when calling the method `predict_proba`.
 
+    ipcw_strategy : {"alternating", "kaplan-meier"}, default="alternating"
+        The method used to estimate the Inverse Probability of Censoring
+        Weighting (IPCW).
+
+        If "alternating", the two instances of gradient boosting are trained
+        alternatively every `n_iter_before_feedback` iterations: one for the
+        CIF + any event survival function and the other for the censoring
+        distribution. This makes it possible to estimate IPCW conditionally on
+        the covariates without assuming independence between censoring and
+        covariates.
+
+        If "kaplan-meier", the censoring estimator is trained using the Kaplan-Meier
+        estimator. This estimator is trained only once at the beginning of the
+        training process. This estimator is very fast but assumes that the
+        censoring is independent of the covariates.
+
     n_iter_before_feedback : int, default=20
         The number of iterations at which we alternate to fit the Inverse Probability
         of Censoring Weighting (IPCW) estimator before feeding back the weights to the
         incidence estimator.
-
-    ipcw_est : object, default=None
-        The estimator used to estimate the Inverse Probability of Censoring Weighting
-        (IPCW). If `None`, an instance of `AlternatingCensoringEst` is used.
 
     random_state : int, RandomState instance or None, default=None
         Controls the randomness of the uniform time sampler.
@@ -316,7 +328,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         n_time_grid_steps=100,
         time_horizon=None,
         n_iter_before_feedback=20,
-        ipcw_est=None,
+        ipcw_strategy="alternating",
         random_state=None,
         n_horizons_per_observation=3,
     ):
@@ -330,7 +342,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         self.n_time_grid_steps = n_time_grid_steps
         self.time_horizon = time_horizon
         self.n_iter_before_feedback = n_iter_before_feedback
-        self.ipcw_est = ipcw_est
+        self.ipcw_strategy = ipcw_strategy
         self.random_state = random_state
         self.n_horizons_per_observation = n_horizons_per_observation
 
@@ -389,10 +401,15 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             self.time_grid_ = times.copy()
             self.time_grid_.sort()
 
-        if self.ipcw_est is None:
+        if self.ipcw_strategy == "alternating":
             ipcw_est = AlternatingCensoringEstimator(incidence_est=self.estimator_)
+        elif self.ipcw_strategy == "kaplan-meier":
+            ipcw_est = KaplanMeierIPCW()
         else:
-            ipcw_est = self.ipcw_est
+            raise ValueError(
+                f"Invalid parameter value: ipcw_strategy={self.ipcw_strategy!r}. "
+                "Valid values are 'alternating' and 'kaplan-meier'."
+            )
 
         self.weighted_targets_ = WeightedMultiClassTargetSampler(
             y,

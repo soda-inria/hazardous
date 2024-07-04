@@ -84,7 +84,13 @@ def weibull_hazard(t, shape=1.0, scale=1.0):
 #
 # Note that true CIFs are independent of the censoring distribution. We can use
 # them as reference to check that the estimators are unbiased by the censoring.
-# Here are the two estimators of interest:
+#
+# We first define the two estimators of interest. The
+# :class:`hazardous.SurvivalBoost` instance uses the Kaplan-Meier estimator on
+# the negated event labels (1 for censoring, 0 for any event) to estimate
+# internal IPCW weights. This is a valid choice in this context because we do
+# not have access to any informative covariate (either for censoring or for the
+# events of interest).
 
 calculate_variance = n_samples <= 5_000
 aj = AalenJohansenFitter(calculate_variance=calculate_variance, seed=0)
@@ -96,6 +102,7 @@ survival_boost = SurvivalBoost(
     hard_zero_fraction=0.1,
     min_samples_leaf=50,
     show_progressbar=False,
+    ipcw_strategy="kaplan-meier",
     random_state=0,
 )
 

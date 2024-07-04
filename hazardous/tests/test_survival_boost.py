@@ -18,12 +18,15 @@ SEED_RANGE = range(1)
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
-def test_survival_boost_incidence_and_survival(seed):
+@pytest.mark.parametrize("ipcw_strategy", ["kaplan-meier", "alternating"])
+def test_survival_boost_incidence_and_survival(seed, ipcw_strategy):
     X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
-    est = SurvivalBoost(n_iter=3, show_progressbar=False, random_state=seed)
+    est = SurvivalBoost(
+        n_iter=3, show_progressbar=False, ipcw_strategy=ipcw_strategy, random_state=seed
+    )
     est.fit(X_train, y_train)
     assert_array_equal(est.event_ids_, [0, 1, 2, 3])
 
@@ -66,6 +69,16 @@ def test_survival_boost_incidence_and_survival(seed):
         cif_pred[:, 1:, 0].sum(axis=1),
         cif_pred[:, 1:, -1].sum(axis=1),
     )
+
+
+def test_invalid_ipcw_strategy():
+    X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=0)
+    err_msg = re.escape(
+        "Invalid parameter value: ipcw_strategy='invalid'. "
+        "Valid values are 'alternating' and 'kaplan-meier'."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        SurvivalBoost(ipcw_strategy="invalid").fit(X, y)
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
