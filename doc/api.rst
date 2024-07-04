@@ -51,4 +51,4 @@ Inverse Probability Censoring Weight
     :template: class.rst
     :nosignatures:
 
-    IPCWEstimator
+    KaplanMeierIPCW

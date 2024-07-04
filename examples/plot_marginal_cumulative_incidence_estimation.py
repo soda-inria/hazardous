@@ -171,7 +171,7 @@ def plot_cumulative_incidence_functions(y, survival_boost=None, aj=None):
         ),
 
         if survival_boost is not None:
-            cif_pred = cif_preds[event_id][0]
+            cif_pred = cif_preds[:, event_id][0]
             ax.plot(
                 coarse_timegrid,
                 cif_pred,

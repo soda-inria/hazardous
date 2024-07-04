@@ -3,7 +3,7 @@ import re
 import numpy as np
 import pandas as pd
 import pytest
-from numpy.testing import assert_allclose, assert_array_equal
+from numpy.testing import assert_allclose, assert_array_equal, assert_array_less
 from sklearn.model_selection import GridSearchCV, train_test_split
 
 from hazardous import SurvivalBoost
@@ -18,7 +18,7 @@ SEED_RANGE = range(1)
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
-def test_monotonic_gradient_boosting_incidence(seed):
+def test_survival_boost_incidence_and_survival(seed):
     X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
 
@@ -40,12 +40,15 @@ def test_monotonic_gradient_boosting_incidence(seed):
     # Check that the survival function is the complement of the cumulative
     # incidence function for any event.
     cif_pred = est.predict_cumulative_incidence(X_test)
-    assert cif_pred.shape == (4, X_test.shape[0], est.time_grid_.shape[0])
+    assert cif_pred.shape == (X_test.shape[0], 4, est.time_grid_.shape[0])
     assert np.all(cif_pred >= 0), cif_pred.min()
     assert np.all(cif_pred <= 1), cif_pred.max()
 
-    any_event_cif_pred = cif_pred[1:].sum(axis=0)
+    any_event_cif_pred = cif_pred[:, 1:, :].sum(axis=1)
     assert_allclose(survival_pred, 1 - any_event_cif_pred)
+    assert_allclose(survival_pred, cif_pred[:, 0])
+    assert_allclose(cif_pred.sum(axis=1), 1.0)
+
     ibs_gb_incidence = integrated_brier_score_incidence(
         y_train,
         y_test,
@@ -55,63 +58,72 @@ def test_monotonic_gradient_boosting_incidence(seed):
     )
     assert ibs_gb_incidence == pytest.approx(ibs_gb_surv)
 
-    # TODO: add assertions for each event CIF
+    # Check that the survival proba is globally decreasing.
+    assert_array_less(cif_pred[:, 0, -1], cif_pred[:, 0, 0])
 
-    # TODO: add assertion about the .score method
+    # Check that the incidence proba are globally increasing.
+    assert_array_less(
+        cif_pred[:, 1:, 0].sum(axis=1),
+        cif_pred[:, 1:, -1].sum(axis=1),
+    )
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
-def test_gradient_boosting_any_event_survival(seed):
+def test_survival_boost_predict_proba(seed):
+    """Check the behaviour of the `predict_proba` method. Notably, we check:
+
+    - we raise an error when no `time_horizon` is set in the constructor nor
+      passed to `predict_proba`.
+    - we raise an error when `time_horizon` is not a real number.
+    - we can pass `time_horizon` as a parameter to `predict_proba`.
+    - we can set `time_horizon` as a constructor parameter of `SurvivalBoost`.
+    - check that passing `time_horizon` to `predict_proba` overrides the
+      constructor parameter.
+    """
     X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
-    all_event_ids = [0, 1, 2, 3]
-    assert sorted(y["event"].unique()) == all_event_ids
+    assert sorted(y["event"].unique()) == [0, 1, 2, 3]
+    n_events = 4
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
     est = SurvivalBoost(n_iter=3, show_progressbar=False, random_state=seed)
     est.fit(X_train, y_train)
-    assert_array_equal(est.event_ids_, [0, 1, 2, 3])
 
-    # Check that the survival function is the complement of the cumulative
-    # incidence function for any event.
-    cif_pred = est.predict_cumulative_incidence(X_test)
-    assert cif_pred.shape == (
-        len(all_event_ids),
-        X_test.shape[0],
-        est.time_grid_.shape[0],
+    err_msg = (
+        "The time_horizon parameter is required to use SurvivalBoost as a classifier."
     )
-    assert np.all(cif_pred >= 0), cif_pred.min()
-    assert np.all(cif_pred <= 1), cif_pred.max()
+    with pytest.raises(ValueError, match=err_msg):
+        est.predict_proba(X_test)
 
-    event_of_interest = 3
-    ibs_gb_incidence_3 = integrated_brier_score_incidence(
-        y_train,
-        y_test,
-        cif_pred[event_of_interest],
-        times=est.time_grid_,
-        event_of_interest=event_of_interest,
+    err_msg = "The time_horizon parameter must be a real number."
+    with pytest.raises(TypeError, match=err_msg):
+        est.predict_proba(X_test, time_horizon=[0, 1])
+
+    time_horizon = 0
+    y_pred = est.predict_proba(X_test, time_horizon=time_horizon)
+    assert y_pred.shape == (X_test.shape[0], n_events)
+    assert_allclose(y_pred.sum(axis=1), 1.0)
+
+    est.set_params(time_horizon=time_horizon)
+    y_pred = est.predict_proba(X_test)
+    assert y_pred.shape == (X_test.shape[0], n_events)
+    assert_allclose(y_pred.sum(axis=1), 1.0)
+
+    time_horizon_0, time_horizon_1_000 = 0, 1_000
+    y_pred_overridden = (
+        est.set_params(time_horizon=time_horizon_0)
+        .fit(X_train, y_train)
+        .predict_proba(X_test, time_horizon=time_horizon_1_000)
     )
-    # The .score method of SurvivalBoost with event_of_interest=3
-    # is the IBS of the cumulative incidence function for the event of
-    # interest.
-    assert ibs_gb_incidence_3 == pytest.approx(-est.score(X_test, y_test))
-
-    # Asking to predict a cause-specific survival function for a specific event
-    # of interest is mathematically possible but does not really make sense,
-    # hence the warning.
-    expected_msg = re.escape(
-        "Values returned by predict_survival_function only make "
-        "sense when the model is trained with a binary event "
-        "indicator or when setting event_of_interest='any'. "
+    y_pred_default = (
+        est.set_params(time_horizon=time_horizon_1_000)
+        .fit(X_train, y_train)
+        .predict_proba(X_test)
     )
-    with pytest.warns(UserWarning, match=expected_msg):
-        survival_pred = est.predict_survival_function(X_test)
-
-    # Cause-specific "survival" is the complement of the sum of cause-specific CIFs.
-    assert_allclose(survival_pred, 1 - cif_pred[1:].sum(axis=0))
+    assert_allclose(y_pred_overridden, y_pred_default)
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
-def test_gradient_boosting_incidence_parameter_tuning(seed):
+def test_survival_boost_parameter_tuning(seed):
     # Minimal parameter grid with one poor and one good value for each
     # parameter to tune.
     param_grid = {
@@ -123,7 +135,9 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     assert sorted(y["event"].unique()) == [0, 1, 2, 3]
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=seed)
-    est = SurvivalBoost(show_progressbar=False, random_state=seed)
+    est = SurvivalBoost(
+        show_progressbar=False, n_horizons_per_observation=1, random_state=seed
+    )
     grid_search = GridSearchCV(est, param_grid, cv=2, error_score="raise")
     grid_search.fit(X_train, y_train)
     assert grid_search.best_params_ == {
@@ -136,7 +150,7 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     # set are good (lower IBS is better, hence higher negative IBS is better).
     max_expected_ibs = 0.17  # found emprically with different seed
     assert grid_search.best_score_ > -max_expected_ibs
-    grid_search.best_estimator_.score(X_test, y_test) > -max_expected_ibs
+    assert grid_search.best_estimator_.score(X_test, y_test) > -max_expected_ibs
 
     # Check that some other parameter values lead to much poorer IBS.
     cv_results = pd.DataFrame(grid_search.cv_results_).sort_values("mean_test_score")
@@ -144,3 +158,19 @@ def test_gradient_boosting_incidence_parameter_tuning(seed):
     best_ibs = -cv_results.iloc[-1]["mean_test_score"]
     assert best_ibs == pytest.approx(-grid_search.best_score_)
     assert worst_ibs > 1.4 * best_ibs
+
+
+@pytest.mark.parametrize("seed", SEED_RANGE)
+def test_censoring_rate(seed):
+    X, y = make_synthetic_competing_weibull(return_X_y=True, random_state=seed)
+    est = SurvivalBoost(
+        n_iter=1, hard_zero_fraction=1.0, show_progressbar=False, random_state=seed
+    )
+    msg = re.escape(
+        "The time-horizon resampling of the data has caused some events "
+        "to be unobserved in the training data at iteration 0. "
+        "Consider lowering the value of hard_zero_fraction (currently set to "
+        "1.0)."
+    )
+    with pytest.raises(ValueError, match=msg):
+        est.fit(X, y)
