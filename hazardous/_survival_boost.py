@@ -175,31 +175,32 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
     The models handles survival analysis and competing risks data.
 
-    The Cumulative Incidence Function for each event type :math:`k` at each time
-    is defined as:
+    The cumulative incidence function (CIF) for each event type :math:`k` at
+    each time horizon `t` is defined as:
 
     .. math::
 
-        \hat{F}_k(t) \approx \mathbb{P}(T \leq t, E=k)
+        \hat{F}_k(t; x_i) \approx F_k(t; x_i) = \mathbb{P}(T \leq t, E=k | X=x_i)
+
     where :math:`T` is a random variable for the uncensored time to first event
     and :math:`E` is a random variable over the :math:`[1, K]` domain for the
-    uncensored event type.
+    (uncensored) event type, and :math:`x_i` is the feature vector of the
+    :math:`i`-th observation.
 
-    The Survival Function can be defined as:
+    The (any event) Survival Function can be defined as:
 
     .. math::
 
-        S(t) = \mathbb{P}(T > t) = 1 - \mathbb{P}(T \leq t)
-        = 1 - \sum_{k=1}^K \mathbb{P}(T \leq t, E=k)
-        = 1 - F_k(t)
+        S(t; x_i) = \mathbb{P}(T > t) = 1 - \mathbb{P}(T \leq t | X=x_i)
+        = 1 - \sum_{k=1}^K \mathbb{P}(T \leq t, E=k | X=x_i)
+        = 1 - \sum_{k=1}^K F_k(t; x_i)
 
-
-    Under the hood, this class uses randomly sampled reference time horizons
-    concatenated as an extra input column to the underlying HGB classifier. At
-    boosting iteration, a new tree is trained on a copy of the original feature
-    matrix X augmented with a new independent sample of time horizons. The
-    number of time horizons sampled at each iteration is controlled by the
-    `n_horizons_per_observation` parameter.
+    Under the hood, this class randomly samples reference time horizons
+    concatenated as an extra input column to train an underlying HGB
+    classifier. At each boosting iteration, a new tree is trained on a copy of
+    the original feature matrix X augmented with a new independent sample of
+    time horizons. The number of time horizons sampled at each iteration is
+    controlled by the `n_horizons_per_observation` parameter.
 
     To predict the survival function and the CIF, the model uses an alternating
     optimization. The censoring-adjusted incidence estimator is trained with a
@@ -487,21 +488,17 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         return self.predict_cumulative_incidence(X, times=times).squeeze()
 
     def predict_cumulative_incidence(self, X, times=None):
-        r"""Estimate the survival function and the cumulative incidence function
-        for each event type at some given times.
+        """Estimate conditional cumulative incidence function for each event type.
 
-        The survival function is the probability of observing no event before a
-        given time point. The cumulative incidence function for each event type
-        :math:`k` at each time is defined as:
-        .. math::
-
-            \sum_{k=1}^K \mathbb{P}(T^* \leq t \cap \Delta = k)
-            + \mathbb{P}(T^* > t) = 1
+        Please refer to the docstring of the class for the definitions of the
+        conditional survival function and the event-specific cumulative
+        incidence functions estimated by this method.
 
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
-            The input samples.
+            The feature vectors for each observation for which to estimate the
+            survival function.
 
         times : array-like, default=None
             The time horizons at which to estimate the probabilities. If `None`, it uses
@@ -513,7 +510,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             The estimated probabilities at different time horizons. The values at event
             index 0 are the estimated probabilities of staying event-free at
             the requested time horizons for each observation described by the matching
-            row of X. The remaining event indices correspond to the estimated cumulated 
+            row of X. The remaining event indices correspond to the estimated cumulated
             incidence (or probability) for each event type.
         """
         if times is None:
@@ -535,12 +532,13 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         return np.transpose(predicted_curves, axes=(1, 2, 0))
 
     def predict_survival_function(self, X, times=None):
-        """Compute the any-event survival function.
+        """Estimate the conditional any-event survival function.
 
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
-            The input samples.
+            The feature vectors for each observation for which to estimate the
+            survival function.
 
         times : array-like, default=None
             The time horizons at which to estimate the probabilities. If `None`, it uses
