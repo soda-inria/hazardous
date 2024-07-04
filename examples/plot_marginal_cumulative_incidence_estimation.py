@@ -28,51 +28,33 @@ monotonically increasing. This is a known limitation of the estimator, and
 attempting to enforce monotonicity at training time typically introduces severe
 over-estimation bias for large time horizons.
 """
+
 # %%
 from time import perf_counter
 import numpy as np
-from scipy.stats import weibull_min
-import pandas as pd
 import matplotlib.pyplot as plt
 
 from hazardous import SurvivalBoost
+from hazardous.data import make_synthetic_competing_weibull
 from lifelines import AalenJohansenFitter
 
-rng = np.random.default_rng(0)
 n_samples = 3_000
-
-# Non-informative covariate because scikit-learn estimators expect at least
-# one feature.
-X_dummy = np.zeros(shape=(n_samples, 1), dtype=np.float32)
-
 base_scale = 1_000.0  # some arbitrary time unit
+event_dist_shapes = (0.5, 1.0, 5.0)
+event_dist_scales = (10, 3, 3)
+n_events = len(event_dist_shapes)
 
-distributions = [
-    {"event_id": 1, "scale": 10 * base_scale, "shape": 0.5},
-    {"event_id": 2, "scale": 3 * base_scale, "shape": 1},
-    {"event_id": 3, "scale": 3 * base_scale, "shape": 5},
-]
-event_times = np.concatenate(
-    [
-        weibull_min.rvs(
-            dist["shape"],
-            scale=dist["scale"],
-            size=n_samples,
-            random_state=rng,
-        ).reshape(-1, 1)
-        for dist in distributions
-    ],
-    axis=1,
+_, y_uncensored = make_synthetic_competing_weibull(
+    n_samples=n_samples,
+    n_events=n_events,
+    censoring_relative_scale=0,
+    return_X_y=True,
+    shape_ranges=[(shape, shape) for shape in event_dist_shapes],
+    scale_ranges=[(scale, scale) for scale in event_dist_scales],
+    base_scale=base_scale,
+    random_state=0,
 )
-first_event_idx = np.argmin(event_times, axis=1)
 
-y_uncensored = pd.DataFrame(
-    dict(
-        event=first_event_idx + 1,  # 0 is reserved as the censoring marker
-        duration=event_times[np.arange(n_samples), first_event_idx],
-    )
-)
-y_uncensored["event"].value_counts().sort_index()
 t_max = y_uncensored["duration"].max()
 
 # %%
@@ -87,7 +69,7 @@ t_max = y_uncensored["duration"].max()
 # distribution <https://en.wikipedia.org/wiki/Weibull_distribution>`_:
 
 
-def weibull_hazard(t, shape=1.0, scale=1.0, **ignored_kwargs):
+def weibull_hazard(t, shape=1.0, scale=1.0):
     # Plug an arbitrary finite hazard value at t==0 because fractional powers
     # of 0 are undefined.
     #
@@ -126,21 +108,25 @@ survival_boost = SurvivalBoost(
 # theoretical CIFs:
 
 
-def plot_cumulative_incidence_functions(distributions, y, survival_boost=None, aj=None):
-    _, axes = plt.subplots(figsize=(12, 4), ncols=len(distributions), sharey=True)
+def plot_cumulative_incidence_functions(y, survival_boost=None, aj=None):
+    """Plot cause-specific cumulative incidence per event using a dummy covariate"""
+    _, axes = plt.subplots(figsize=(12, 4), ncols=n_events, sharey=True)
 
     # Compute the estimate of the CIFs on a coarse grid.
     coarse_timegrid = np.linspace(0, t_max, num=100)
 
     # Compute the theoretical CIFs by integrating the hazard functions on a
     # fine-grained time grid. Note that integration errors can accumulate quite
-    # quickly if the time grid is resolution too coarse, especially for the
+    # quickly if the time grid's resolution is too coarse, especially for the
     # Weibull distribution with shape < 1.
     tic = perf_counter()
     fine_time_grid = np.linspace(0, t_max, num=10_000_000)
     dt = np.diff(fine_time_grid)[0]
     all_hazards = np.stack(
-        [weibull_hazard(fine_time_grid, **dist) for dist in distributions],
+        [
+            weibull_hazard(fine_time_grid, shape, scale * base_scale)
+            for shape, scale in zip(event_dist_shapes, event_dist_scales)
+        ],
         axis=0,
     )
     any_event_hazards = all_hazards.sum(axis=0)
@@ -155,7 +141,9 @@ def plot_cumulative_incidence_functions(distributions, y, survival_boost=None, a
         "Cause-specific cumulative incidence functions"
         f" ({censoring_fraction:.1%} censoring)"
     )
-
+    # Non-informative covariate because scikit-learn estimators expect at least
+    # one feature.
+    X_dummy = np.zeros(shape=(n_samples, 1), dtype=np.float32)
     if survival_boost is not None:
         tic = perf_counter()
         survival_boost.fit(X_dummy, y)
@@ -192,8 +180,12 @@ def plot_cumulative_incidence_functions(distributions, y, survival_boost=None, a
             ax.set(title=f"Event {event_id}")
 
         if aj is not None:
+            # Randomly break tied durations, to silence a warning raised by the
+            # Aalen-Johansen estimator.
+            rng = np.random.default_rng(0)
+            jitter = rng.normal(scale=1e-3, size=y.shape[0])
             tic = perf_counter()
-            aj.fit(y["duration"], y["event"], event_of_interest=event_id)
+            aj.fit(y["duration"] + jitter, y["event"], event_of_interest=event_id)
             duration = perf_counter() - tic
             print(f"Aalen-Johansen for event {event_id} fit in {duration:.3f} s")
             aj.plot(label="Aalen-Johansen", ax=ax)
@@ -205,7 +197,7 @@ def plot_cumulative_incidence_functions(distributions, y, survival_boost=None, a
 
 
 plot_cumulative_incidence_functions(
-    distributions, survival_boost=survival_boost, aj=aj, y=y_uncensored
+    survival_boost=survival_boost, aj=aj, y=y_uncensored
 )
 
 # %%
@@ -216,26 +208,18 @@ plot_cumulative_incidence_functions(
 # Add some independent censoring with some arbitrary parameters to control the
 # amount of censoring: lowering the expected value bound increases the amount
 # of censoring.
-censoring_times = weibull_min.rvs(
-    1.0,
-    scale=1.5 * base_scale,
-    size=n_samples,
-    random_state=rng,
+_, y_censored = make_synthetic_competing_weibull(
+    n_samples=n_samples,
+    n_events=n_events,
+    censoring_relative_scale=1.5,
+    return_X_y=True,
+    shape_ranges=[(shape, shape) for shape in event_dist_shapes],
+    scale_ranges=[(scale, scale) for scale in event_dist_scales],
+    base_scale=base_scale,
+    random_state=0,
 )
-y_censored = pd.DataFrame(
-    dict(
-        event=np.where(
-            censoring_times < y_uncensored["duration"], 0, y_uncensored["event"]
-        ),
-        duration=np.minimum(censoring_times, y_uncensored["duration"]),
-    )
-)
-y_censored["event"].value_counts().sort_index()
 
-# %%
-plot_cumulative_incidence_functions(
-    distributions, survival_boost=survival_boost, aj=aj, y=y_censored
-)
+plot_cumulative_incidence_functions(survival_boost=survival_boost, aj=aj, y=y_censored)
 # %%
 #
 # Note that the Aalen-Johansen estimator is unbiased and empirically recovers
