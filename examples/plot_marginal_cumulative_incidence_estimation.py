@@ -38,13 +38,13 @@ from hazardous import SurvivalBoost
 from hazardous.data import make_synthetic_competing_weibull
 from lifelines import AalenJohansenFitter
 
-n_events = 3
 n_samples = 3_000
 base_scale = 1_000.0  # some arbitrary time unit
 event_dist_shapes = (0.5, 1.0, 5.0)
 event_dist_scales = (10, 3, 3)
+n_events = len(event_dist_shapes)
 
-X_uncensored, y_uncensored = make_synthetic_competing_weibull(
+_, y_uncensored = make_synthetic_competing_weibull(
     n_samples=n_samples,
     n_events=n_events,
     censoring_relative_scale=0,
@@ -208,7 +208,7 @@ plot_cumulative_incidence_functions(
 # Add some independent censoring with some arbitrary parameters to control the
 # amount of censoring: lowering the expected value bound increases the amount
 # of censoring.
-X_censored, y_censored = make_synthetic_competing_weibull(
+_, y_censored = make_synthetic_competing_weibull(
     n_samples=n_samples,
     n_events=n_events,
     censoring_relative_scale=1.5,
