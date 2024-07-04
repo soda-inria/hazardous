@@ -41,24 +41,16 @@ from lifelines import AalenJohansenFitter
 n_events = 3
 n_samples = 3_000
 base_scale = 1_000.0  # some arbitrary time unit
-shape_ranges = (
-    (0.5, 0.5),
-    (1.0, 1.0),
-    (5.0, 5.0),
-)
-scale_ranges = (
-    (10, 10),
-    (3, 3),
-    (3, 3),
-)
+event_dist_shapes = (0.5, 1.0, 5.0)
+event_dist_scales = (10, 3, 3)
 
 X_uncensored, y_uncensored = make_synthetic_competing_weibull(
     n_samples=n_samples,
     n_events=n_events,
     censoring_relative_scale=0,
     return_X_y=True,
-    shape_ranges=shape_ranges,
-    scale_ranges=scale_ranges,
+    shape_ranges=[(shape, shape) for shape in event_dist_shapes],
+    scale_ranges=[(scale, scale) for scale in event_dist_scales],
     base_scale=base_scale,
     random_state=0,
 )
@@ -132,8 +124,8 @@ def plot_cumulative_incidence_functions(y, survival_boost=None, aj=None):
     dt = np.diff(fine_time_grid)[0]
     all_hazards = np.stack(
         [
-            weibull_hazard(fine_time_grid, shape[0], scale[0] * base_scale)
-            for shape, scale in zip(shape_ranges, scale_ranges)
+            weibull_hazard(fine_time_grid, shape, scale * base_scale)
+            for shape, scale in zip(event_dist_shapes, event_dist_scales)
         ],
         axis=0,
     )
@@ -217,8 +209,8 @@ X_censored, y_censored = make_synthetic_competing_weibull(
     n_events=n_events,
     censoring_relative_scale=1.5,
     return_X_y=True,
-    shape_ranges=shape_ranges,
-    scale_ranges=scale_ranges,
+    shape_ranges=[(shape, shape) for shape in event_dist_shapes],
+    scale_ranges=[(scale, scale) for scale in event_dist_scales],
     base_scale=base_scale,
     random_state=0,
 )
