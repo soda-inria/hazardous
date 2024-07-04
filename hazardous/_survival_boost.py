@@ -495,11 +495,11 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         Returns
         -------
         predicted_curves : ndarray of shape (n_samples, n_events + 1, n_times)
-            The estimated probabilities at different time horizons. The column
-            indexed 0 stores the estimated probabilities of staying event-free at
+            The estimated probabilities at different time horizons. The values at event
+            index 0 are the estimated probabilities of staying event-free at
             the requested time horizons for each observation described by the matching
-            row of X. The remaining columns store the estimated cumulated incidence
-            (or probability) for each event.
+            row of X. The remaining event indices correspond to the estimated cumulated 
+            incidence (or probability) for each event type.
         """
         if times is None:
             times = self.time_grid_
