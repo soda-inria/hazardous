@@ -7,7 +7,7 @@ on:
       - test-ci*
   pull_request:
     branches:
-      - main
+      - '**'
 
 permissions:
   contents: write

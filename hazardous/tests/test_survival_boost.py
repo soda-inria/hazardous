@@ -40,14 +40,14 @@ def test_survival_boost_incidence_and_survival(seed):
     # Check that the survival function is the complement of the cumulative
     # incidence function for any event.
     cif_pred = est.predict_cumulative_incidence(X_test)
-    assert cif_pred.shape == (4, X_test.shape[0], est.time_grid_.shape[0])
+    assert cif_pred.shape == (X_test.shape[0], 4, est.time_grid_.shape[0])
     assert np.all(cif_pred >= 0), cif_pred.min()
     assert np.all(cif_pred <= 1), cif_pred.max()
 
-    any_event_cif_pred = cif_pred[1:].sum(axis=0)
+    any_event_cif_pred = cif_pred[:, 1:, :].sum(axis=1)
     assert_allclose(survival_pred, 1 - any_event_cif_pred)
-    assert_allclose(survival_pred, cif_pred[0])
-    assert_allclose(cif_pred.sum(axis=0), 1.0)
+    assert_allclose(survival_pred, cif_pred[:, 0])
+    assert_allclose(cif_pred.sum(axis=1), 1.0)
 
     ibs_gb_incidence = integrated_brier_score_incidence(
         y_train,
@@ -59,12 +59,12 @@ def test_survival_boost_incidence_and_survival(seed):
     assert ibs_gb_incidence == pytest.approx(ibs_gb_surv)
 
     # Check that the survival proba is globally decreasing.
-    assert_array_less(cif_pred[0, :, -1], cif_pred[0, :, 0])
+    assert_array_less(cif_pred[:, 0, -1], cif_pred[:, 0, 0])
 
     # Check that the incidence proba are globally increasing.
     assert_array_less(
-        cif_pred[1:, :, 0].sum(axis=0),
-        cif_pred[1:, :, -1].sum(axis=0),
+        cif_pred[:, 1:, 0].sum(axis=1),
+        cif_pred[:, 1:, -1].sum(axis=1),
     )
 
 
@@ -123,7 +123,7 @@ def test_survival_boost_predict_proba(seed):
 
 
 @pytest.mark.parametrize("seed", SEED_RANGE)
-def test_gradient_boosting_incidence_parameter_tuning(seed):
+def test_survival_boost_parameter_tuning(seed):
     # Minimal parameter grid with one poor and one good value for each
     # parameter to tune.
     param_grid = {

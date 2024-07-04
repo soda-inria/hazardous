@@ -106,7 +106,7 @@ class IncidenceScoreComputer:
 
         Parameters
         ----------
-        y_true : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        y_true : record-array, dictionary or dataframe of shape (n_samples, 2)
             The ground truth, consisting in the 'event' and 'duration' columns.
 
         y_pred : array-like of shape (n_samples, n_times)
