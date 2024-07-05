@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from ._gradient_boosting_incidence import GradientBoostingIncidence
-from ._ipcw import IPCWEstimator
+from ._survival_boost import SurvivalBoost
 
 with open(Path(__file__).parent / "VERSION.txt") as _fh:
     __version__ = _fh.read().strip()
@@ -9,6 +8,5 @@ with open(Path(__file__).parent / "VERSION.txt") as _fh:
 
 __all__ = [
     "metrics",
-    "GradientBoostingIncidence",
-    "IPCWEstimator",
+    "SurvivalBoost",
 ]

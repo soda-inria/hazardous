@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from .._ipcw import IPCWEstimator
+from .._ipcw import KaplanMeierIPCW
 
 
 @pytest.mark.parametrize("seed", range(10))
@@ -20,10 +20,10 @@ def test_ipcw_invariant_properties(seed):
 
     test_times = np.linspace(0, t_max, num=100)
 
-    est_competing = IPCWEstimator().fit(y_competing)
+    est_competing = KaplanMeierIPCW().fit(y_competing)
     ipcw_values = est_competing.compute_ipcw_at(test_times)
 
-    est_any_event = IPCWEstimator().fit(y_any_event)
+    est_any_event = KaplanMeierIPCW().fit(y_any_event)
     ipcw_values_any_event = est_any_event.compute_ipcw_at(test_times)
 
     # The IPCW should be the same for any event and competing risk: they
@@ -77,7 +77,7 @@ def test_ipcw_deterministic_censoring_weights(seed):
         event=events,
         duration=durations,
     )
-    est = IPCWEstimator().fit(y)
+    est = KaplanMeierIPCW().fit(y)
     before_censoring = np.arange(threshold)
     ipcw_before_censoring = est.compute_ipcw_at(before_censoring)
     assert_allclose(ipcw_before_censoring, np.ones_like(ipcw_before_censoring))
@@ -115,7 +115,7 @@ def test_ipcw_no_censoring(competing_risk, seed):
             duration=durations,
         )
 
-    est = IPCWEstimator().fit(y_uncensored)
+    est = KaplanMeierIPCW().fit(y_uncensored)
     test_times = np.arange(t_max)
     ipcw_values = est.compute_ipcw_at(test_times)
     assert_allclose(ipcw_values, np.ones_like(ipcw_values))
@@ -144,7 +144,7 @@ def test_ipcw_consistent_with_sksurv(competing_risk):
     max_observed_duration = y["duration"][y["event"] != 0].max()
     test_times = np.linspace(0, max_observed_duration, num=5)
 
-    est = IPCWEstimator().fit(y)
+    est = KaplanMeierIPCW().fit(y)
     ipcw_values = est.compute_ipcw_at(test_times)
 
     # Expected values computed with scikit-survival:

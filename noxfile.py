@@ -28,9 +28,10 @@ def test_latest_from_conda_forge(session):
         "scikit-learn",
         "lifelines",
         "tqdm",
+        "flit",
     ]:
         session.conda_install(package_name, channel="conda-forge")
-    session.install(".")
+    session.install("--no-build-isolation", ".")
     _common_test_steps(session)
 
 

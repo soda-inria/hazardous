@@ -2,7 +2,7 @@ import warnings
 
 import numpy as np
 
-from .._ipcw import IPCWEstimator
+from .._ipcw import KaplanMeierIPCW
 from ..utils import check_event_of_interest, check_y_survival
 
 
@@ -35,6 +35,7 @@ class IncidenceScoreComputer:
         self,
         y_train,
         event_of_interest="any",
+        ipcw_estimator=None,
     ):
         self.y_train = y_train
         self.event_train, self.duration_train = check_y_survival(y_train)
@@ -42,18 +43,15 @@ class IncidenceScoreComputer:
         self.any_event_train = self.event_train > 0
         self.event_of_interest = event_of_interest
 
+        y = dict(
+            event=self.any_event_train,
+            duration=self.duration_train,
+        )
         # Estimate the censoring distribution from the training set
         # using Kaplan-Meier.
-        self.ipcw_est = IPCWEstimator().fit(
-            dict(
-                event=self.any_event_train,
-                duration=self.duration_train,
-            )
-        )
-
-        # Precompute the censoring probabilities at the time of the events on the
-        # training set:
-        self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
+        if ipcw_estimator is None:
+            ipcw_estimator = KaplanMeierIPCW()
+        self.ipcw_estimator = ipcw_estimator.fit(y)
 
     def brier_score_survival(self, y_true, y_pred, times):
         """Time-dependent Brier score of a survival function estimate.
@@ -108,7 +106,7 @@ class IncidenceScoreComputer:
 
         Parameters
         ----------
-        y_true : record-array, dictionnary or dataframe of shape (n_samples, 2)
+        y_true : record-array, dictionary or dataframe of shape (n_samples, 2)
             The ground truth, consisting in the 'event' and 'duration' columns.
 
         y_pred : array-like of shape (n_samples, n_times)
@@ -158,7 +156,7 @@ class IncidenceScoreComputer:
             shape=(n_samples, n_time_steps),
             dtype=np.float64,
         )
-        ipcw_y = self.ipcw_est.compute_ipcw_at(duration_true)
+        ipcw_y = self.ipcw_estimator.compute_ipcw_at(duration_true)
         for t_idx, t in enumerate(times):
             y_true_binary, weights = self._weighted_binary_targets(
                 y_event=event_true,
@@ -196,7 +194,15 @@ class IncidenceScoreComputer:
         time_span = sorted_times[-1] - sorted_times[0]
         return np.trapz(sorted_scores, sorted_times) / time_span
 
-    def _weighted_binary_targets(self, y_event, y_duration, times, ipcw_y_duration):
+    def _weighted_binary_targets(
+        self,
+        y_event,
+        y_duration,
+        times,
+        ipcw_y_duration,
+        ipcw_training=False,
+        X=None,
+    ):
         if self.event_of_interest == "any":
             # y should already be provided as binary indicator
             k = 1
@@ -228,7 +234,11 @@ class IncidenceScoreComputer:
         event_k_before_horizon = (y_event == k) & (y_duration <= times)
         y_binary = event_k_before_horizon.astype(np.int32)
 
-        ipcw_times = self.ipcw_est.compute_ipcw_at(times)
+        ipcw_times = self.ipcw_estimator.compute_ipcw_at(
+            times,
+            X=X,
+            ipcw_training=ipcw_training,
+        )
         any_event_or_censoring_after_horizon = y_duration > times
         weights = np.where(any_event_or_censoring_after_horizon, ipcw_times, 0)
 
@@ -399,7 +409,7 @@ def brier_score_incidence(
 
     .. math::
 
-            \hat{F}_k(t | \mathbf{x}_i) \approx P(T_i \leq t, E_i = k |
+            \hat{F}_k(t | \mathbf{x}_i) \approx P(T_i \leq t, \Delta_i = k |
             \mathbf{x}_i)
 
     and :math:`\hat{\omega}_i(t)` are IPCW weigths based on the Kaplan-Meier

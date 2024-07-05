@@ -15,7 +15,7 @@ Estimators
     :template: class.rst
     :nosignatures:
 
-    GradientBoostingIncidence
+    SurvivalBoost
 
 
 Metrics
@@ -42,13 +42,3 @@ Datasets
     data.make_synthetic_competing_weibull
     data.load_seer
 
-
-Inverse Probability Censoring Weight
-------------------------------------
-
-.. autosummary::
-    :toctree: generated/
-    :template: class.rst
-    :nosignatures:
-
-    IPCWEstimator
