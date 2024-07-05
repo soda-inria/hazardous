@@ -409,7 +409,7 @@ def brier_score_incidence(
 
     .. math::
 
-            \hat{F}_k(t | \mathbf{x}_i) \approx P(T_i \leq t, E_i = k |
+            \hat{F}_k(t | \mathbf{x}_i) \approx P(T_i \leq t, \Delta_i = k |
             \mathbf{x}_i)
 
     and :math:`\hat{\omega}_i(t)` are IPCW weigths based on the Kaplan-Meier

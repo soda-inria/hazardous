@@ -144,8 +144,8 @@ class KaplanMeierIPCW:
 class AlternatingCensoringEstimator(KaplanMeierIPCW):
     r"""IPCW estimator for Debiased Gradient Boosting Incidence.
 
-    Predict :math:`\hat{G}(t | X = x) = p(C > t | X = x)` using
-    :math:`1/\hat{S}(t | X = x) = 1/p(T^* > t | X = x)` as IPCW.
+    Predict :math:`\hat{G}(t | X = x) = P(C > t | X = x)` using
+    :math:`1/\hat{S}(t | X = x) = 1/P(T^* > t | X = x)` as IPCW.
 
     TODO
     """
@@ -227,8 +227,8 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
         for each :math:`k` competing event.
 
         The probabilities returned by the censoring estimator are
-        :math:`\hat{S}(t| X = x) = P(T^* > t | X = x)` and
-        :math:`\hat{G}(t) = P(C^* > t | X = x)`.
+        :math:`\hat{G}(t) = P(C > t | X = x)` and
+        :math:`1 - \hat{G}(t) = P(C \leq t | X = x)`.
 
         Parameters
         ----------

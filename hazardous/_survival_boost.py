@@ -90,7 +90,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         sampled_time_horizons[hard_zero_indices] = 0.0
 
         if ipcw_training:
-            # During the training of the ICPW, we estimate G(t) = P(C > t)
+            # During the training of the ICPW, we estimate G(t) = P(C > t) using
             # 1 / S(t) = 1 / P(T^* > t) as sample weight. t is an arbitrary
             # time horizon.
             # Since 1 = P(C <= t) + P(C > t), our training target is the censoring
@@ -180,10 +180,10 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
     .. math::
 
-        \hat{F}_k(t; x_i) \approx F_k(t; x_i) = \mathbb{P}(T \leq t, E=k | X=x_i)
+        \hat{F}_k(t; x_i) \approx F_k(t; x_i) = \mathbb{P}(T \leq t, \Delta=k | X=x_i)
 
     where :math:`T` is a random variable for the uncensored time to first event
-    and :math:`E` is a random variable over the :math:`[1, K]` domain for the
+    and :math:`\Delta` is a random variable over the :math:`[1, K]` domain for the
     (uncensored) event type, and :math:`x_i` is the feature vector of the
     :math:`i`-th observation.
 
@@ -191,8 +191,8 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
     .. math::
 
-        S(t; x_i) = \mathbb{P}(T > t) = 1 - \mathbb{P}(T \leq t | X=x_i)
-        = 1 - \sum_{k=1}^K \mathbb{P}(T \leq t, E=k | X=x_i)
+        S(t; x_i) = \mathbb{P}(T > t | X=x_i) = 1 - \mathbb{P}(T \leq t | X=x_i)
+        = 1 - \sum_{k=1}^K \mathbb{P}(T \leq t, \Delta=k | X=x_i)
         = 1 - \sum_{k=1}^K F_k(t; x_i)
 
     Under the hood, this class randomly samples reference time horizons
