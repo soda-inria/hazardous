@@ -224,9 +224,6 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         The learning rate, also known as shrinkage. This is used as a multiplicative
         factor for the leaves values. Use 1 for no shrinkage.
 
-    n_iter : int, default=100
-        The number of iterations of the boosting process.
-
     max_leaf_nodes : int or None, default=31
         The maximum number of leaves for each tree. Must be strictly greater than 1. If
         None, there is no maximum limit.
