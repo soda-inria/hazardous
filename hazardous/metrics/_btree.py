@@ -19,16 +19,17 @@ class _BTree:
     - To get the rank of an element, you add up a bunch of subtree counts
     """
 
-    def __init__(self, values):
+    def __init__(self, nodes, weights):
         """
         Parameters
         ----------
         values: list
             List of sorted (ascending), unique values that will be inserted.
         """
-        self._tree = self._treeify(values)
+        self._tree = self._treeify(nodes)
         # self._counts = np.zeros_like(self._tree, dtype=int)
-        self._indices = [[]] * len(self._tree)
+        self._weight_indices = [[]] * len(self._tree)
+        self._weights = weights
 
     @staticmethod
     def _treeify(values):
@@ -69,57 +70,78 @@ class _BTree:
             values_len = int(values_len / 2)
         return tree
 
-    def insert(self, value, j):
+    def insert(self, value, weight_index):
         """Insert an occurrence of `value` into the btree."""
-        i = 0
-        n = len(self._tree)
-        while i < n:
-            cur = self._tree[i]
+        idx_node = 0
+        while idx_node < len(self._tree):
+            current = self._tree[idx_node]
             # self._counts[i] += 1
-            self._indices[i].append(j)
-            if value < cur:
-                i = 2 * i + 1
-            elif value > cur:
-                i = 2 * i + 2
+            self._weight_indices[idx_node].append(weight_index)
+            if value < current:
+                idx_node = 2 * idx_node + 1
+            elif value > current:
+                idx_node = 2 * idx_node + 2
             else:
                 return
         raise ValueError(
-            "Value %s not contained in tree.Also, the counts are now messed up." % value
+            f"Value {value} not contained in tree. Also, the counts are now messed up."
         )
 
-    def __len__(self):
-        return self._counts[0]
+    def total_counts(self, idx_value):
+        return self._get_counts(idx_node=0, idx_value=idx_value)
 
-    def rank(self, value):
+    def rank(self, value, idx_value):
         """Returns the rank and count of the value in the btree."""
-        i = 0
+        idx_node = 0
         n = len(self._tree)
-        rank = 0
-        count = 0
-        while i < n:
-            cur = self._tree[i]
-            if value < cur:
-                i = 2 * i + 1
-                continue
-            elif value > cur:
-                rank += self._counts[i]
-                # subtract off the right tree if exists
-                nexti = 2 * i + 2
-                if nexti < n:
-                    rank -= self._counts[nexti]
-                    i = nexti
-                    continue
-                else:
-                    return (rank, count)
-            else:  # value == cur
-                count = self._counts[i]
-                lefti = 2 * i + 1
-                if lefti < n:
-                    nleft = self._counts[lefti]
-                    count -= nleft
-                    rank += nleft
-                    righti = lefti + 1
-                    if righti < n:
-                        count -= self._counts[righti]
+        rank = count = 0
+        
+        while idx_node < n:
+
+            current = self._tree[idx_node]
+
+            if value < current:
+                idx_node = 2 * idx_node + 1
+
+            elif value > current:
+                # Since the input value is higher than all the values from the
+                # left subtree, we add to the rank the weighted sum of items that
+                # were inserted in the left subtree:
+                # rank += counts_current_tree - counts_right_subtree
+                rank += self._get_counts(idx_node, idx_value)
+
+                # Subtract off the right subtree if exists
+                idx_node = 2 * idx_node + 2
+                if idx_node < n:
+                    rank -= self._get_counts(idx_node, idx_value)
+
+            else:
+                # We have found the node corresponding to our input value.
+                # We now add to the rank the weighted sum of items inserted into
+                # the left subtree.
+                # 'count' represent the weighted sum of items inserted at
+                # the current node.
+                # counts_current_node = counts_current_tree
+                # - counts_left_subtree - counts_right_subtree
+                count = self._get_counts(idx_node, idx_value)
+    
+                idx_node = 2 * idx_node + 1
+                if idx_node < n:
+                    count_left = self._get_counts(idx_node, idx_value)
+                    count -= count_left
+                    rank += count_left
+                    
+                    # Remove the counts of the right subtree
+                    idx_node += 1
+                    if idx_node < n:
+                        count -= self._get_counts(idx_node, idx_value)
+                
                 return (rank, count)
+        
         return (rank, count)
+    
+    def _get_counts(self, idx_node, idx_value):
+        indices = self._weight_indices[idx_node]
+        left_weight = self._weights[idx_value]
+        return sum([
+            left_weight * self._weights[jdx] for jdx in indices])
