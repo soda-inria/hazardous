@@ -32,12 +32,12 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         learn to predict 0 incidence at `t=0` at the cost of reducing the effective
         sample size for the non-zero time horizons.
 
-    ipcw_est : object, default=None
+    ipcw_estimator : object, default=None
         The estimator used to estimate the Inverse Probability of Censoring Weighting
         (IPCW). If `None`, an instance of `KaplanMeierIPCW` is used.
 
     n_iter_before_feedback : int, default=20
-        The number of iterations used to fit incrementally `ipcw_est`.
+        The number of iterations used to fit incrementally `ipcw_estimator`.
 
     random_state : int, RandomState instance or None, default=None
         Control the randomness of the time horizon sampler.
@@ -56,7 +56,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         y_train,
         hard_zero_fraction=0.01,
         random_state=None,
-        ipcw_est=None,
+        ipcw_estimator=None,
         n_iter_before_feedback=20,
     ):
         self.rng = check_random_state(random_state)
@@ -65,11 +65,11 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         super().__init__(
             y_train,
             event_of_interest="any",
-            ipcw_est=ipcw_est,
+            ipcw_estimator=ipcw_estimator,
         )
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
-        self.ipcw_train = self.ipcw_est.compute_ipcw_at(self.duration_train)
+        self.ipcw_train = self.ipcw_estimator.compute_ipcw_at(self.duration_train)
 
     def draw(self, ipcw_training=False, X=None):
         # Sample time horizons uniformly on the observed time range:
@@ -104,7 +104,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
             #   The sample weight is zero in that case.
 
             if not hasattr(self, "inv_any_survival_train"):
-                self.inv_any_survival_train = self.ipcw_est.compute_ipcw_at(
+                self.inv_any_survival_train = self.ipcw_estimator.compute_ipcw_at(
                     self.duration_train, ipcw_training=True, X=X
                 )
 
@@ -142,7 +142,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         return sampled_time_horizons.reshape(-1, 1), y_targets, sample_weight
 
     def fit(self, X):
-        self.inv_any_survival_train = self.ipcw_est.compute_ipcw_at(
+        self.inv_any_survival_train = self.ipcw_estimator.compute_ipcw_at(
             self.duration_train, ipcw_training=True, X=X
         )
 
@@ -151,14 +151,14 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
                 ipcw_training=True,
                 X=X,
             )
-            self.ipcw_est.fit_censoring_estimator(
+            self.ipcw_estimator.fit_censoring_estimator(
                 X,
                 y_targets,
                 times=sampled_time_horizons,
                 sample_weight=sample_weight,
             )
 
-        self.ipcw_train = self.ipcw_est.compute_ipcw_at(
+        self.ipcw_train = self.ipcw_estimator.compute_ipcw_at(
             self.duration_train,
             ipcw_training=False,
             X=X,
@@ -402,9 +402,11 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             self.time_grid_.sort()
 
         if self.ipcw_strategy == "alternating":
-            ipcw_est = AlternatingCensoringEstimator(incidence_est=self.estimator_)
+            ipcw_estimator = AlternatingCensoringEstimator(
+                incidence_estimator=self.estimator_
+            )
         elif self.ipcw_strategy == "kaplan-meier":
-            ipcw_est = KaplanMeierIPCW()
+            ipcw_estimator = KaplanMeierIPCW()
         else:
             raise ValueError(
                 f"Invalid parameter value: ipcw_strategy={self.ipcw_strategy!r}. "
@@ -415,7 +417,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             y,
             hard_zero_fraction=self.hard_zero_fraction,
             random_state=self.random_state,
-            ipcw_est=ipcw_est,
+            ipcw_estimator=ipcw_estimator,
             n_iter_before_feedback=self.n_iter_before_feedback,
         )
 
@@ -451,7 +453,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                 )
 
             if (idx_iter % self.n_iter_before_feedback == 0) and isinstance(
-                ipcw_est, AlternatingCensoringEstimator
+                ipcw_estimator, AlternatingCensoringEstimator
             ):
                 self.weighted_targets_.fit(X)
 

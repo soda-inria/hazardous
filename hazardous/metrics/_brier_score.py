@@ -35,7 +35,7 @@ class IncidenceScoreComputer:
         self,
         y_train,
         event_of_interest="any",
-        ipcw_est=None,
+        ipcw_estimator=None,
     ):
         self.y_train = y_train
         self.event_train, self.duration_train = check_y_survival(y_train)
@@ -49,9 +49,9 @@ class IncidenceScoreComputer:
         )
         # Estimate the censoring distribution from the training set
         # using Kaplan-Meier.
-        if ipcw_est is None:
-            ipcw_est = KaplanMeierIPCW()
-        self.ipcw_est = ipcw_est.fit(y)
+        if ipcw_estimator is None:
+            ipcw_estimator = KaplanMeierIPCW()
+        self.ipcw_estimator = ipcw_estimator.fit(y)
 
     def brier_score_survival(self, y_true, y_pred, times):
         """Time-dependent Brier score of a survival function estimate.
@@ -156,7 +156,7 @@ class IncidenceScoreComputer:
             shape=(n_samples, n_time_steps),
             dtype=np.float64,
         )
-        ipcw_y = self.ipcw_est.compute_ipcw_at(duration_true)
+        ipcw_y = self.ipcw_estimator.compute_ipcw_at(duration_true)
         for t_idx, t in enumerate(times):
             y_true_binary, weights = self._weighted_binary_targets(
                 y_event=event_true,
@@ -234,7 +234,7 @@ class IncidenceScoreComputer:
         event_k_before_horizon = (y_event == k) & (y_duration <= times)
         y_binary = event_k_before_horizon.astype(np.int32)
 
-        ipcw_times = self.ipcw_est.compute_ipcw_at(
+        ipcw_times = self.ipcw_estimator.compute_ipcw_at(
             times,
             X=X,
             ipcw_training=ipcw_training,

@@ -152,8 +152,8 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
 
     def __init__(
         self,
-        cold_start_ipcw_est=None,
-        incidence_est=None,
+        cold_start_ipcw_estimator=None,
+        incidence_estimator=None,
         learning_rate=0.05,
         max_depth=None,
         max_leaf_nodes=31,
@@ -161,8 +161,8 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
         monotonic_cst=None,
         epsilon_censoring_prob=0.05,
     ):
-        self.cold_start_ipcw_est = cold_start_ipcw_est
-        self.incidence_est = incidence_est
+        self.cold_start_ipcw_estimator = cold_start_ipcw_estimator
+        self.incidence_estimator = incidence_estimator
         self.learning_rate = learning_rate
         self.max_leaf_nodes = max_leaf_nodes
         self.max_depth = max_depth
@@ -187,7 +187,7 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
         del X
         super().fit(y)
 
-        self.check_cold_start_ipcw_est()
+        self.check_cold_start_ipcw_estimator()
         self.cold_start_ipcw_estimator_.fit(y)
 
         return self
@@ -238,19 +238,19 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
 
         ipcw_training : bool, default=False
             * If set to True, returns the predicted probability
-            of survival to any event, using the external 'incidence_est'.
+            of survival to any event, using the external 'incidence_estimator'.
             * If set to False (default), returns the predicted probability
             of survival to censoring, using the internal 'censoring_estimator_'
             (or using the cold start IPCW estimator for the first training iteration).
         """
         if ipcw_training:
-            # incidence_est is trained to predict the survival to any event S(t)
+            # incidence_estimator is trained to predict the survival to any event S(t)
             # (class 0) and the incidence of all events (class 1 to K).
             if X is None:
                 X = times
             else:
                 X = np.hstack([times.reshape(-1, 1), X])
-            return self.incidence_est.predict_proba(X)[:, 0]
+            return self.incidence_estimator.predict_proba(X)[:, 0]
 
         else:
             if not hasattr(self, "censoring_estimator_"):
@@ -261,8 +261,8 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
             X_with_time = np.hstack([times.reshape(-1, 1), X])
             return self.censoring_estimator_.predict_proba(X_with_time)[:, 0]
 
-    def check_cold_start_ipcw_est(self):
-        if self.cold_start_ipcw_est is None:
+    def check_cold_start_ipcw_estimator(self):
+        if self.cold_start_ipcw_estimator is None:
             self.cold_start_ipcw_estimator_ = KaplanMeierIPCW(
                 epsilon_censoring_prob=self.epsilon_censoring_prob
             )
