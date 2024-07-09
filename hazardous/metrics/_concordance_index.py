@@ -1,7 +1,8 @@
 # %%
 import warnings
+from collections import Counter, defaultdict
+
 import numpy as np
-from collections import defaultdict
 from scipy.interpolate import interp1d
 
 from hazardous._ipcw import IPCWEstimator
@@ -13,16 +14,16 @@ def concordance_index_incidence(
     y_test,
     y_pred,
     time_grid=None,
+    taus=None,
     y_train=None,
     X_train=None,
     X_test=None,
-    taus=None,
     event_of_interest=1,
     ipcw_estimator="km",
     tied_tol=1e-8,
 ):
     """Time-dependent concordance index for prognostic models \
-    with competing risks with inverse probability of censoring weighting
+    with competing risks with inverse probability of censoring weighting.
 
     The concordance index (C-index) is a common metric in survival analysis
     that evaluates if the model predictions correctly order pairs of individuals
@@ -36,7 +37,7 @@ def concordance_index_incidence(
 
     Due to the right-censoring in the data, the order of some pairs is unknown,
     so we define the notion of comparable pairs, i.e. the pairs for which
-    we can compare the order of occurrence of the event of interest. 
+    we can compare the order of occurrence of the event of interest.
     A pair (i, j) is comparable, with i experiencing the event of interest
     at time T_i if:
     - j experiences the event of interest at a strictly greater time
@@ -55,45 +56,53 @@ def concordance_index_incidence(
     inverse probability of censoring weighting (IPCW) allows to overcome this
     limitation [1]. By default, the IPCW is implemented with a Kaplan-Meier
     estimator. Additionnally, the c-index is not a proper metric to evaluate
-    a survival model [4], and alternatives as the integrated Brier score 
+    a survival model [4], and alternatives as the integrated Brier score
     (`integrated_brier_score_incidence`) should be considered.
 
     Parameters
     ----------
-    y_train : np.array, dictionnary or dataframe of shape (n_samples, 2)
-        The train target, consisting in the 'event' and 'duration' columns.
-
-    y_test : np.array, dictionnary or dataframe of shape (n_samples, 2)
+    y_test : array, dictionnary or dataframe of shape (n_samples, 2)
         The test target, consisting in the 'event' and 'duration' columns.
 
-    y_pred: (n_samples_test, n_time_grid)
-        cumulative incidence for the event of interest, at the time points
-        from the input time_grid
+    y_pred: array of shape (n_samples_test, n_time_grid)
+        Cumulative incidence for the event of interest, at the time points
+        from the input time_grid.
 
-    time_grid: (n_time_grid,)
-        time points used to predict the cumulative incidence
+    time_grid: array of shape (n_time_grid,), default=None
+        Time points used to predict the cumulative incidence.
 
-    X_train: (n_samples_train, n_features)
-        covariates, used to learn a censor model if the inverse
-        probability of censoring weights (IPCW), if the IPCW model is conditional
-        on features (for instance cox). Not used if ipcw=None or 'km'.
-
-    X_test: (n_samples_test, n_features)
-        covariates, used to predict weights a censor model if the inverse
-        probability of censoring weights (IPCW), if the IPCW model is conditional
-        on features (for instance cox). Not used if ipcw=None or 'km'.
-
-    taus: (n_taus,)
+    taus: array of shape (n_taus,), default=None
         float or vector, timepoints at which the concordance index is
         evaluated.
 
-    event_of_interest: int
+    y_train : array, dictionnary or dataframe of shape (n_samples, 2)
+        The train target, consisting in the 'event' and 'duration' columns.
+
+    X_train: array or dataframe of shape (n_samples_train, n_features), default=None
+        Covariates, used to learn a censor model if the inverse
+        probability of censoring weights (IPCW), if the IPCW model is conditional
+        on features (for instance cox). Not used if ipcw=None or 'km'.
+
+    X_test: array or dataframe of shape (n_samples_test, n_features), default=None
+        Covariates, used to predict weights a censor model if the inverse
+        probability of censoring weights (IPCW), if the IPCW model is conditional
+        on features (for instance cox). Not used if ipcw=None or 'km'.
+
+    event_of_interest: int, default=1
         For competing risks, the event of interest.
+
+    ipcw_estimator : {None or 'km'}, default="km"
+        The inverse probability of censoring weighted (IPCW) estimator.
+        - None set uniform weights to all samples
+        - "km" use the Kaplan-Meier estimator
+
+    tied_tol : float, default=1e-8
+        The tolerance range to consider two probabilities equal.
 
     Returns
     -------
     cindex: (n_taus,)
-        value of the concordance index for each tau in taus.
+        Value of the concordance index for each tau in taus.
 
     References
     ----------
@@ -121,10 +130,10 @@ def concordance_index_incidence(
         y_test,
         y_pred,
         time_grid=time_grid,
+        taus=taus,
         y_train=y_train,
         X_train=X_train,
         X_test=X_test,
-        taus=taus,
         event_of_interest=event_of_interest,
         ipcw_estimator=ipcw_estimator,
         tied_tol=tied_tol,
@@ -136,79 +145,91 @@ def _concordance_index_incidence_report(
     y_test,
     y_pred,
     time_grid=None,
+    taus=None,
     y_train=None,
     X_train=None,
     X_test=None,
-    taus=None,
     event_of_interest=1,
     ipcw_estimator="km",
     tied_tol=1e-8,
 ):
-    """
-    Report version of function `concordance_index_incidence`.
-    
+    """Report version of function `concordance_index_incidence`.
+
+    All returned lists have the same length as taus.
+
     Returns
     -------
-    cindex: float
-        value of the concordance index
+    cindex: list of float
+        Value of the concordance index
 
-    num_pairs_a: integer
-        number of comparable pairs with T_i <= T_j (type A) without ties for D_j != 0
-        those are the only comparable pairs for survival without competing events
+    num_pairs_a: list of int
+        Number of comparable pairs with T_i <= T_j (type A) without ties for D_j != 0
+        those are the only comparable pairs for survival without competing events.
 
-    num_concordant_pairs_a: integer
-        number of concordant pairs among A pairs without ties
+    num_concordant_pairs_a: list of int
+        Number of concordant pairs among A pairs without ties.
 
-    num_tied_times_a: integer
-        number of tied pairs of type A with D_i = D_j = 1
+    num_ties_times_a: list of int
+        Number of tied pairs of type A with D_i = D_j = 1.
 
-    num_tied_pred_a: integer
-        number of pairs of type A with np.abs(y_pred_i - y_pred_i) < tied_tol
+    num_ties_pred_a: list of int
+        Number of pairs of type A with np.abs(y_pred_i - y_pred_j) < tied_tol
 
-    num_pairs_b: integer
-        number of comparable pairs with T_i >= T_j where j has a competing event (type B)
-        returns 0 if there are no competing events
+    num_pairs_b: list of int
+        Number of comparable pairs with T_i >= T_j where j has
+        a competing event (type B).
+        0 if there are no competing events.
 
-    num_concordant_pairs_b: integer
-        number of concordant pairs among B pairs without ties
+    num_concordant_pairs_b: list of int
+        Number of concordant pairs among B pairs without ties.
 
-    num_tied_pred_b: integer
-        number of pairs of type B with np.abs(y_pred_i - y_pred_i) < tied_tol   
-
+    num_ties_pred_b: list of int
+        Number of pairs of type B with np.abs(y_pred_i - y_pred_j) < tied_tol.
     """
-    # TODO: Check input parameters
-    # - if tau is not None, then time_grid must not be None
-    # check y, x
-    y_test["competing_event"] = (~y_test["event"].isin([0, event_of_interest])).astype(
-        "int"
-    )
-    y_test["event"] = (y_test["event"] == event_of_interest).astype("int")
-    is_competing_event = y_test["competing_event"].any()
-
-    n_time_grid_test = y_test[y_test["event"] == 1]["duration"].nunique()
-
-    if ipcw_estimator is not None:
-        # TODO: add cox option
-        ipcw_estimator_ = IPCWEstimator().fit(y_train)
-        ipcw = ipcw_estimator_.compute_ipcw_at(y_test["duration"]) # shape: (n_samples_test,)
-
-    else:
+    if ipcw_estimator is None:
         if y_train is not None:
-            warnings.warns(
+            warnings.warn(
                 "y_train passed but ipcw_estimator is set to None, "
                 "therefore y_train won't be used. Set y_train=None "
                 "to silence this warning."
             )
-        ipcw = np.ones(n_time_grid_test)
+        ipcw = np.ones(y_test["event"].shape[0])
 
-    # XXX: Bin y_test["duration"] using time grid?
+    else:
+        if y_train is None:
+            # Raising here since the error raised by the IPCW estimator doesn't
+            # help the user understand that y_train is missing.
+            raise ValueError(
+                "ipcw_estimator is set, but y_train is None. "
+                "Set y_train to fix this error."
+            )
+        # TODO: add cox option
+        ipcw_estimator_ = IPCWEstimator().fit(y_train)
+        ipcw = ipcw_estimator_.compute_ipcw_at(
+            y_test["duration"]
+        )  # shape: (n_samples_test,)
+
+    # XXX: When using cox, Bin y_test["duration"] using time grid?
+
+    if taus is None:
+        t_min, t_max = 0, y_test["duration"].max()
+        taus = [t_max]
+        if time_grid is None:
+            time_grid = np.linspace(t_min, t_max, num=y_pred.shape[1])
+    else:
+        if time_grid is None:
+            raise ValueError("When 'taus' is set, 'time_grid' must also be set.")
+    taus = np.atleast_1d(taus)
 
     c_index_report = defaultdict(list)
-    
+
     for tau in taus:
         y_pred_tau = interpolate_preds(y_pred, time_grid, tau)
+        y_test_tau = y_test.copy()
+        y_test_tau.loc[y_test_tau["duration"] > tau, "event"] = 0
+        # TODO: use tied_tol
         c_index_report_tau = _concordance_index_tau(
-            y_test, y_pred_tau, tau, ipcw, is_competing_event
+            y_test_tau, y_pred_tau, ipcw, event_of_interest
         )
         for metric_name, metric_value in c_index_report_tau.items():
             c_index_report[metric_name].append(metric_value)
@@ -216,185 +237,248 @@ def _concordance_index_incidence_report(
     return c_index_report
 
 
-def _concordance_index_tau(y_test, y_pred_tau, tau, ipcw, is_competing_event):
-    y_test = y_test.copy()
-    y_test.loc[y_test["duration"] > tau, ["event"]] = 0
+def _concordance_index_tau(y_test, y_pred, ipcw, event_of_interest):
+    """Compute the cindex and the associated statistics for a given tau."""
+    event, duration = check_y_survival(y_test)
+    binary_event = (event == event_of_interest).astype("int32")
+    if not binary_event.any():
+        warnings.warn(
+            f"There is not any event for {event_of_interest=!r}. "
+            "The cindex is undefined."
+        )
 
-    stats_pairs_a = _concordance_summary_statistics(
-        event=y_test["event"],
-        duration=y_test["duration"],
-        y_pred=y_pred_tau,
+    stats_a = _concordance_summary_statistics(
+        event=binary_event,
+        duration=duration,
+        y_pred=y_pred,
         ipcw=ipcw,
+        pair_type="a",
     )
 
-    weighted_corrects = stats_pairs_a["weighted_corrects"]
-    weighted_ties = stats_pairs_a["weighted_ties"]
-    weighted_pairs = stats_pairs_a["weighted_pairs"]
-
-    stats_pairs_b = {}
+    is_competing_event = (~np.isin(event, [0, event_of_interest])).any()
     if is_competing_event:
-        mask_uncensored = y_test["event"] != 0
-        y_test = y_test.loc[mask_uncensored]
-        y_pred_tau = y_pred_tau[mask_uncensored]
+        mask_uncensored = event != 0
+        binary_event = binary_event[mask_uncensored]
+        duration = duration[mask_uncensored]
+        y_pred = y_pred[mask_uncensored]
         ipcw = ipcw[mask_uncensored]
 
-        stats_pairs_b = _concordance_summary_statistics(
-            event=y_test["competing_event"],
-            duration=y_test["duration"],
-            y_pred=y_pred_tau,
+        stats_b = _concordance_summary_statistics(
+            event=binary_event,
+            duration=duration,
+            y_pred=y_pred,
             ipcw=ipcw,
+            pair_type="b",
         )
-        
-        weighted_corrects += stats_pairs_b["weighted_corrects"]
-        weighted_ties += stats_pairs_b["weighted_ties"]
-        weighted_pairs += stats_pairs_b["weighted_pairs"]
+    else:
+        stats_b = Counter()
 
-    cindex = (weighted_corrects + .5 * (weighted_ties)) / weighted_pairs
+    stats = stats_a + stats_b
 
-    return dict(
-        cindex=cindex,
-        # a statistics
-        num_pairs_a=stats_pairs_a["num_pairs"],
-        num_concordant_pairs_a=stats_pairs_a["num_concordant_pairs"],
-        num_tied_times_a=stats_pairs_a["num_tied_times"],
-        num_tied_pred_a=stats_pairs_a["num_tied_pred"],
-        # b statistics
-        num_pairs_b=stats_pairs_b.get("num_pairs", 0),
-        num_concordant_pairs_b=stats_pairs_b.get("num_concordant_pairs", 0),
-        num_tied_pred_b=stats_pairs_b.get("num_tied_pred", 0),
-    )
+    if stats["weighted_pairs"] == 0:
+        stats["weighted_pairs"] = np.nan
+
+    cindex = (
+        stats["weighted_concordant_pairs"] + 0.5 * stats["weighted_ties_pred"]
+    ) / stats["weighted_pairs"]
+
+    keys_b = ["num_pairs", "num_concordant_pairs", "num_ties_pred"]
+    keys_a = keys_b + ["num_ties_times"]
+
+    return {
+        "cindex": cindex,
+        **{f"{k}_a": stats_a[k] for k in keys_a},
+        **{f"{k}_b": stats_b[k] for k in keys_b},
+    }
 
 
-def _concordance_summary_statistics(event, duration, y_pred, ipcw):
+def _concordance_summary_statistics(event, duration, y_pred, ipcw, pair_type="a"):
     """Find the concordance index in n * log(n) time.
 
-    Here's how this works.
-    
-    It would be pretty easy to do if we had no censored data and no ties. There, the basic idea
-    would be to iterate over the cases in order of their true event time (from least to greatest),
-    while keeping track of a pool of *predicted* event times for all cases previously seen (= all
-    cases that we know should be ranked lower than the case we're looking at currently).
-    
-    If the pool has O(log n) insert and O(log n) RANK (i.e., "how many things in the pool have
-    value less than x"), then the following algorithm is n log n:
-    
+    This function iterates over the samples ordered by ascending time to event,
+    while keeping track of a tree of predicted probabilities for all cases
+    previously seen, i.e. all cases that should be ranked lower than the case
+    we're looking at currently.
+
+    If the tree has:
+    * O(log n) time complexity to insert
+    * O(log n) time complexity to rank (i.e., "how many values in the
+    tree are lower than x")
+
+    then the following algorithm has a O(n * log n) time complexity:
+
     Sort the times and predictions by time, increasing
     n_pairs, n_correct := 0
-    pool := {}
+    tree := {}
     for each prediction p:
-        n_pairs += len(pool)
-        n_correct += rank(pool, p)
-        add p to pool
-    
-    There are three complications: tied ground truth values, tied predictions, and censored
-    observations.
-    
-    - To handle tied true event times, we modify the inner loop to work in *batches* of observations
-    p_1, ..., p_n whose true event times are tied, and then add them all to the pool
-    simultaneously at the end.
-    
-    - To handle tied predictions, which should each count for 0.5, we switch to
-        n_correct += min_rank(pool, p)
-        n_tied += count(pool, p)
-    
-    - To handle censored observations, we handle each batch of tied, censored observations just
-    after the batch of observations that died at the same time (since those censored observations
-    are comparable all the observations that died at the same time or previously). However, we do
-    NOT add them to the pool at the end, because they are NOT comparable with any observations
-    that leave the study afterward--whether or not those observations get censored.
+        n_pairs += len(tree)
+        n_correct += rank(tree, p)
+        add p to tree
+
+    There are three complications: tied ground duration, tied predictions,
+    and censored observations.
+
+    1. To handle tied duration, we modify the inner loop to work in *batches*
+    of observations p_1, ..., p_n whose duration are tied, and then add them all
+    to the pool simultaneously at the end.
+
+    2. To handle tied predictions, which should each count for 0.5, we switch to
+        n_correct += min_rank(tree, p)
+        n_tied += count(tree, p)
+
+    3. To handle censored observations, we handle each batch of tied,
+    censored observations just after the batch of observations that died at
+    the same time (since those censored observations are comparable all
+    the observations that died at the same time or previously).
+    However, we do not add them to the tree at the end, because they are not
+    comparable with any observations that leave the study afterward,
+    whether or not those observations get censored.
     """
-    event_mask = event.astype(bool)
+    # For each node i, the balanced tree places:
+    # - a lower predicted probability p_i at the node 2 * i + 1
+    # - a higher predicted probability p_i at the node 2 * i + 2
 
-    # Sort the predictions by the event duration
-    duration_event = duration[event_mask]
-    indices = np.argsort(duration_event)
-    duration_event = duration_event[indices]
-    y_pred_event = y_pred[event_mask][indices]
+    # For a given node to rank j, the balanced tree returns the number of inserted
+    # values that are lower than p_j, i.e. the size of the left subtree of the node
+    # whose value is p_j.
 
-    # Sort the predictions by the censoring duration
-    duration_censoring = duration[~event_mask]
-    indices = np.argsort(duration_censoring)
-    duration_censoring = duration_censoring[indices]
-    y_pred_censoring = y_pred_event[~event_mask][indices]
+    # When p_j is high, we actually want the size of the left subtree to be small,
+    # because it represents the number of concordant pairs, where:
+    # * T_i < T_j, p_i > p_j and D_i = 1 (concordant pairs of type A)
+    # * T_i > T_j, p_i > p_j and D_i = 1, D_j = 2 (concordant pairs of type B)
 
+    # So, we build the balanced tree with the negative predicted probabilities of
+    # incidence, ordered in ascending order. Note that `np.unique` sorts the unique
+    # values in ascending order.
+    y_pred = y_pred * -1
+
+    y_pred_event, duration_event, ipcw_event = _sort_by_duration(
+        event, duration, y_pred, ipcw, event_label=1, pair_type=pair_type
+    )
+    y_pred_censoring, duration_censoring, ipcw_censoring = _sort_by_duration(
+        event, duration, y_pred, ipcw, event_label=0, pair_type=pair_type
+    )
+    unique_neg_preds = np.unique(y_pred_event)
     tree_pred = _BTree(
-        nodes=np.unique(y_pred_event),
-        weights=ipcw,
+        nodes=unique_neg_preds,
+        left_weights=ipcw_event,
+        right_weights=ipcw_censoring,
     )
 
     idx_event = idx_censoring = 0
-    num_pairs = num_correct = num_tied = 0
+    total_stats = Counter()
 
-    # We iterate through test samples sorted by duration:
-    # - First, all cases that died at t0. We add these to the btree.
-    # - Then, all cases that were censored at t0. We don't add these since they are
-    #   not comparable to subsequent elements.
     has_censored_left = idx_censoring < len(duration_censoring)
     has_event_left = idx_event < len(duration_event)
-    
+
     while has_event_left or has_censored_left:
-        
-        is_event_before_censoring = (
-            duration_event[idx_event] <= duration_censoring[idx_censoring]
+        is_event_before_censoring = has_event_left and (
+            not has_censored_left
+            or duration_event[idx_event] <= duration_censoring[idx_censoring]
         )
-        if has_event_left and (is_event_before_censoring or not has_censored_left):
-            pairs, correct, tied_prediction, tied_duration = _handle_pairs(
-                duration_event, y_pred_event, idx_event, tree_pred
-            )
-            for _ in range(tied_duration):
+        if is_event_before_censoring:
+            num_ties_times = _get_ties_times(duration_event, idx_event)
+            stats = Counter({"num_ties_times": num_ties_times - 1})
+
+            # Pairs of type B are only comparable when D_i = 1 and D_j = 2.
+            # At this stage, we are comparing pairs with D_i = 1 and D_j = 1.
+            # Therefore, we skip this operation for type B pairs.
+            if pair_type == "a":
+                stats += _handle_pairs(
+                    num_ties_times,
+                    y_pred_event,
+                    idx_event,
+                    tree_pred,
+                    pair_type,
+                )
+            for _ in range(num_ties_times):
                 tree_pred.insert(y_pred_event[idx_event], idx_event)
                 idx_event += 1
- 
+
         else:
-            pairs, correct, tied_prediction, tied_duration = _handle_pairs(
-                duration_censoring, y_pred_censoring, idx_censoring, tree_pred
+            num_ties_times = _get_ties_times(duration_censoring, idx_censoring)
+            stats = Counter({"num_ties_times": num_ties_times - 1})
+            stats += _handle_pairs(
+                num_ties_times,
+                y_pred_censoring,
+                idx_censoring,
+                tree_pred,
+                pair_type,
             )
-            idx_censoring += tied_duration
-        
-        num_pairs += pairs
-        num_correct += correct
-        num_tied += tied_prediction
+            idx_censoring += num_ties_times
+
+        total_stats += stats
 
         has_event_left = idx_event < len(duration_event)
         has_censored_left = idx_censoring < len(duration_censoring)
 
-    return (num_correct, num_tied, num_pairs)
+    return total_stats
 
 
-def _handle_pairs(duration, y_pred, idx, tree_pred):
+def _get_ties_times(duration, jdx):
+    """Count the number of identical duration for a given index jdx.
+
+    Note that duration is a sorted array.
+    """
+    ties_duration = 0
+    while (
+        jdx + ties_duration < len(duration)
+        and duration[jdx] == duration[jdx + ties_duration]
+    ):
+        ties_duration += 1
+
+    return ties_duration
+
+
+def _handle_pairs(ties_duration, y_pred, jdx, tree_pred, pair_type):
     """
     Handle all pairs that exited at the same duration[idx].
 
     Returns
     -------
-      (pairs, correct, tied, next_ix)
-      new_pairs: The number of new comparisons performed
-      new_correct: The number of comparisons correctly predicted
-      next_ix: The next index that needs to be handled
+    stats : Counter with the keys:
+        - num_pairs
+        - num_concordant_pairs
+        - num_ties_pred
+        - weighted_pairs
+        - weighted_concordant_pairs
+        - weighted_ties_pred
     """
-    tied_duration = 0
-    while (
-        idx + tied_duration < len(duration)
-        and duration[idx] == duration[idx + tied_duration]
-    ):
-        tied_duration += 1
+    stats = Counter()
 
-    pairs = tree_pred.total_counts(idx) * tied_duration
-    
-    correct, tied_prediction = 0, 0
-    for _ in range(tied_duration):
-        rank, count = tree_pred.rank(
-            value=y_pred[idx],
-            idx_value=idx,
+    use_left_weight_only = pair_type == "a"
+
+    # Compute the number of pairs (num_pairs, weighted_pairs)
+    for _ in range(ties_duration):
+        stats += tree_pred.total_counts(
+            jdx_right_weight=jdx,
+            use_left_weight_only=use_left_weight_only,
+            return_weighted=True,
         )
-        idx += 1
-        correct += rank
-        tied_prediction += count
 
-    return (pairs, correct, tied_prediction, tied_duration)
+    # Compute the number of concordant pairs and ties
+    for _ in range(ties_duration):
+        rank, ties = tree_pred.rank(
+            value=y_pred[jdx],
+            jdx_right_weight=jdx,
+            use_left_weight_only=use_left_weight_only,
+            return_weighted=True,
+        )
+        stats["num_concordant_pairs"] += rank["num_pairs"]
+        stats["weighted_concordant_pairs"] += rank["weighted_pairs"]
+        stats["num_ties_pred"] += ties["num_pairs"]
+        stats["weighted_ties_pred"] += ties["weighted_pairs"]
+
+        jdx += 1
+
+    return stats
 
 
 def interpolate_preds(y_pred, time_grid, tau):
+    """Interpolated the values of y_pred at tau."""
+
+    tau = np.clip(tau, min(time_grid), max(time_grid))
+
     n_samples = y_pred.shape[0]
     y_pred_tau = np.zeros(n_samples)
     for idx in range(n_samples):
@@ -404,6 +488,25 @@ def interpolate_preds(y_pred, time_grid, tau):
             kind="linear",
         )(tau)
         y_pred_tau[idx] = y_pred_sample_at_tau
+
     return y_pred_tau
 
-# %%
+
+def _sort_by_duration(event, duration, y_pred, ipcw, event_label, pair_type):
+    """Sort the predictions and duration by the event duration.
+
+    The pair type selects whether we sort duration by ascending or descending order.
+    Indeed, to be comparable:
+    - A pair of type A requires T_i < T_j
+    - A pair of type B requires T_i >= T_j
+    """
+    event_mask = event == event_label
+    duration = duration[event_mask]
+    if pair_type == "b":
+        duration *= -1
+    indices = np.argsort(duration)
+    duration = duration[indices]
+    y_pred = y_pred[event_mask][indices]
+    ipcw = ipcw[event_mask][indices]
+
+    return y_pred, duration, ipcw

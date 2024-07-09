@@ -1,56 +1,78 @@
-# -*- coding: utf-8 -*-
-from collections import de
+"""
+The original implementation of this balanced tree belongs to lifelines.
+This class extends the original one by enabling weighted counts of inserted
+elements instead of simple counts.
+"""
+
+from collections import Counter, defaultdict
 
 import numpy as np
 
 
 class _BTree:
+    """A balanced binary order statistic tree to help compute the concordance.
 
-    """A simple balanced binary order statistic tree to help compute the concordance.
+    When computing the concordance, we know all the values the tree will ever
+    contain.
+    That condition simplifies this tree a lot, because instead of complex
+    AVL/red-black mechanisms, we do the following:
 
-    When computing the concordance, we know all the values the tree will ever contain. That
-    condition simplifies this tree a lot. It means that instead of crazy AVL/red-black shenanigans
-    we can simply do the following:
-
-    - Store the final tree in flattened form in an array (so node i's children are 2i+1, 2i+2)
-    - Additionally, store the current size of each subtree in another array with the same indices
-    - To insert a value, just find its index, increment the size of the subtree at that index and
-      propagate
-    - To get the rank of an element, you add up a bunch of subtree counts
+    - Store the final tree in flattened form in an array (so node i's children
+    are 2i+1, 2i+2).
+    - Store the current size of each subtree in another array with the same indices.
+    - Insert a value by finding its index, then incrementing the size of the subtree
+    at that index and propagating.
+    - Rank an element by adding up subtree weighted counts.
     """
 
-    def __init__(self, nodes, weights):
+    def __init__(self, nodes, left_weights=None, right_weights=None):
         """
         Parameters
         ----------
-        values: list
-            List of sorted (ascending), unique values that will be inserted.
+        nodes: array of float
+            Iterable of sorted (ascending), unique values that will be inserted.
+
+        left_weights : array of float, default=None
+            The inverse weight to apply for each inserted node.
+
+        right_weights : array of float, default=None
+            The inverse weight to apply for each node to rank.
         """
         self._tree = self._treeify(nodes)
-        # self._counts = np.zeros_like(self._tree, dtype=int)
-        self._weight_indices = [[]] * len(self._tree)
-        self._weights = weights
+        self._left_weights = left_weights
+        self._right_weights = right_weights
+        self._left_weight_indices = defaultdict(list)
 
-    @staticmethod
-    def _treeify(values):
-        """Convert the np.ndarray `values` into a complete balanced tree.
+    def _treeify(self, values):
+        """Convert the array of values into a complete balanced tree.
 
-        Assumes `values` is sorted ascending. Returns a list `t` of the same length in which t[i] >
-        t[2i+1] and t[i] < t[2i+2] for all i."""
-        if len(values) == 1:  # this case causes problems later
+        Tree indices work as follows:
+        * 0 is the root
+        * 2n+1 is the left child of n
+        * 2n+2 is the right child of n
+
+        Parameters
+        ----------
+        values : array of float, sorted ascending.
+            The values to order into a balanced tree
+
+        Returns
+        -------
+        tree : array of shape (n_values,)
+            Array in which t[i] > t[2i+1] and t[i] < t[2i+2] for all i.
+        """
+        n_values = len(values)
+        if n_values == 1:
             return values
-        tree = np.empty_like(values)
-        # Tree indices work as follows:
-        # 0 is the root
-        # 2n+1 is the left child of n
-        # 2n+2 is the right child of n
-        # So we now rearrange `values` into that format...
 
-        # The first step is to remove the bottom row of leaves, which might not be exactly full
-        last_full_row = int(np.log2(len(values) + 1) - 1)
-        len_ragged_row = len(values) - (2 ** (last_full_row + 1) - 1)
+        tree = np.empty_like(values)
+
+        # The first step is to remove the bottom row of leaves,
+        # which might not be exactly full.
+        last_full_row = int(np.log2(n_values + 1) - 1)
+        len_ragged_row = n_values - (2 ** (last_full_row + 1) - 1)
         if len_ragged_row > 0:
-            bottom_row_ix = np.s_[: 2 * len_ragged_row : 2]
+            bottom_row_ix = np.s_[: 2 * len_ragged_row : 2]  # equivalent to slice
             tree[-len_ragged_row:] = values[bottom_row_ix]
             values = np.delete(values, bottom_row_ix)
 
@@ -70,13 +92,23 @@ class _BTree:
             values_len = int(values_len / 2)
         return tree
 
-    def insert(self, value, weight_index):
-        """Insert an occurrence of `value` into the btree."""
+    def insert(self, value, left_weight_index):
+        """Insert an occurrence of `value` into the btree.
+
+        Parameters
+        ----------
+        value : float,
+            The value to insert, i.e. to place in the tree
+            and append its weight index to the traversed nodes.
+
+        left_weight_index : int,
+            The index to append to all traversed node. It matches a value
+            in self._left_weights.
+        """
         idx_node = 0
         while idx_node < len(self._tree):
             current = self._tree[idx_node]
-            # self._counts[i] += 1
-            self._weight_indices[idx_node].append(weight_index)
+            self._left_weight_indices[idx_node].append(left_weight_index)
             if value < current:
                 idx_node = 2 * idx_node + 1
             elif value > current:
@@ -87,17 +119,61 @@ class _BTree:
             f"Value {value} not contained in tree. Also, the counts are now messed up."
         )
 
-    def total_counts(self, idx_value):
-        return self._get_counts(idx_node=0, idx_value=idx_value)
+    def rank(
+        self,
+        value,
+        jdx_right_weight=None,
+        use_left_weight_only=True,
+        return_weighted=False,
+    ):
+        """Returns the rank and count of the value in the btree.
 
-    def rank(self, value, idx_value):
-        """Returns the rank and count of the value in the btree."""
+        Parameters
+        ----------
+        value : float
+            The value to rank. It may or may not belong to the tree.
+
+        jdx_right_weight : int, default=None
+            The weight index of the value to rank. It matches a value in
+            self._right_index.
+
+        use_left_weight_only : bool, default=True
+            If set to True, the weighting will only consider left weights, i.e.
+            weight of inserted nodes, and won't use the weight of the value
+            to rank.
+            Unused if return_weight=False or use_left_weight_only=True
+
+        return_weighted : bool, default=False
+            If set to True, the rank will use weighted count of subtrees.
+            Otherwise, the rank use a regular count with uniform weights.
+
+        Returns
+        -------
+        rank : Counter with keys:
+            * num_pairs : int
+                The number of concordant pairs, unweighted.
+            * weighted_pairs : float
+                The number of concordant pairs, weighted.
+                0. if return_weighted is False
+
+        count : Counter with keys:
+            * num_pairs : int
+                The number of prediction ties, unweighted.
+            * weighted_pairs : float
+                The number of prediction ties, weighted.
+                0. if return_weighted is False
+        """
         idx_node = 0
         n = len(self._tree)
-        rank = count = 0
-        
-        while idx_node < n:
+        rank, count = Counter(), Counter()
 
+        count_params = dict(
+            jdx_right_weight=jdx_right_weight,
+            use_left_weight_only=use_left_weight_only,
+            return_weighted=return_weighted,
+        )
+
+        while idx_node < n:
             current = self._tree[idx_node]
 
             if value < current:
@@ -105,15 +181,15 @@ class _BTree:
 
             elif value > current:
                 # Since the input value is higher than all the values from the
-                # left subtree, we add to the rank the weighted sum of items that
-                # were inserted in the left subtree:
+                # left subtree, we incremente the rank by the weighted sum of items
+                # that were inserted in the left subtree:
                 # rank += counts_current_tree - counts_right_subtree
-                rank += self._get_counts(idx_node, idx_value)
+                rank += self._counts(idx_node, **count_params)
 
                 # Subtract off the right subtree if exists
                 idx_node = 2 * idx_node + 2
                 if idx_node < n:
-                    rank -= self._get_counts(idx_node, idx_value)
+                    rank -= self._counts(idx_node, **count_params)
 
             else:
                 # We have found the node corresponding to our input value.
@@ -122,26 +198,89 @@ class _BTree:
                 # 'count' represent the weighted sum of items inserted at
                 # the current node.
                 # counts_current_node = counts_current_tree
-                # - counts_left_subtree - counts_right_subtree
-                count = self._get_counts(idx_node, idx_value)
-    
+                # - counts_left_subtree
+                # - counts_right_subtree
+                count = self._counts(idx_node, **count_params)
+
                 idx_node = 2 * idx_node + 1
                 if idx_node < n:
-                    count_left = self._get_counts(idx_node, idx_value)
+                    count_left = self._counts(idx_node, **count_params)
                     count -= count_left
                     rank += count_left
-                    
+
                     # Remove the counts of the right subtree
                     idx_node += 1
                     if idx_node < n:
-                        count -= self._get_counts(idx_node, idx_value)
-                
-                return (rank, count)
-        
-        return (rank, count)
-    
-    def _get_counts(self, idx_node, idx_value):
-        indices = self._weight_indices[idx_node]
-        left_weight = self._weights[idx_value]
-        return sum([
-            left_weight * self._weights[jdx] for jdx in indices])
+                        count -= self._counts(idx_node, **count_params)
+                break
+
+        return rank, count
+
+    def total_counts(
+        self,
+        jdx_right_weight=None,
+        use_left_weight_only=True,
+        return_weighted=False,
+    ):
+        """Compute the weighted total number of inserted values, i.e. the
+        inserted values that traversed the root node.
+        """
+        return self._counts(
+            idx_node=0,
+            jdx_right_weight=jdx_right_weight,
+            use_left_weight_only=use_left_weight_only,
+            return_weighted=return_weighted,
+        )
+
+    def _counts(
+        self,
+        idx_node,
+        jdx_right_weight=None,
+        use_left_weight_only=True,
+        return_weighted=False,
+    ):
+        """Compute the weighted total number of inserted values at
+        the node whose index is idx_node.
+
+        Parameters
+        ----------
+        idx_node : int
+            The index of the tree node where to count inserted values.
+
+        jdx_right_weight : int, default=None
+            The index of the right inverse weight to apply to the count operation.
+            Unused if return_weight=False or use_left_weight_only=True.
+
+        use_left_weight_only : bool, default=True
+            If set to True, the weighting count will only consider left weights, i.e.
+            weight of inserted nodes, and won't use the weight of the value to rank.
+            Unused if return_weight=False or use_left_weight_only=True
+
+        return_weighted : bool, default=False
+            If set to True, the operation will use weighted count of subtrees.
+            Otherwise, a regular count with uniform weights is performed.
+
+        Returns
+        -------
+        stats : Counter with keys:
+            * num_pairs : int
+                The total number of inserted nodes at idx_node, unweighted.
+            * weighted_pairs : float
+                The total number of inserted ndoes at idx_node, weighted.
+        """
+        stats = Counter()
+        indices = self._left_weight_indices[idx_node]
+        stats["num_pairs"] = len(indices)
+
+        if return_weighted:
+            if use_left_weight_only:
+                stats["weighted_pairs"] = sum(
+                    [1 / (self._left_weights[idx] ** 2) for idx in indices]
+                )
+            else:
+                right_weight = self._right_weights[jdx_right_weight]
+                stats["weighted_pairs"] = sum(
+                    [1 / (self._left_weights[idx] * right_weight) for idx in indices]
+                )
+
+        return stats
