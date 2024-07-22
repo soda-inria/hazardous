@@ -49,6 +49,7 @@ doc = [
     "pillow",  # to scrape images from the examples
     "numpydoc",
     "pycox",
+    "torch",
     "scikit-survival",
 ]
 
