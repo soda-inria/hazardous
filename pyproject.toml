@@ -44,6 +44,7 @@ doc = [
     "sphinx",
     "pydata-sphinx-theme",
     "sphinx-gallery",
+    "sphinx-design",
     "matplotlib",
     "pillow",  # to scrape images from the examples
     "numpydoc",
@@ -108,7 +109,7 @@ exclude = [
     "venv",
     "doc",
 ]
-per-file-ignores = {}
+per-file-ignores = {"examples/*" = ["E402"]}
 
 # Same as Black.
 line-length = 88
@@ -120,7 +121,6 @@ target-version = "py39"
 
 [tool.ruff.mccabe]
 max-complexity = 10
-
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
