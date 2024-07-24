@@ -1,4 +1,3 @@
-# %%
 import warnings
 from collections import Counter, defaultdict
 
@@ -66,14 +65,18 @@ def concordance_index_incidence(
 
     y_pred: array of shape (n_samples_test, n_time_grid)
         Cumulative incidence for the event of interest, at the time points
-        from the input time_grid.
+        from the input ``time_grid``.
 
     time_grid: array of shape (n_time_grid,), default=None
         Time points used to predict the cumulative incidence.
+        - If ``None`` and taus is not ``None``, an error is raised.
+        - If ``None`` and taus is ``None``, we use a linear interpolation between
+          the min and max duration of length ``y_pred.shape[1]``.
 
     taus: array of shape (n_taus,), default=None
         float or vector, timepoints at which the concordance index is
         evaluated.
+        If ``None``, the maximum duration of ``y_test`` is used.
 
     y_train : array, dictionnary or dataframe of shape (n_samples, 2)
         The train target, consisting in the 'event' and 'duration' columns.
@@ -93,7 +96,7 @@ def concordance_index_incidence(
 
     ipcw_estimator : {None or 'km'}, default="km"
         The inverse probability of censoring weighted (IPCW) estimator.
-        - None set uniform weights to all samples
+        - ``None`` set uniform weights to all samples
         - "km" use the Kaplan-Meier estimator
 
     tied_tol : float, default=1e-8
@@ -101,7 +104,7 @@ def concordance_index_incidence(
 
     Returns
     -------
-    cindex: (n_taus,)
+    cindex: list of float of length n_taus
         Value of the concordance index for each tau in taus.
 
     References
@@ -210,6 +213,12 @@ def _concordance_index_incidence_report(
         )  # shape: (n_samples_test,)
 
     # XXX: When using cox, Bin y_test["duration"] using time grid?
+
+    if time_grid is not None and y_pred.shape[1] != len(time_grid):
+        raise ValueError(
+            "The number of columns of y_pred must be the same as the length "
+            f"of the time_grid, got {y_pred.shape[1]} and {len(time_grid)}"
+        )
 
     if taus is None:
         t_min, t_max = 0, y_test["duration"].max()
@@ -360,9 +369,9 @@ def _concordance_summary_statistics(event, duration, y_pred, ipcw, pair_type="a"
     )
     unique_neg_preds = np.unique(y_pred_event)
     tree_pred = _BTree(
-        nodes=unique_neg_preds,
-        left_weights=ipcw_event,
-        right_weights=ipcw_censoring,
+        unique_neg_preds,
+        ipcw_event.astype("float64"),
+        ipcw_censoring.astype("float64"),
     )
 
     idx_event = idx_censoring = 0
@@ -447,23 +456,26 @@ def _handle_pairs(ties_duration, y_pred, jdx, tree_pred, pair_type):
     stats = Counter()
 
     use_left_weight_only = pair_type == "a"
+    return_weighted = True
 
     # Compute the number of pairs (num_pairs, weighted_pairs)
     for _ in range(ties_duration):
-        stats += tree_pred.total_counts(
-            jdx_right_weight=jdx,
-            use_left_weight_only=use_left_weight_only,
-            return_weighted=True,
+        stats_ = tree_pred.total_counts(
+            jdx,
+            use_left_weight_only,
+            return_weighted,
         )
+        stats += Counter(stats_)
 
     # Compute the number of concordant pairs and ties
     for _ in range(ties_duration):
         rank, ties = tree_pred.rank(
-            value=y_pred[jdx],
-            jdx_right_weight=jdx,
-            use_left_weight_only=use_left_weight_only,
-            return_weighted=True,
+            y_pred[jdx],
+            jdx,
+            use_left_weight_only,
+            return_weighted,
         )
+        rank, ties = Counter(rank), Counter(ties)
         stats["num_concordant_pairs"] += rank["num_pairs"]
         stats["weighted_concordant_pairs"] += rank["weighted_pairs"]
         stats["num_ties_pred"] += ties["num_pairs"]

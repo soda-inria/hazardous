@@ -4,11 +4,24 @@ This class extends the original one by enabling weighted counts of inserted
 elements instead of simple counts.
 """
 
-from collections import Counter, defaultdict
-
+# %%
 import numpy as np
+from numba import float64, int64
+from numba.experimental import jitclass
+from numba.typed import Dict, List
+from numba.types import DictType, ListType, unicode_type
+
+# See https://stackoverflow.com/questions/58637802/how-to-declare-a-typed-dict-whose-value-is-a-nested-list-in-numba  # noqa
+# for nested types.
+spec = [
+    ("_tree", float64[:]),
+    ("_left_weights", float64[:]),
+    ("_right_weights", float64[:]),
+    ("_left_weight_indices", DictType(int64, ListType(int64))),
+]
 
 
+@jitclass(spec)
 class _BTree:
     """A balanced binary order statistic tree to help compute the concordance.
 
@@ -41,7 +54,10 @@ class _BTree:
         self._tree = self._treeify(nodes)
         self._left_weights = left_weights
         self._right_weights = right_weights
-        self._left_weight_indices = defaultdict(list)
+        self._left_weight_indices = Dict.empty(
+            key_type=int64,
+            value_type=List.empty_list(int64),
+        )
 
     def _treeify(self, values):
         """Convert the array of values into a complete balanced tree.
@@ -72,7 +88,7 @@ class _BTree:
         last_full_row = int(np.log2(n_values + 1) - 1)
         len_ragged_row = n_values - (2 ** (last_full_row + 1) - 1)
         if len_ragged_row > 0:
-            bottom_row_ix = np.s_[: 2 * len_ragged_row : 2]  # equivalent to slice
+            bottom_row_ix = slice(None, 2 * len_ragged_row, 2)
             tree[-len_ragged_row:] = values[bottom_row_ix]
             values = np.delete(values, bottom_row_ix)
 
@@ -90,6 +106,7 @@ class _BTree:
             values_start += int(values_space / 2)
             values_space *= 2
             values_len = int(values_len / 2)
+
         return tree
 
     def insert(self, value, left_weight_index):
@@ -108,7 +125,11 @@ class _BTree:
         idx_node = 0
         while idx_node < len(self._tree):
             current = self._tree[idx_node]
+
+            if idx_node not in self._left_weight_indices:
+                self._left_weight_indices[idx_node] = List.empty_list(int64)
             self._left_weight_indices[idx_node].append(left_weight_index)
+
             if value < current:
                 idx_node = 2 * idx_node + 1
             elif value > current:
@@ -165,13 +186,8 @@ class _BTree:
         """
         idx_node = 0
         n = len(self._tree)
-        rank, count = Counter(), Counter()
-
-        count_params = dict(
-            jdx_right_weight=jdx_right_weight,
-            use_left_weight_only=use_left_weight_only,
-            return_weighted=return_weighted,
-        )
+        rank = self._init_counter()
+        count = self._init_counter()
 
         while idx_node < n:
             current = self._tree[idx_node]
@@ -184,12 +200,25 @@ class _BTree:
                 # left subtree, we incremente the rank by the weighted sum of items
                 # that were inserted in the left subtree:
                 # rank += counts_current_tree - counts_right_subtree
-                rank += self._counts(idx_node, **count_params)
+                # self._add(rank, idx_node, **count_params)
+                rank = self._add(
+                    rank,
+                    idx_node,
+                    jdx_right_weight,
+                    use_left_weight_only,
+                    return_weighted,
+                )
 
                 # Subtract off the right subtree if exists
                 idx_node = 2 * idx_node + 2
                 if idx_node < n:
-                    rank -= self._counts(idx_node, **count_params)
+                    rank = self._sub(
+                        rank,
+                        idx_node,
+                        jdx_right_weight,
+                        use_left_weight_only,
+                        return_weighted,
+                    )
 
             else:
                 # We have found the node corresponding to our input value.
@@ -200,21 +229,85 @@ class _BTree:
                 # counts_current_node = counts_current_tree
                 # - counts_left_subtree
                 # - counts_right_subtree
-                count = self._counts(idx_node, **count_params)
+                count = self._counts(
+                    idx_node,
+                    jdx_right_weight,
+                    use_left_weight_only,
+                    return_weighted,
+                )
 
                 idx_node = 2 * idx_node + 1
                 if idx_node < n:
-                    count_left = self._counts(idx_node, **count_params)
-                    count -= count_left
-                    rank += count_left
+                    count = self._sub(
+                        count,
+                        idx_node,
+                        jdx_right_weight,
+                        use_left_weight_only,
+                        return_weighted,
+                    )
+                    rank = self._add(
+                        rank,
+                        idx_node,
+                        jdx_right_weight,
+                        use_left_weight_only,
+                        return_weighted,
+                    )
 
                     # Remove the counts of the right subtree
                     idx_node += 1
                     if idx_node < n:
-                        count -= self._counts(idx_node, **count_params)
+                        count = self._sub(
+                            count,
+                            idx_node,
+                            jdx_right_weight,
+                            use_left_weight_only,
+                            return_weighted,
+                        )
                 break
 
         return rank, count
+
+    def _init_counter(self):
+        counter = Dict.empty(unicode_type, float64)
+        counter["num_pairs"] = 0.0
+        counter["weighted_pairs"] = 0.0
+        return counter
+
+    def _add(
+        self,
+        counter,
+        idx_node,
+        jdx_right_weight,
+        use_left_weight_only,
+        return_weighted,
+    ):
+        counter_ = self._counts(
+            idx_node,
+            jdx_right_weight,
+            use_left_weight_only,
+            return_weighted,
+        )
+        counter["num_pairs"] += counter_["num_pairs"]
+        counter["weighted_pairs"] += counter_["weighted_pairs"]
+        return counter
+
+    def _sub(
+        self,
+        counter,
+        idx_node,
+        jdx_right_weight,
+        use_left_weight_only,
+        return_weighted,
+    ):
+        counter_ = self._counts(
+            idx_node,
+            jdx_right_weight,
+            use_left_weight_only,
+            return_weighted,
+        )
+        counter["num_pairs"] -= counter_["num_pairs"]
+        counter["weighted_pairs"] -= counter_["weighted_pairs"]
+        return counter
 
     def total_counts(
         self,
@@ -268,19 +361,21 @@ class _BTree:
             * weighted_pairs : float
                 The total number of inserted ndoes at idx_node, weighted.
         """
-        stats = Counter()
-        indices = self._left_weight_indices[idx_node]
-        stats["num_pairs"] = len(indices)
+        stats = self._init_counter()
 
-        if return_weighted:
-            if use_left_weight_only:
-                stats["weighted_pairs"] = sum(
-                    [1 / (self._left_weights[idx] ** 2) for idx in indices]
-                )
-            else:
-                right_weight = self._right_weights[jdx_right_weight]
-                stats["weighted_pairs"] = sum(
-                    [1 / (self._left_weights[idx] * right_weight) for idx in indices]
-                )
+        if idx_node in self._left_weight_indices:
+            indices = self._left_weight_indices[idx_node]
+            stats["num_pairs"] = float64(len(indices))
+
+            if return_weighted:
+                if use_left_weight_only:
+                    for idx in indices:
+                        stats["weighted_pairs"] += 1 / (self._left_weights[idx] ** 2)
+                else:
+                    right_weight = self._right_weights[jdx_right_weight]
+                    for idx in indices:
+                        stats["weighted_pairs"] += 1 / (
+                            self._left_weights[idx] * right_weight
+                        )
 
         return stats
