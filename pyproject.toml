@@ -50,7 +50,6 @@ doc = [
     "numpydoc",
     "pycox",
     "torch",
-    "scikit-survival",
 ]
 
 [project.urls]
