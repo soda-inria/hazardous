@@ -108,7 +108,7 @@ def test_summary_statistics_a(bunch, expected):
         pair_type="a",
         **bunch,
     )
-    assert stats_a == expected
+    assert_equal(stats_a, expected)
 
 
 @pytest.mark.parametrize(
@@ -240,7 +240,7 @@ def test_summary_statistics_b(bunch, expected):
         pair_type="b",
         **bunch,
     )
-    assert stats_b == expected
+    assert_equal(stats_b, expected)
 
 
 @pytest.mark.parametrize(
@@ -319,7 +319,7 @@ def test_summary_statistics_b(bunch, expected):
 )
 def test_cindex_tau(bunch, expected):
     stats = _concordance_index_tau(event_of_interest=1, **bunch)
-    assert stats == expected
+    assert_equal(stats, expected)
 
 
 def test_cindex_tau_no_comparable_pairs():
@@ -412,33 +412,39 @@ def test_concordance_index_incidence_report_competitive():
     res = _concordance_index_incidence_report(
         y_test, y_pred, time_grid, taus=None, y_train=y_test, event_of_interest=1
     )
-    assert res == {
-        "cindex": [1.0],
-        "n_concordant_pairs_a": [3],
-        "n_concordant_pairs_b": [0],
-        "n_pairs_a": [3],
-        "n_pairs_b": [0],
-        "n_ties_pred_a": [0],
-        "n_ties_pred_b": [0],
-        "n_ties_times_a": [0],
-        "taus": np.array([40]),
-    }
+    assert_equal(
+        res,
+        {
+            "cindex": [1.0],
+            "n_concordant_pairs_a": [3],
+            "n_concordant_pairs_b": [0],
+            "n_pairs_a": [3],
+            "n_pairs_b": [0],
+            "n_ties_pred_a": [0],
+            "n_ties_pred_b": [0],
+            "n_ties_times_a": [0],
+            "taus": np.array([40]),
+        },
+    )
 
     res = _concordance_index_incidence_report(
         y_test, y_pred, time_grid, taus=None, y_train=y_test, event_of_interest=2
     )
 
-    assert res == {
-        "cindex": [0.6666666666666666],
-        "n_concordant_pairs_a": [2],
-        "n_concordant_pairs_b": [0],
-        "n_pairs_a": [2],
-        "n_pairs_b": [1],
-        "n_ties_pred_a": [0],
-        "n_ties_pred_b": [0],
-        "n_ties_times_a": [0],
-        "taus": np.array([40]),
-    }
+    assert_equal(
+        res,
+        {
+            "cindex": [0.6666666666666666],
+            "n_concordant_pairs_a": [2],
+            "n_concordant_pairs_b": [0],
+            "n_pairs_a": [2],
+            "n_pairs_b": [1],
+            "n_ties_pred_a": [0],
+            "n_ties_pred_b": [0],
+            "n_ties_times_a": [0],
+            "taus": np.array([40]),
+        },
+    )
 
 
 def test_concordance_index_incidence_report_incorrect_input():
