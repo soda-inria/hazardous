@@ -39,6 +39,9 @@ from hazardous.metrics._concordance_index import (
                     weighted_pairs=5,
                     n_concordant_pairs=3,
                     weighted_concordant_pairs=3,
+                    n_ties_pred=0,
+                    weighted_ties_pred=0,
+                    n_ties_times=0,
                 )
             ),
         ),
@@ -54,6 +57,11 @@ from hazardous.metrics._concordance_index import (
                 dict(
                     n_pairs=5,
                     weighted_pairs=5,
+                    n_ties_pred=0,
+                    weighted_ties_pred=0,
+                    n_concordant_pairs=0,
+                    weighted_concordant_pairs=0,
+                    n_ties_times=0,
                 )
             ),
         ),
@@ -81,6 +89,9 @@ from hazardous.metrics._concordance_index import (
                     weighted_pairs=6.0,
                     n_concordant_pairs=6,
                     weighted_concordant_pairs=6.0,
+                    n_ties_pred=0,
+                    weighted_ties_pred=0,
+                    n_ties_times=0,
                 )
             ),
         ),
@@ -98,6 +109,9 @@ from hazardous.metrics._concordance_index import (
                     weighted_concordant_pairs=14.0,
                     n_pairs=5,
                     n_concordant_pairs=5,
+                    n_ties_pred=0,
+                    weighted_ties_pred=0.0,
+                    n_ties_times=0,
                 )
             ),
         ),
@@ -122,7 +136,17 @@ def test_summary_statistics_a(bunch, expected):
                 y_pred=np.array([0.9, 0.8, 0.7, 0.6]),
                 ipcw=np.array([1, 1, 1, 1]),
             ),
-            Counter(),
+            Counter(
+                dict(
+                    n_pairs=0,
+                    weighted_pairs=0,
+                    n_ties_pred=0,
+                    weighted_ties_pred=0,
+                    n_concordant_pairs=0,
+                    weighted_concordant_pairs=0,
+                    n_ties_times=0,
+                ),
+            ),
         ),
         (
             # 0 comparable pairs, because we only accepts pairs where
@@ -143,7 +167,17 @@ def test_summary_statistics_a(bunch, expected):
                 y_pred=np.array([0.9, 0.8, 0.7, 0.6]),
                 ipcw=np.array([1, 1, 1, 1]),
             ),
-            Counter(),
+            Counter(
+                dict(
+                    n_pairs=0,
+                    weighted_pairs=0,
+                    n_ties_pred=0,
+                    weighted_ties_pred=0,
+                    n_concordant_pairs=0,
+                    weighted_concordant_pairs=0,
+                    n_ties_times=0,
+                )
+            ),
         ),
         # 4 concordant pairs out of 4 comparable pairs
         (
@@ -159,6 +193,9 @@ def test_summary_statistics_a(bunch, expected):
                     weighted_pairs=4.0,
                     n_concordant_pairs=4,
                     weighted_concordant_pairs=4.0,
+                    n_ties_pred=0,
+                    weighted_ties_pred=0,
+                    n_ties_times=0,
                 )
             ),
         ),
@@ -176,6 +213,9 @@ def test_summary_statistics_a(bunch, expected):
                     weighted_pairs=2.0,
                     n_concordant_pairs=1,
                     weighted_concordant_pairs=1.0,
+                    n_ties_pred=0,
+                    weighted_ties_pred=0,
+                    n_ties_times=0,
                 )
             ),
         ),
@@ -193,6 +233,9 @@ def test_summary_statistics_a(bunch, expected):
                     weighted_pairs=30.0,  # (1/0.1 + 1/0.1 * 1/0.5)
                     n_concordant_pairs=2,
                     weighted_concordant_pairs=30.0,
+                    n_ties_pred=0,
+                    weighted_ties_pred=0.0,
+                    n_ties_times=0,
                 )
             ),
         ),
@@ -211,6 +254,8 @@ def test_summary_statistics_a(bunch, expected):
                     n_pairs=4,
                     n_concordant_pairs=4,
                     n_ties_times=1,
+                    n_ties_pred=0,
+                    weighted_ties_pred=0.0,
                 )
             ),
         ),
@@ -230,6 +275,7 @@ def test_summary_statistics_a(bunch, expected):
                     n_pairs=4,
                     n_concordant_pairs=2,
                     n_ties_pred=2,
+                    n_ties_times=0,
                 )
             ),
         ),
