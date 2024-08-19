@@ -21,42 +21,45 @@ def concordance_index_incidence(
     ipcw_estimator="km",
     tied_tol=1e-8,
 ):
-    """Time-dependent concordance index for prognostic models \
-    with competing risks with inverse probability of censoring weighting.
+    """Time-dependent concordance index for prognostic models with competing risks \
+    using inverse probability of censoring weighting.
 
-    The concordance index (C-index) is a common metric in survival analysis
-    that evaluates if the model predictions correctly order pairs of individuals
-    with respect to the order they actually experience the event of interest.
-    It is defined as the probability that the prediction is concordant for a
-    pair of individuals, and computed as the ratio between the number of
-    concordant pairs and the total number of pairs. This implementation
-    includes the extension to the competing events setting, where we consider
-    multiple alternative events, and aim at determining which one happens first
-    and when following the formulas and notations in [1].
+    The concordance index (C-index) is a common metric in survival analysis that
+    evaluates whether the model predictions correctly order pairs of individuals with
+    respect to the timing of the event of interest. It is defined as the probability
+    that the prediction is concordant for a pair of individuals and is computed as the
+    ratio of the number of concordant pairs to the total number of pairs.
+    This implementation extends the C-index to the competing risks setting, where
+    multiple alternative events are considered, aiming to determine which event occurs
+    first and when, following the formulas and notations in [1]_.
 
     Due to the right-censoring in the data, the order of some pairs is unknown,
     so we define the notion of comparable pairs, i.e. the pairs for which
     we can compare the order of occurrence of the event of interest.
-    A pair (i, j) is comparable, with i experiencing the event of interest
-    at time T_i if:
-    - j experiences the event of interest at a strictly greater time
-        T_j > T_i (pair of type A)
-    - j is censored at time T_j = T_i or greater (pair of type A)
-    - j experiences a competing event before or at time T_i (pair of type B)
-    The pair (i, j) is considered a tie for time if j experiences the event of
-    interest at the same time (T_j=T_i). This tied time pair will be counted
-    as `1/2` for the count of comparable pairs.
-    A pair is then considered concordant if the incidence of the event of
-    interest for `i` at time `tau` is larger than the incidence for `j`. If
-    both predicted incidences are ties, the pair is counted as `1/2` for the
-    count of concordant pairs.
+    A pair :math:`(i, j)` is comparable, with :math:`i` experiencing the event of
+    interest at time :math:`T_i` if:
 
-    The c-index has been shown to depend on the censoring distribution, and an
+    - :math:`j` experiences the event of interest at a strictly greater time
+      :math:`T_j > T_i` (pair of type A)
+    - :math:`j` is censored at time :math:`T_j = T_i` or greater (pair of type A)
+    - :math:`j` experiences a competing event before or at time :math:`T_i`
+      (pair of type B)
+
+    The pair :math:`(i, j)` is considered a tie for time if :math:`j` experiences
+    the event of interest at the same time (:math:`T_j=T_i`). This tied time pair will
+    be counted as :math:`1/2` for the count of comparable pairs.
+
+    A pair is then considered concordant if the predicted incidence of the event of
+    interest for :math:`i` at time :math:`\\tau` is larger than the predicted incidence
+    for :math:`j`. If both predicted incidences are ties, the pair is counted as
+    :math:`1/2` for the count of concordant pairs.
+
+    The C-index has been shown to depend on the censoring distribution, and an
     inverse probability of censoring weighting (IPCW) allows to overcome this
-    limitation [2]. By default, the IPCW is implemented with a Kaplan-Meier
-    estimator. Additionnally, the c-index is not a proper metric to evaluate
-    a survival model [3], and alternatives as the integrated Brier score
-    (`integrated_brier_score_incidence`) should be considered.
+    limitation [2]_, [3]_. By default, the IPCW is implemented with a Kaplan-Meier
+    estimator. Additionnally, the C-index is not a proper metric to evaluate
+    a survival model [4]_, and alternatives as the integrated Brier score
+    (``integrated_brier_score_incidence``) should be considered.
 
     Parameters
     ----------
@@ -116,14 +119,14 @@ def concordance_index_incidence(
            prediction procedures with censored survival data.
            Statistics in medicine, 30(10), 1105-1117.
 
-    .. [3] Blanche, P., Kattan, M. W., & Gerds, T. A. (2019).
-           The c-index is not proper for the evaluation of-year predicted risks.
-           Biostatistics, 20(2), 347-357.
-
-    .. [4] Gerds, T. A., Kattan, M. W., Schumacher, M., & Yu, C. (2013).
+    .. [3] Gerds, T. A., Kattan, M. W., Schumacher, M., & Yu, C. (2013).
            Estimating a time‐dependent concordance index for survival
            prediction models with covariate dependent censoring.
            Statistics in medicine, 32(13), 2173-2184.
+
+    .. [4] Blanche, P., Kattan, M. W., & Gerds, T. A. (2019).
+           The c-index is not proper for the evaluation of-year predicted risks.
+           Biostatistics, 20(2), 347-357.
 
     """
     c_index_report = _concordance_index_incidence_report(

@@ -7,17 +7,6 @@ package:
 .. currentmodule:: hazardous
 
 
-Estimators
-----------
-
-.. autosummary::
-    :toctree: generated/
-    :template: class.rst
-    :nosignatures:
-
-    GradientBoostingIncidence
-
-
 Metrics
 -------
 
@@ -30,6 +19,7 @@ Metrics
     metrics.brier_score_incidence
     metrics.integrated_brier_score_survival
     metrics.integrated_brier_score_incidence
+    metrics.concordance_index_incidence
 
 Datasets
 --------
