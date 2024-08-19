@@ -36,8 +36,6 @@ html_static_path = ['_static']
 sphinx_gallery_conf = {
     'examples_dirs': '../examples',   # path to example scripts
     'gallery_dirs': 'auto_examples',  # path to gallery generated output
-    # TODO: remove when PR #53 is merged
-    "ignore_pattern": "plot_marginal_cumulative_incidence_estimation.py"
 }
 
 # intersphinx configuration
