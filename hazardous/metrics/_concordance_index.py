@@ -5,8 +5,8 @@ from collections import Counter, defaultdict
 import numpy as np
 from scipy.interpolate import interp1d
 
-from hazardous._ipcw import IPCWEstimator
-from hazardous.utils import check_y_survival
+from .._ipcw import IPCWEstimator
+from ..utils import check_y_survival
 
 
 def concordance_index_incidence(
