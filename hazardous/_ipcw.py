@@ -1,6 +1,7 @@
 import numpy as np
 from lifelines import KaplanMeierFitter
 from scipy.interpolate import interp1d
+from sklearn.base import clone
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.validation import check_is_fitted
 
@@ -10,29 +11,50 @@ from .utils import check_y_survival
 class KaplanMeierIPCW:
     """Estimate the Inverse Probability of Censoring Weight (IPCW).
 
-    This class estimates the inverse of the probability of "survival" to
-    censoring using the Kaplan-Meier estimator on a binary indicator for
-    censoring, that is the negative of the binary indicator for any-event
-    occurrence. This estimator assumes that the censoring distribution is
-    independent of the covariates X. If this assumption is not met, the
-    estimator will be biased and you may want to use a conditional estimator
-    instead.
+    This class estimates the inverse probability of 'survival' to censoring using the
+    Kaplan-Meier estimator applied to a binary indicator for censoring, defined as the
+    negation of the binary indicator for any event occurrence. This estimator assumes
+    that the censoring distribution is independent of the covariates X. If this
+    assumption is violated, the estimator may be biased, and a conditional estimator
+    might be more appropriate.
 
-    This is useful to correct for the bias introduced by right censoring in
-    survival analysis when computing model evaluation metrics such as the Brier
-    score or the concordance index.
+    This approach is useful for correcting the bias introduced by right censoring in
+    survival analysis, particularly when computing model evaluation metrics such as
+    the Brier score or the concordance index.
 
-    Note that the name IPCW name is a bit misleading: IPCW values are the
-    inverse of the probability of remaining censoring-free (or uncensored) at a
-    given time: at t=0, the probability of being censored is 0, therefore the
-    probability of being uncensored is 1.0, and its inverse is also 1.0.
+    Note that the term 'IPCW' can be somewhat misleading: IPCW values represent the
+    inverse of the probability of remaining censor-free (or uncensored) at a given time.
+    For instance, at t=0, the probability of being censored is 0, so the probability of
+    being uncensored is 1.0, and its inverse is also 1.0.
 
-    By construction, IPCW values are always larger or equal to 1.0 and can only
-    increase with time. If no observations are censored, the IPCW values are
-    uniformly 1.0.
+    By construction, IPCW values are always greater than or equal to 1.0 and can only
+    increase over time. If no observations are censored, the IPCW values remain
+    uniformly at 1.0.
 
-    Note: this estimator extrapolates with a constant value equal to the last
-    IPCW value beyond the last observed time.
+    Note: This estimator extrapolates by maintaining a constant value equal to the last
+    observed IPCW value beyond the last recorded time point.
+
+    Parameters
+    ----------
+    epsilon_censoring_prob : float, default=0.05
+        Lower limit of the predicted censoring probabilities. It helps avoiding
+        instabilities during the division to obtain IPCW.
+
+    Attributes
+    ----------
+    min_censoring_prob_ : float
+        The effective minimal probability used, defined as the max between
+        min_censoring_prob and the minimum predicted probability.
+
+    unique_times_ : ndarray of shape (n_unique_times,)
+        The observed censoring durations from the training target.
+
+    censoring_survival_probs_ : ndarray of shape (n_unique_times,)
+        The estimated censoring survival probabilities.
+
+    censoring_survival_func_ : callable
+        The linear interpolation function defined with unique_times_ (x) and
+        censoring_survival_probs_ (y).
     """
 
     def __init__(self, epsilon_censoring_prob=0.05):
@@ -47,11 +69,11 @@ class KaplanMeierIPCW:
 
         Parameters
         ----------
-        y : np.array, dictionary or dataframe
-            The target, consisting in the 'event' and 'duration' columns.
+        y : array-like of shape (n_samples, 2)
+            The target data.
 
         X : None
-            Unused since this estimator is marginal.
+            The input samples. Unused since this estimator is non-conditional.
 
         Returns
         -------
@@ -75,7 +97,7 @@ class KaplanMeierIPCW:
             self.censoring_survival_probs_ > 0
         ].min()
 
-        self.min_censoring_prob_ = min(
+        self.min_censoring_prob_ = max(
             min_censoring_prob,
             self.epsilon_censoring_prob,
         )
@@ -89,7 +111,7 @@ class KaplanMeierIPCW:
         return self
 
     def compute_ipcw_at(self, times, X=None, ipcw_training=False):
-        """Estimate inverse probability of censoring weights at given time horizons.
+        """Estimate the inverse probability of censoring weights at given time horizons.
 
         Compute the inverse of the linearly interpolated censoring survival
         function.
@@ -99,8 +121,8 @@ class KaplanMeierIPCW:
         times : np.ndarray of shape (n_samples,)
             The input times for which to predict the IPCW for each sample.
 
-        X : array-like of shape (n_samples, n_features), default=None
-            The input data for a conditional estimator. Unused for a marginal estimator.
+        X : None
+            The input samples. Unused since this estimator is non-conditional.
 
         Returns
         -------
@@ -128,7 +150,7 @@ class KaplanMeierIPCW:
             The input times for which to predict the IPCW.
 
         X : None
-            Unused.
+            The input samples. Unused since this estimator is non-conditional.
 
         ipcw_training : bool, default=False
             Unused.
@@ -142,12 +164,48 @@ class KaplanMeierIPCW:
 
 
 class AlternatingCensoringEstimator(KaplanMeierIPCW):
-    r"""IPCW estimator for Debiased Gradient Boosting Incidence.
+    r"""IPCW estimator for the alternating censoring estimation strategy used by \
+    SurvivalBoost.
 
-    Predict :math:`\hat{G}(t | X = x) = P(C > t | X = x)` using
-    :math:`1/\hat{S}(t | X = x) = 1/P(T^* > t | X = x)` as IPCW.
+    Predicts :math:`\hat{G}(t | X = x) = P(C > t | X = x)` using
+    :math:`1/\hat{S}(t | X = x) = 1/P(T^* > t | X = x)` as its IPCWs.
 
-    TODO
+    Like ``SurvivalBoost``, this class uses a Histogram-based Gradient Boosting (HGB)
+    classifier with the log-loss to estimate the probability of "survival" to censoring.
+
+    Parameters
+    ----------
+    cold_start_ipcw_estimator : object, default=None
+        The estimator considered to compute the probabilities of survival to censoring
+        before the censoring estimator has been fit.
+        If set to ``None``, the ``KaplanMeierIPCW`` is used, as it doesn't require an
+        extensive training.
+
+    incidence_estimator : object, default=None
+        The antagonist estimator to the censoring estimator, where the former predicts
+        the probability of survival to any event, as well as the cause-specific
+        cumulative incidence functions (CIFs).
+        The incidence estimator is fit outside of this class, and its predictions are
+        used as sample weights to fit the censoring estimator.
+
+    learning_rate : float, default=0.05
+        The learning rate, similar to the argument in SurvivalBoost constructor.
+
+    max_depth : int, default=None
+        The maximum depth of each tree, similar to the argument in SurvivalBoost
+        constructor.
+
+    min_samples_leaf : int, default=50
+        The minimum number of samples per leaf.
+
+    epsilon_censoring_prob : float, default=0.05
+        Lower limit of the predicted censoring probabilities. It helps avoiding
+        instabilities during the division to obtain IPCW
+
+    Attributes
+    ----------
+    cold_start_ipcw_estimator_ : object
+        The fitted cold start censoring probability estimator.
     """
 
     def __init__(
@@ -158,7 +216,6 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
         max_depth=None,
         max_leaf_nodes=31,
         min_samples_leaf=50,
-        monotonic_cst=None,
         epsilon_censoring_prob=0.05,
     ):
         self.cold_start_ipcw_estimator = cold_start_ipcw_estimator
@@ -167,7 +224,6 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
         self.max_leaf_nodes = max_leaf_nodes
         self.max_depth = max_depth
         self.min_samples_leaf = min_samples_leaf
-        self.monotonic_cst = monotonic_cst
         super().__init__(epsilon_censoring_prob=epsilon_censoring_prob)
 
     def fit(self, y, X=None):
@@ -178,17 +234,22 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
 
         Parameters
         ----------
-        X : None
-            Unused.
-
-        y : pandas.DataFrame of shape (n_samples, 2)
+        y : array-like of shape (n_samples, 2)
             The target dataframe with 'event' and 'duration' columns.
+
+        X : array-like of shape (n_samples, n_features), default=None
+            The input samples. Ignored if the cold start estimator is
+            the ``KaplanMeierIPCW``.
+
+        Returns
+        -------
+        self : object
+            Fitted estimator
         """
-        del X
         super().fit(y)
 
         self.check_cold_start_ipcw_estimator()
-        self.cold_start_ipcw_estimator_.fit(y)
+        self.cold_start_ipcw_estimator_.fit(y, X=X)
 
         return self
 
@@ -197,15 +258,23 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
 
         Parameters
         ----------
-        X : pandas.DataFrame of shape (n_samples, n_features)
-            Covariates.
+        X : array-like of shape (n_samples, n_features)
+            The input samples.
+
         y_binary : ndarray of shape (n_samples,)
             Binary censoring indicator (1 for censoring, 0 for any event).
+
         times : ndarray of shape (n_samples,)
             Times of observation for each sample.
+
         sample_weight : ndarray of shape (n_samples,)
             Inverse probability of survival to any event :math:`P(T^* > t)`.
             Antagonist to the IPCW.
+
+        Return
+        ------
+        self : object
+            Fitted estimator.
         """
         if not hasattr(self, "censoring_estimator_"):
             self.censoring_estimator_ = self._build_censoring_estimator()
@@ -228,19 +297,21 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
 
         The probabilities returned by the censoring estimator are
         :math:`\hat{G}(t) = P(C > t | X = x)` and
-        :math:`1 - \hat{G}(t) = P(C \leq t | X = x)`.
+        :math:`\hat{G}(t) = P(C \leq t | X = x)`.
 
         Parameters
         ----------
         times : ndarray of shape (n_samples,)
+            The time horizons used to predict the censoring survival probabilities.
 
-        X : pandas.DataFrame of shape (n_samples, n_features), default=None
+        X : array-like of shape (n_samples, n_features), default=None
+            The input samples.
 
         ipcw_training : bool, default=False
-            * If set to True, returns the predicted probability
-            of survival to any event, using the external 'incidence_estimator'.
-            * If set to False (default), returns the predicted probability
-            of survival to censoring, using the internal 'censoring_estimator_'
+            * If set to True, returns the predicted probability of survival to
+            any event, using the external 'incidence_estimator'.
+            * If set to False (default), returns the predicted probability of survival
+            to censoring, using the internal 'censoring_estimator_'
             (or using the cold start IPCW estimator for the first training iteration).
         """
         if ipcw_training:
@@ -266,13 +337,16 @@ class AlternatingCensoringEstimator(KaplanMeierIPCW):
             self.cold_start_ipcw_estimator_ = KaplanMeierIPCW(
                 epsilon_censoring_prob=self.epsilon_censoring_prob
             )
+        else:
+            self.cold_start_ipcw_estimator_ = clone(
+                self.cold_start_ipcw_estimator, safe=False
+            )
 
     def _build_censoring_estimator(self):
         return HistGradientBoostingClassifier(
             loss="log_loss",
             max_iter=1,
             warm_start=True,
-            monotonic_cst=self.monotonic_cst,
             learning_rate=self.learning_rate,
             max_leaf_nodes=self.max_leaf_nodes,
             max_depth=self.max_depth,

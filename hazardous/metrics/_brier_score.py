@@ -18,17 +18,19 @@ class IncidenceScoreComputer:
 
     Parameters
     ----------
-    y_train : np.array, dictionnary or dataframe
-        The target, consisting in the 'event' and 'duration' columns. This is
-        used to fit the IPCW estimator.
+    y_train : array-like of shape (n_samples, 2)
+        The target data, used to fit the IPCW estimator.
 
     event_of_interest : int or "any", default="any"
         The event to consider in a competing events setting.
 
-        ``"any"`` indicates that all events except the censoring marker ``0``
-        are considered collapsed together as a single event. In a single event
-        setting, ``"any"`` and ``1`` are equivalent.
+        "any" indicates that all events except the censoring marker 0 are considered
+        collapsed together as a single event. In a single event (survival) setting,
+        "any" and 1 are equivalent.
 
+    ipcw_estimator : object, default=None
+        The estimator used to compute the IPCW. If set to ``None``,
+        the ``KaplanMeierIPCW`` is used.
     """
 
     def __init__(
@@ -47,8 +49,7 @@ class IncidenceScoreComputer:
             event=self.any_event_train,
             duration=self.duration_train,
         )
-        # Estimate the censoring distribution from the training set
-        # using Kaplan-Meier.
+        # Estimate the censoring distribution from the training set.
         if ipcw_estimator is None:
             ipcw_estimator = KaplanMeierIPCW()
         self.ipcw_estimator = ipcw_estimator.fit(y)
@@ -57,7 +58,7 @@ class IncidenceScoreComputer:
         """Time-dependent Brier score of a survival function estimate.
 
         Compute the time-dependent Brier score value for each individual and
-        each time point in `times` and then average over individuals.
+        each time point in times and then average over individuals.
 
         This estimate is adjusted for censoring by leveraging the Inverse
         Probability of Censoring Weighting (IPCW) scheme.
@@ -72,7 +73,7 @@ class IncidenceScoreComputer:
             setting event_of_interest="any".
 
         y_pred : array-like of shape (n_samples, n_times)
-            Survival probability estimates predicted at ``times``. In the
+            Survival probability estimates predicted at times. In the
             binary event settings, this is 1 - incidence_probability.
 
         times : array-like of shape (n_times)
@@ -111,7 +112,7 @@ class IncidenceScoreComputer:
 
         y_pred : array-like of shape (n_samples, n_times)
             Cause-specific cumulative incidence estimates predicted at
-            ``times`` for the event of interest. In the single event type
+            times for the event of interest. In the single event type
             settings, or when event_of_interest == "any", this is 1 -
             survival_probability.
 
@@ -123,7 +124,7 @@ class IncidenceScoreComputer:
         -------
         brier_score_incidence : np.ndarray
             Average value of the time-dependent Brier scores computed at time
-            locations specified in the ``times`` argument.
+            locations specified in the times argument.
         """
         event_true, duration_true = check_y_survival(y_true)
         check_event_of_interest(self.event_of_interest)

@@ -26,18 +26,21 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 
     Parameters
     ----------
+    y_train : array-like
+        The target data.
+
     hard_zero_fraction : float, default=0.1
         The fraction of observations that are assigned a time horizon set to exact
         zeros when doing one epoch of fitting. Increasing this value helps the model
-        learn to predict 0 incidence at `t=0` at the cost of reducing the effective
+        learn to predict 0 incidence at ``t=0`` at the cost of reducing the effective
         sample size for the non-zero time horizons.
 
     ipcw_estimator : object, default=None
         The estimator used to estimate the Inverse Probability of Censoring Weighting
-        (IPCW). If `None`, an instance of `KaplanMeierIPCW` is used.
+        (IPCW). If ``None``, an instance of ``KaplanMeierIPCW`` is used.
 
     n_iter_before_feedback : int, default=20
-        The number of iterations used to fit incrementally `ipcw_estimator`.
+        The number of iterations used to fit incrementally ``ipcw_estimator``.
 
     random_state : int, RandomState instance or None, default=None
         Control the randomness of the time horizon sampler.
@@ -55,9 +58,9 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         self,
         y_train,
         hard_zero_fraction=0.01,
-        random_state=None,
         ipcw_estimator=None,
         n_iter_before_feedback=20,
+        random_state=None,
     ):
         self.rng = check_random_state(random_state)
         self.hard_zero_fraction = hard_zero_fraction
@@ -119,7 +122,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
             )
         else:
             # During the training of the multi incidence estimator, we estimate
-            # P(T^* <= t & Delta = k) using 1 / P(C > t) as sample weight.
+            # P(T^* <= t & Delta^* = k) using 1 / P(C > t) as sample weight.
             # t is an arbitrary time horizon.
             # Since 1 = P(T^* <= t) + P(T^* > t), our training target is the
             # multi event incidence, whose value is:
@@ -168,12 +171,12 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 class SurvivalBoost(BaseEstimator, ClassifierMixin):
     r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT [1]_.
 
-    This model estimates the cause-specific Cumulative Incidence Function (CIF)
-    of each event of interest as well the surival funciton to any event using a
-    Gradient Boosting Decision Tree (GBDT) classifier. The CIF is the
+    This model estimates the cause-specific Cumulative Incidence Function (CIF) for
+    each event of interest, as well as the survival function for any event, using a
+    Gradient Boosting Decision Tree (GBDT) classifier. The CIF represents the
     probability of observing an event of a specific type before a given time.
 
-    The models handles survival analysis and competing risks data.
+    The model handles survival analysis and competing risks data.
 
     The cumulative incidence function (CIF) for each event type :math:`k` at
     each time horizon `t` is defined as:
@@ -195,26 +198,25 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         = 1 - \sum_{k=1}^K \mathbb{P}(T \leq t, \Delta=k | X=x_i)
         = 1 - \sum_{k=1}^K F_k(t; x_i)
 
-    Under the hood, this class randomly samples reference time horizons
-    concatenated as an extra input column to train an underlying HGB
-    classifier. At each boosting iteration, a new tree is trained on a copy of
-    the original feature matrix X augmented with a new independent sample of
-    time horizons. The number of time horizons sampled at each iteration is
-    controlled by the `n_horizons_per_observation` parameter.
+    Under the hood, this class randomly samples reference time horizons, which are
+    concatenated as an extra input column to train the underlying Histogram-based
+    Gradient Boosting (HGB) classifier. At each boosting iteration, a new tree is
+    trained on a copy of the original feature matrix :math:`X`, augmented with a new
+    independent sample of time horizons. The number of time horizons sampled at each
+    iteration is controlled by the ``n_horizons_per_observation`` parameter.
 
     To predict the survival function and the CIF, the model uses an alternating
-    optimization. The censoring-adjusted incidence estimator is trained with a
-    fixed number of iterations before the feedback loop is triggered. The
-    feedback loop is triggered every `n_iter_before_feedback` iterations. The
-    feedback loop updates the censoring-adjusted incidence estimator with the
-    current model predictions.
+    optimization approach. The censoring-adjusted incidence estimator is trained for a
+    fixed number of iterations before the feedback loop is triggered. This feedback
+    loop is initiated every ``n_iter_before_feedback`` iterations and updates the
+    censoring-adjusted incidence estimator with the current model predictions.
 
     Parameters
     ----------
     hard_zero_fraction : float, default=0.1
         The fraction of observations that are assigned a time horizon set to exact
         zeros when doing one epoch of fitting. Increasing this value helps the model
-        learn to predict 0 incidence at `t=0` at the cost of reducing the effective
+        learn to predict 0 incidence at ``t=0`` at the cost of reducing the effective
         sample size for the non-zero time horizons.
 
     n_iter : int, default=100
@@ -240,20 +242,20 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
     n_time_grid_steps : int, default=100
         The number of time horizons to sample uniformly between the minimum and maximum
-        observed event times. Note that the generated grid `time_grid_` can be
-        overridden in the method `predict_cumulative_incidence` and
-        `predict_survival_function` by setting the parameter `times`.
+        observed event times. Note that the generated grid ``time_grid_`` can be
+        overridden in the method ``predict_cumulative_incidence`` and
+        ``predict_survival_function`` by setting the parameter ``times``.
 
     time_horizon : int or float, default=None
-        The time horizon at which to estimate the probabilities. If `None`, the
-        `time_horizon` should be specified when calling the method `predict_proba`.
+        The time horizon at which to estimate the probabilities. If ``None``, the
+        ``time_horizon`` should be specified when calling the method ``predict_proba``.
 
     ipcw_strategy : {"alternating", "kaplan-meier"}, default="alternating"
         The method used to estimate the Inverse Probability of Censoring
         Weighting (IPCW).
 
         If "alternating", the two instances of gradient boosting are trained
-        alternatively every `n_iter_before_feedback` iterations: one for the
+        alternatively every ``n_iter_before_feedback`` iterations: one for the
         CIF + any event survival function and the other for the censoring
         distribution. This makes it possible to estimate IPCW conditionally on
         the covariates without assuming independence between censoring and
@@ -283,6 +285,9 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
     classes_ : ndarray of shape (n_classes,)
         The events seen during training.
+
+    event_ids_ : ndarray of shape (n_classes,)
+        Numeric representation of classes_.
 
     time_grid_ : ndarray of shape (n_time_grid_steps,)
         The time horizons used to predict the survival function and the CIF.
@@ -318,14 +323,14 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         # n_iter.
         n_iter=100,
         learning_rate=0.05,
-        max_depth=None,
         max_leaf_nodes=31,
+        max_depth=None,
         min_samples_leaf=50,
         show_progressbar=True,
         n_time_grid_steps=100,
         time_horizon=None,
-        n_iter_before_feedback=20,
         ipcw_strategy="alternating",
+        n_iter_before_feedback=20,
         random_state=None,
         n_horizons_per_observation=3,
     ):
@@ -356,7 +361,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             "duration". If an record array, it must have a dtype with two fields
             named "event" and "duration". If a dataframe, it must have columns
             named "event" and "duration". "event" is an integer array of shape
-            (n_samples,) indicating which event was observed (and 0 means that
+            (n_samples,) indicating which event was observed (0 means that
             the sample was censored). "duration" is a float array of shape
             (n_samples,) indicating the time of the first event or the time of
             censoring.
@@ -393,8 +398,6 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                 self.time_grid_ = observed_times.copy()
                 self.time_grid_.sort()
         else:
-            # XXX: do we really want to allow to pass this at training time if
-            # we already allow to pass it at prediction time?
             self.time_grid_ = times.copy()
             self.time_grid_.sort()
 
@@ -471,8 +474,8 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             The input samples.
 
         time_horizon : int or float, default=None
-            The time horizon at which to estimate the probabilities. If `None`, the
-            `time_horizon` passed at the constructor is used.
+            The time horizon at which to estimate the probabilities. If ``None``, the
+            ``time_horizon`` passed at the constructor is used.
 
         Returns
         -------
@@ -517,8 +520,9 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             survival function.
 
         times : array-like, default=None
-            The time horizons at which to estimate the probabilities. If `None`, it uses
-            the grid generated during `fit` based on the parameter `n_time_grid_steps`.
+            The time horizons at which to estimate the probabilities. If ``None``,
+            this method uses the grid generated during ``fit`` based on the parameter
+            ``n_time_grid_steps``.
 
         Returns
         -------
@@ -557,8 +561,9 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             survival function.
 
         times : array-like, default=None
-            The time horizons at which to estimate the probabilities. If `None`, it uses
-            the grid generated during `fit` based on the parameter `n_time_grid_steps`.
+            The time horizons at which to estimate the probabilities. If ``None``,
+            it uses the grid generated during ``fit`` based on the parameter
+            ``n_time_grid_steps``.
 
         Returns
         -------
@@ -583,14 +588,11 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         """Return the mean of IBS for each event of interest and survival.
 
         This returns the negative of the mean of the Integrated Brier Score
-        (IBS) (a proper scoring rule) of each competing event as well as the IBS
+        (IBS, a proper scoring rule) of each competing event as well as the IBS
         of the survival to any event. So, the higher the value, the better the
         model to be consistent with the scoring convention of scikit-learn to
         make it possible to use this class with scikit-learn model selection
-        utilities such as GridSearchCV and RandomizedSearchCV.
-
-        The `loss` parameter passed to the constructor determines whether the
-        negative IBS or negative INLL is returned.
+        utilities such as ``GridSearchCV`` and ``RandomizedSearchCV``.
 
         Parameters
         ----------
@@ -605,7 +607,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         Returns
         -------
         score : float
-            The negative of time-integrated Brier score (IBS) or INLL.
+            The negative of time-integrated Brier score (IBS).
 
         TODO: implement time integrated NLL and use as the default for the
         .score method to match the objective function used at fit time.
