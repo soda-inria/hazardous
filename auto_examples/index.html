@@ -29,10 +29,11 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=61a4c737" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=56c72d39" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
@@ -43,11 +44,13 @@
     <script src="../_static/documentation_options.js?v=01f34227"></script>
     <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'auto_examples/index';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Estimating marginal cumulative incidence functions" href="plot_marginal_cumulative_incidence_estimation.html" />
-    <link rel="prev" title="hazardous.IPCWEstimator" href="../generated/hazardous.IPCWEstimator.html" />
+    <link rel="next" title="Survival analysis with SurvivalBoost" href="plot_survival_analysis.html" />
+    <link rel="prev" title="hazardous.data.load_seer" href="../generated/hazardous.data.load_seer.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -294,6 +297,7 @@ document.write(`
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="plot_survival_analysis.html">Survival analysis with SurvivalBoost</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plot_marginal_cumulative_incidence_estimation.html">Estimating marginal cumulative incidence functions</a></li>
 </ul>
 </div>
@@ -353,7 +357,10 @@ document.write(`
 <h1>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h1>
 <p>Below is a gallery of examples on how to use <cite>hazardous</cite> for predictive
 competive risk analysis problems.</p>
-<div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to estimate the marginal cumulative incidence using hazardous.Gra..."><img alt="" src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_thumb.png" />
+<div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="Survival analysis is a time-to-event regression problem that deals with censored data. We refer to individuals as censored if they did not experience the event during the period of observation."><img alt="" src="../_images/sphx_glr_plot_survival_analysis_thumb.png" />
+<p><a class="reference internal" href="plot_survival_analysis.html#sphx-glr-auto-examples-plot-survival-analysis-py"><span class="std std-ref">Survival analysis with SurvivalBoost</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Survival analysis with SurvivalBoost</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This example demonstrates how to estimate the marginal cumulative incidence using hazardous.SurvivalBoost and compares the results to the Aalen-Johansen estimator and to the theoretical cumulated incidence curves on synthetic data."><img alt="" src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_thumb.png" />
 <p><a class="reference internal" href="plot_marginal_cumulative_incidence_estimation.html#sphx-glr-auto-examples-plot-marginal-cumulative-incidence-estimation-py"><span class="std std-ref">Estimating marginal cumulative incidence functions</span></a></p>
   <div class="sphx-glr-thumbnail-title">Estimating marginal cumulative incidence functions</div>
 </div></div><div class="toctree-wrapper compound">
@@ -380,20 +387,20 @@ competive risk analysis problems.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../generated/hazardous.IPCWEstimator.html"
+       href="../generated/hazardous.data.load_seer.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous</span></code>.IPCWEstimator</p>
+        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.data</span></code>.load_seer</p>
       </div>
     </a>
     <a class="right-next"
-       href="plot_marginal_cumulative_incidence_estimation.html"
+       href="plot_survival_analysis.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Estimating marginal cumulative incidence functions</p>
+        <p class="prev-next-title">Survival analysis with SurvivalBoost</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -450,7 +457,7 @@ competive risk analysis problems.</p>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.3.7.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
     <br/>
   </p>
 </div>

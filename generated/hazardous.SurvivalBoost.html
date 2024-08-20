@@ -1,0 +1,926 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>hazardous.SurvivalBoost &#8212; hazardous</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=56c72d39" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/hazardous.SurvivalBoost';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="hazardous.metrics.brier_score_survival" href="hazardous.metrics.brier_score_survival.html" />
+    <link rel="prev" title="API" href="../api.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+  <aside class="bd-header-announcement d-print-none d-none" aria-label="Announcement" data-pst-announcement-url="https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">hazardous</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../auto_examples/index.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../downloading_seer.html">
+    Getting the SEER dataset
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../auto_examples/index.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../downloading_seer.html">
+    Getting the SEER dataset
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous</span></code>.SurvivalBoost</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.brier_score_survival.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_survival</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.brier_score_incidence.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_incidence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.integrated_brier_score_survival.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.integrated_brier_score_survival</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.integrated_brier_score_incidence.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.integrated_brier_score_incidence</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="hazardous.data.make_synthetic_competing_weibull.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.data</span></code>.make_synthetic_competing_weibull</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hazardous.data.load_seer.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.data</span></code>.load_seer</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><code...</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="hazardous-survivalboost">
+<h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous</span></code>.SurvivalBoost<a class="headerlink" href="#hazardous-survivalboost" title="Link to this heading">#</a></h1>
+<p class="side-comment">Usage examples at the bottom of this page.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hazardous.</span></span><span class="sig-name descname"><span class="pre">SurvivalBoost</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hard_zero_fraction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_leaf_nodes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">31</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_depth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_samples_leaf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_progressbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_time_grid_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ipcw_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'alternating'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_iter_before_feedback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_horizons_per_observation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.SurvivalBoost" title="Link to this definition">#</a></dt>
+<dd><p>Cause-specific Cumulative Incidence Function (CIF) with GBDT <a class="reference internal" href="#r087b999b2617-1" id="id1">[1]</a>.</p>
+<p>This model estimates the cause-specific Cumulative Incidence Function (CIF) for
+each event of interest, as well as the survival function for any event, using a
+Gradient Boosting Decision Tree (GBDT) classifier. The CIF represents the
+probability of observing an event of a specific type before a given time.</p>
+<p>The model handles survival analysis and competing risks data.</p>
+<p>The cumulative incidence function (CIF) for each event type <span class="math notranslate nohighlight">\(k\)</span> at
+each time horizon <cite>t</cite> is defined as:</p>
+<div class="math notranslate nohighlight">
+\[\hat{F}_k(t; x_i) \approx F_k(t; x_i) = \mathbb{P}(T \leq t, \Delta=k | X=x_i)\]</div>
+<p>where <span class="math notranslate nohighlight">\(T\)</span> is a random variable for the uncensored time to first event
+and <span class="math notranslate nohighlight">\(\Delta\)</span> is a random variable over the <span class="math notranslate nohighlight">\([1, K]\)</span> domain for the
+(uncensored) event type, and <span class="math notranslate nohighlight">\(x_i\)</span> is the feature vector of the
+<span class="math notranslate nohighlight">\(i\)</span>-th observation.</p>
+<p>The (any event) Survival Function can be defined as:</p>
+<div class="math notranslate nohighlight">
+\[S(t; x_i) = \mathbb{P}(T &gt; t | X=x_i) = 1 - \mathbb{P}(T \leq t | X=x_i)
+= 1 - \sum_{k=1}^K \mathbb{P}(T \leq t, \Delta=k | X=x_i)
+= 1 - \sum_{k=1}^K F_k(t; x_i)\]</div>
+<p>Under the hood, this class randomly samples reference time horizons, which are
+concatenated as an extra input column to train the underlying Histogram-based
+Gradient Boosting (HGB) classifier. At each boosting iteration, a new tree is
+trained on a copy of the original feature matrix <span class="math notranslate nohighlight">\(X\)</span>, augmented with a new
+independent sample of time horizons. The number of time horizons sampled at each
+iteration is controlled by the <code class="docutils literal notranslate"><span class="pre">n_horizons_per_observation</span></code> parameter.</p>
+<p>To predict the survival function and the CIF, the model uses an alternating
+optimization approach. The censoring-adjusted incidence estimator is trained for a
+fixed number of iterations before the feedback loop is triggered. This feedback
+loop is initiated every <code class="docutils literal notranslate"><span class="pre">n_iter_before_feedback</span></code> iterations and updates the
+censoring-adjusted incidence estimator with the current model predictions.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>hard_zero_fraction</strong><span class="classifier">float, default=0.1</span></dt><dd><p>The fraction of observations that are assigned a time horizon set to exact
+zeros when doing one epoch of fitting. Increasing this value helps the model
+learn to predict 0 incidence at <code class="docutils literal notranslate"><span class="pre">t=0</span></code> at the cost of reducing the effective
+sample size for the non-zero time horizons.</p>
+</dd>
+<dt><strong>n_iter</strong><span class="classifier">int, default=100</span></dt><dd><p>The number of boosting iterations.</p>
+</dd>
+<dt><strong>learning_rate</strong><span class="classifier">float, default=0.05</span></dt><dd><p>The learning rate, also known as shrinkage. This is used as a multiplicative
+factor for the leaves values. Use 1 for no shrinkage.</p>
+</dd>
+<dt><strong>max_leaf_nodes</strong><span class="classifier">int or None, default=31</span></dt><dd><p>The maximum number of leaves for each tree. Must be strictly greater than 1. If
+None, there is no maximum limit.</p>
+</dd>
+<dt><strong>max_depth</strong><span class="classifier">int, default=None</span></dt><dd><p>The maximum depth of each tree. The depth of a tree is the number of edges to go
+from the root to the deepest leaf. Depth isn’t constrained by default.</p>
+</dd>
+<dt><strong>min_samples_leaf</strong><span class="classifier">int, default=50</span></dt><dd><p>The minimum number of samples per leaf.</p>
+</dd>
+<dt><strong>show_progressbar</strong><span class="classifier">bool, default=True</span></dt><dd><p>Whether to show a progress bar during the training process.</p>
+</dd>
+<dt><strong>n_time_grid_steps</strong><span class="classifier">int, default=100</span></dt><dd><p>The number of time horizons to sample uniformly between the minimum and maximum
+observed event times. Note that the generated grid <code class="docutils literal notranslate"><span class="pre">time_grid_</span></code> can be
+overridden in the method <code class="docutils literal notranslate"><span class="pre">predict_cumulative_incidence</span></code> and
+<code class="docutils literal notranslate"><span class="pre">predict_survival_function</span></code> by setting the parameter <code class="docutils literal notranslate"><span class="pre">times</span></code>.</p>
+</dd>
+<dt><strong>time_horizon</strong><span class="classifier">int or float, default=None</span></dt><dd><p>The time horizon at which to estimate the probabilities. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the
+<code class="docutils literal notranslate"><span class="pre">time_horizon</span></code> should be specified when calling the method <code class="docutils literal notranslate"><span class="pre">predict_proba</span></code>.</p>
+</dd>
+<dt><strong>ipcw_strategy</strong><span class="classifier">{“alternating”, “kaplan-meier”}, default=”alternating”</span></dt><dd><p>The method used to estimate the Inverse Probability of Censoring
+Weighting (IPCW).</p>
+<p>If “alternating”, the two instances of gradient boosting are trained
+alternatively every <code class="docutils literal notranslate"><span class="pre">n_iter_before_feedback</span></code> iterations: one for the
+CIF + any event survival function and the other for the censoring
+distribution. This makes it possible to estimate IPCW conditionally on
+the covariates without assuming independence between censoring and
+covariates.</p>
+<p>If “kaplan-meier”, the censoring estimator is trained using the Kaplan-Meier
+estimator. This estimator is trained only once at the beginning of the
+training process. This estimator is very fast but assumes that the
+censoring is independent of the covariates.</p>
+</dd>
+<dt><strong>n_iter_before_feedback</strong><span class="classifier">int, default=20</span></dt><dd><p>The number of iterations at which we alternate to fit the Inverse Probability
+of Censoring Weighting (IPCW) estimator before feeding back the weights to the
+incidence estimator.</p>
+</dd>
+<dt><strong>random_state</strong><span class="classifier">int, RandomState instance or None, default=None</span></dt><dd><p>Controls the randomness of the uniform time sampler.</p>
+</dd>
+<dt><strong>n_horizons_per_observation</strong><span class="classifier">int, default=3</span></dt><dd><p>The number of time horizons to sample for each individual in the
+training at each stochastic boosting iteration (epoch).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>estimator_</strong><span class="classifier">HistGradientBoostingClassifier</span></dt><dd><p>The base estimator used to fit the CIF and survival function.</p>
+</dd>
+<dt><strong>classes_</strong><span class="classifier">ndarray of shape (n_classes,)</span></dt><dd><p>The events seen during training.</p>
+</dd>
+<dt><strong>event_ids_</strong><span class="classifier">ndarray of shape (n_classes,)</span></dt><dd><p>Numeric representation of <a href="#id3"><span class="problematic" id="id4">classes_</span></a>.</p>
+</dd>
+<dt><strong>time_grid_</strong><span class="classifier">ndarray of shape (n_time_grid_steps,)</span></dt><dd><p>The time horizons used to predict the survival function and the CIF.</p>
+</dd>
+<dt><strong>weighted_targets_</strong><span class="classifier">WeightedMultiClassTargetSampler</span></dt><dd><p>The weighted targets used to train the model.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="r087b999b2617-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>J. Alberge, V. Maladière, O. Grisel, J. Abécassis, G. Varoquaux,
+“Teaching Models To Survive: Proper Scoring Rule and Stochastic Optimization
+with Competing Risks”, 2024.
+<a class="reference external" href="https://arxiv.org/pdf/2406.14085">https://arxiv.org/pdf/2406.14085</a></p>
+</div>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">hazardous.data</span> <span class="kn">import</span> <span class="n">make_synthetic_competing_weibull</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">hazardous</span> <span class="kn">import</span> <span class="n">SurvivalBoost</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_synthetic_competing_weibull</span><span class="p">(</span><span class="n">return_X_y</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">survival_booster</span> <span class="o">=</span> <span class="n">SurvivalBoost</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">n_iter</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">show_progressbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+<span class="gp">... </span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">survival_pred</span> <span class="o">=</span> <span class="n">survival_booster</span><span class="o">.</span><span class="n">predict_survival_function</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.SurvivalBoost.fit" title="Link to this definition">#</a></dt>
+<dd><p>Fit the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array-like of shape (n_samples, n_features)</span></dt><dd><p>The input samples.</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">dict, {array-like, dataframe} of shape (n_samples, 2)</span></dt><dd><p>The target values. If a dictionary, it must have keys “event” and
+“duration”. If an record array, it must have a dtype with two fields
+named “event” and “duration”. If a dataframe, it must have columns
+named “event” and “duration”. “event” is an integer array of shape
+(n_samples,) indicating which event was observed (0 means that
+the sample was censored). “duration” is a float array of shape
+(n_samples,) indicating the time of the first event or the time of
+censoring.</p>
+</dd>
+<dt><strong>times</strong><span class="classifier">array-like of shape (n_times,), default=None</span></dt><dd><p>The time horizons used to predict the survival function and the CIF.
+If None, the default time grid is computed from the observed event
+times in the training data.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>self</strong><span class="classifier">object</span></dt><dd><p>Returns an instance of self.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost.get_metadata_routing">
+<span class="sig-name descname"><span class="pre">get_metadata_routing</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.SurvivalBoost.get_metadata_routing" title="Link to this definition">#</a></dt>
+<dd><p>Get metadata routing of this object.</p>
+<p>Please check <a class="reference external" href="https://scikit-learn.org/stable/metadata_routing.html#metadata-routing" title="(in scikit-learn v1.5)"><span class="xref std std-ref">User Guide</span></a> on how the routing
+mechanism works.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>routing</strong><span class="classifier">MetadataRequest</span></dt><dd><p>A <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.utils.metadata_routing.MetadataRequest.html#sklearn.utils.metadata_routing.MetadataRequest" title="(in scikit-learn v1.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetadataRequest</span></code></a> encapsulating
+routing information.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost.get_params">
+<span class="sig-name descname"><span class="pre">get_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.SurvivalBoost.get_params" title="Link to this definition">#</a></dt>
+<dd><p>Get parameters for this estimator.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>deep</strong><span class="classifier">bool, default=True</span></dt><dd><p>If True, will return the parameters for this estimator and
+contained subobjects that are estimators.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>params</strong><span class="classifier">dict</span></dt><dd><p>Parameter names mapped to their values.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost.predict_cumulative_incidence">
+<span class="sig-name descname"><span class="pre">predict_cumulative_incidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.SurvivalBoost.predict_cumulative_incidence" title="Link to this definition">#</a></dt>
+<dd><p>Estimate conditional cumulative incidence function for each event type.</p>
+<p>Please refer to the docstring of the class for the definitions of the
+conditional survival function and the event-specific cumulative
+incidence functions estimated by this method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array-like of shape (n_samples, n_features)</span></dt><dd><p>The feature vectors for each observation for which to estimate the
+survival function.</p>
+</dd>
+<dt><strong>times</strong><span class="classifier">array-like, default=None</span></dt><dd><p>The time horizons at which to estimate the probabilities. If <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+this method uses the grid generated during <code class="docutils literal notranslate"><span class="pre">fit</span></code> based on the parameter
+<code class="docutils literal notranslate"><span class="pre">n_time_grid_steps</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>predicted_curves</strong><span class="classifier">ndarray of shape (n_samples, n_events + 1, n_times)</span></dt><dd><p>The estimated probabilities at different time horizons. The values at event
+index 0 are the estimated probabilities of staying event-free at
+the requested time horizons for each observation described by the matching
+row of X. The remaining event indices correspond to the estimated cumulated
+incidence (or probability) for each event type.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost.predict_proba">
+<span class="sig-name descname"><span class="pre">predict_proba</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.SurvivalBoost.predict_proba" title="Link to this definition">#</a></dt>
+<dd><p>Estimate the probability of all incidences for a specific time horizon.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array-like of shape (n_samples, n_features)</span></dt><dd><p>The input samples.</p>
+</dd>
+<dt><strong>time_horizon</strong><span class="classifier">int or float, default=None</span></dt><dd><p>The time horizon at which to estimate the probabilities. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the
+<code class="docutils literal notranslate"><span class="pre">time_horizon</span></code> passed at the constructor is used.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>y_proba</strong><span class="classifier">ndarray of shape (n_samples, n_events + 1)</span></dt><dd><p>The estimated probabilities at the given time horizon. The column
+indexed 0 stores the estimated probabilities of staying event-free at
+the requested time horizon for each observation described by the matching
+row of X. The remaining columns store the estimated cumulated incidence
+(or probability) for each event.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost.predict_survival_function">
+<span class="sig-name descname"><span class="pre">predict_survival_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.SurvivalBoost.predict_survival_function" title="Link to this definition">#</a></dt>
+<dd><p>Estimate the conditional any-event survival function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array-like of shape (n_samples, n_features)</span></dt><dd><p>The feature vectors for each observation for which to estimate the
+survival function.</p>
+</dd>
+<dt><strong>times</strong><span class="classifier">array-like, default=None</span></dt><dd><p>The time horizons at which to estimate the probabilities. If <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+it uses the grid generated during <code class="docutils literal notranslate"><span class="pre">fit</span></code> based on the parameter
+<code class="docutils literal notranslate"><span class="pre">n_time_grid_steps</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>predicted_curves</strong><span class="classifier">ndarray of shape (n_samples, n_times)</span></dt><dd><p>The estimated probabilities of staying event-free at different time
+horizons.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost.score">
+<span class="sig-name descname"><span class="pre">score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.SurvivalBoost.score" title="Link to this definition">#</a></dt>
+<dd><p>Return the mean of IBS for each event of interest and survival.</p>
+<p>This returns the negative of the mean of the Integrated Brier Score
+(IBS, a proper scoring rule) of each competing event as well as the IBS
+of the survival to any event. So, the higher the value, the better the
+model to be consistent with the scoring convention of scikit-learn to
+make it possible to use this class with scikit-learn model selection
+utilities such as <code class="docutils literal notranslate"><span class="pre">GridSearchCV</span></code> and <code class="docutils literal notranslate"><span class="pre">RandomizedSearchCV</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>X</strong><span class="classifier">array-like of shape (n_samples, n_features)</span></dt><dd><p>The input samples.</p>
+</dd>
+<dt><strong>y</strong><span class="classifier">dict with keys “event” and “duration”</span></dt><dd><p>The target values. “event” is a boolean array of shape (n_samples,)
+indicating whether the event was observed or not. “duration” is a
+float array of shape (n_samples,) indicating the time of the event
+or the time of censoring.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>score</strong><span class="classifier">float</span></dt><dd><p>The negative of time-integrated Brier score (IBS).</p>
+</dd>
+<dt>TODO: implement time integrated NLL and use as the default for the</dt><dd></dd>
+<dt>.score method to match the objective function used at fit time.</dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost.set_fit_request">
+<span class="sig-name descname"><span class="pre">set_fit_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'$UNCHANGED$'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#hazardous.SurvivalBoost" title="hazardous._survival_boost.SurvivalBoost"><span class="pre">SurvivalBoost</span></a></span></span><a class="headerlink" href="#hazardous.SurvivalBoost.set_fit_request" title="Link to this definition">#</a></dt>
+<dd><p>Request metadata passed to the <code class="docutils literal notranslate"><span class="pre">fit</span></code> method.</p>
+<p>Note that this method is only relevant if
+<code class="docutils literal notranslate"><span class="pre">enable_metadata_routing=True</span></code> (see <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.set_config.html#sklearn.set_config" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.set_config()</span></code></a>).
+Please see <a class="reference external" href="https://scikit-learn.org/stable/metadata_routing.html#metadata-routing" title="(in scikit-learn v1.5)"><span class="xref std std-ref">User Guide</span></a> on how the routing
+mechanism works.</p>
+<p>The options for each parameter are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">True</span></code>: metadata is requested, and passed to <code class="docutils literal notranslate"><span class="pre">fit</span></code> if provided. The request is ignored if metadata is not provided.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">False</span></code>: metadata is not requested and the meta-estimator will not pass it to <code class="docutils literal notranslate"><span class="pre">fit</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">None</span></code>: metadata is not requested, and the meta-estimator will raise an error if the user provides it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">str</span></code>: metadata should be passed to the meta-estimator with this given alias instead of the original name.</p></li>
+</ul>
+<p>The default (<code class="docutils literal notranslate"><span class="pre">sklearn.utils.metadata_routing.UNCHANGED</span></code>) retains the
+existing request. This allows you to change the request for some
+parameters and not others.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.3.</span></p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method is only relevant if this estimator is used as a
+sub-estimator of a meta-estimator, e.g. used inside a
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="(in scikit-learn v1.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code></a>. Otherwise it has no effect.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>times</strong><span class="classifier">str, True, False, or None,                     default=sklearn.utils.metadata_routing.UNCHANGED</span></dt><dd><p>Metadata routing for <code class="docutils literal notranslate"><span class="pre">times</span></code> parameter in <code class="docutils literal notranslate"><span class="pre">fit</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>self</strong><span class="classifier">object</span></dt><dd><p>The updated object.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost.set_params">
+<span class="sig-name descname"><span class="pre">set_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.SurvivalBoost.set_params" title="Link to this definition">#</a></dt>
+<dd><p>Set the parameters of this estimator.</p>
+<p>The method works on simple estimators as well as on nested objects
+(such as <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="(in scikit-learn v1.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code></a>). The latter have
+parameters of the form <code class="docutils literal notranslate"><span class="pre">&lt;component&gt;__&lt;parameter&gt;</span></code> so that it’s
+possible to update each component of a nested object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>**params</strong><span class="classifier">dict</span></dt><dd><p>Estimator parameters.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>self</strong><span class="classifier">estimator instance</span></dt><dd><p>Estimator instance.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hazardous.SurvivalBoost.set_predict_proba_request">
+<span class="sig-name descname"><span class="pre">set_predict_proba_request</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_horizon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'$UNCHANGED$'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#hazardous.SurvivalBoost" title="hazardous._survival_boost.SurvivalBoost"><span class="pre">SurvivalBoost</span></a></span></span><a class="headerlink" href="#hazardous.SurvivalBoost.set_predict_proba_request" title="Link to this definition">#</a></dt>
+<dd><p>Request metadata passed to the <code class="docutils literal notranslate"><span class="pre">predict_proba</span></code> method.</p>
+<p>Note that this method is only relevant if
+<code class="docutils literal notranslate"><span class="pre">enable_metadata_routing=True</span></code> (see <a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.set_config.html#sklearn.set_config" title="(in scikit-learn v1.5)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sklearn.set_config()</span></code></a>).
+Please see <a class="reference external" href="https://scikit-learn.org/stable/metadata_routing.html#metadata-routing" title="(in scikit-learn v1.5)"><span class="xref std std-ref">User Guide</span></a> on how the routing
+mechanism works.</p>
+<p>The options for each parameter are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">True</span></code>: metadata is requested, and passed to <code class="docutils literal notranslate"><span class="pre">predict_proba</span></code> if provided. The request is ignored if metadata is not provided.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">False</span></code>: metadata is not requested and the meta-estimator will not pass it to <code class="docutils literal notranslate"><span class="pre">predict_proba</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">None</span></code>: metadata is not requested, and the meta-estimator will raise an error if the user provides it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">str</span></code>: metadata should be passed to the meta-estimator with this given alias instead of the original name.</p></li>
+</ul>
+<p>The default (<code class="docutils literal notranslate"><span class="pre">sklearn.utils.metadata_routing.UNCHANGED</span></code>) retains the
+existing request. This allows you to change the request for some
+parameters and not others.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 1.3.</span></p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method is only relevant if this estimator is used as a
+sub-estimator of a meta-estimator, e.g. used inside a
+<a class="reference external" href="https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html#sklearn.pipeline.Pipeline" title="(in scikit-learn v1.5)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code></a>. Otherwise it has no effect.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>time_horizon</strong><span class="classifier">str, True, False, or None,                     default=sklearn.utils.metadata_routing.UNCHANGED</span></dt><dd><p>Metadata routing for <code class="docutils literal notranslate"><span class="pre">time_horizon</span></code> parameter in <code class="docutils literal notranslate"><span class="pre">predict_proba</span></code>.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>self</strong><span class="classifier">object</span></dt><dd><p>The updated object.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<div class="clearer"></div></section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../api.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">API</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="hazardous.metrics.brier_score_survival.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_survival</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost.fit"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost.fit()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost.get_metadata_routing"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost.get_metadata_routing()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost.get_params"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost.get_params()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost.predict_cumulative_incidence"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost.predict_cumulative_incidence()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost.predict_proba"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost.predict_proba()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost.predict_survival_function"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost.predict_survival_function()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost.score"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost.score()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost.set_fit_request"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost.set_fit_request()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost.set_params"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost.set_params()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.SurvivalBoost.set_predict_proba_request"><code class="docutils literal notranslate"><span class="pre">SurvivalBoost.set_predict_proba_request()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/generated/hazardous.SurvivalBoost.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2023, Olivier Grisel and Vincent Maladière.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

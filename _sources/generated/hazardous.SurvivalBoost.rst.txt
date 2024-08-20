@@ -1,4 +1,4 @@
-﻿:mod:`hazardous`.IPCWEstimator
+﻿:mod:`hazardous`.SurvivalBoost
 =====================================
 
 .. rst-class:: side_comment
@@ -7,7 +7,7 @@
 
 .. currentmodule:: hazardous
 
-.. autoclass:: IPCWEstimator
+.. autoclass:: SurvivalBoost
    :inherited-members:
 
    
