@@ -158,6 +158,8 @@ def _concordance_index_incidence_report(
 ):
     """Report version of function `concordance_index_incidence`.
 
+    Running this function directly is useful to get more insights about
+    the underlying statistics of the c-index.
     All returned lists have the same length as taus.
 
     Returns
@@ -189,6 +191,22 @@ def _concordance_index_incidence_report(
     n_ties_pred_b: list of int
         Number of pairs of type B with np.abs(y_pred_i - y_pred_j) <= tied_tol.
     """
+    if y_pred.ndim != 2:
+        raise ValueError(
+            "y_pred dimension must be 2, with shape (n_samples, n_time_grid), "
+            f"got {y_pred.ndim=}."
+        )
+    if y_test.shape[0] != y_pred.shape[0]:
+        raise ValueError(
+            "y_test and y_pred must be the same length, got:"
+            f"{y_test.shape[0]=} and {y_pred.shape[0]=}."
+        )
+    if time_grid is not None and len(time_grid) != y_pred.shape[1]:
+        raise ValueError(
+            "y_pred must have the same number of columns as the length of time_grid, "
+            f"got: {y_test.shape[1]=} and {len(time_grid)=}."
+        )
+
     if ipcw_estimator is None:
         if y_train is not None:
             warnings.warn(
