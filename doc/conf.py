@@ -19,6 +19,7 @@ extensions = [
     'sphinx.ext.autosummary',
     "sphinx.ext.intersphinx",
     'numpydoc',
+    'sphinx_design',
 ]
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
@@ -32,6 +33,11 @@ templates_path = ["_templates"]
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
 
+html_css_files = [
+    "css/custom.css",
+]
+html_js_files = []
+
 # sphinx_gallery options
 sphinx_gallery_conf = {
     'examples_dirs': '../examples',   # path to example scripts
@@ -44,3 +50,11 @@ intersphinx_mapping = {
 }
 
 numpydoc_show_class_members = False 
+
+html_title = "hazardous"
+
+html_theme_options = {
+    "announcement": (
+        "https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"
+    ),
+}

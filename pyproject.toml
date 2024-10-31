@@ -44,9 +44,12 @@ doc = [
     "sphinx",
     "pydata-sphinx-theme",
     "sphinx-gallery",
+    "sphinx-design",
     "matplotlib",
     "pillow",  # to scrape images from the examples
     "numpydoc",
+    "pycox",
+    "torch",
 ]
 
 [project.urls]
@@ -59,7 +62,7 @@ requires = ["flit_core"]
 
 [tool.black]
 line-length = 88
-target_version = ['py38', 'py39', 'py310', 'py311']
+target_version = ['py39', 'py310', 'py311']
 preview = true
 exclude = '''
 /(
@@ -106,7 +109,7 @@ exclude = [
     "venv",
     "doc",
 ]
-per-file-ignores = {}
+per-file-ignores = {"examples/*" = ["E402"]}
 
 # Same as Black.
 line-length = 88
@@ -118,3 +121,10 @@ target-version = "py39"
 
 [tool.ruff.mccabe]
 max-complexity = 10
+
+[tool.pytest.ini_options]
+addopts = "--doctest-modules"
+doctest_optionflags = "NORMALIZE_WHITESPACE ELLIPSIS"
+testpaths = [
+    "hazardous",
+]
