@@ -5,7 +5,7 @@ from collections import Counter, defaultdict
 import numpy as np
 from scipy.interpolate import interp1d
 
-from .._ipcw import IPCWEstimator
+from .._ipcw import KaplanMeierIPCW
 from ..utils import check_y_survival
 
 
@@ -225,7 +225,7 @@ def _concordance_index_incidence_report(
                 "Set y_train to fix this error."
             )
         # TODO: add cox option
-        ipcw_estimator_ = IPCWEstimator().fit(y_train)
+        ipcw_estimator_ = KaplanMeierIPCW().fit(y_train)
         ipcw = ipcw_estimator_.compute_ipcw_at(
             y_test["duration"]
         )  # shape: (n_samples_test,)
