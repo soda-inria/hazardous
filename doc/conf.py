@@ -47,8 +47,9 @@ sphinx_gallery_conf = {
     "show_memory": False,
     "write_computation_times": False,
     'reference_url': {
+        # Intersphinx links
         # The module you locally document uses None
-        'skore': None,
+        'hazardous': None,
         }
 
 }
