@@ -45,6 +45,7 @@ doc = [
     "pydata-sphinx-theme",
     "sphinx-gallery",
     "sphinx-design",
+    "sphinx-copybutton",
     "matplotlib",
     "pillow",  # to scrape images from the examples
     "numpydoc",
