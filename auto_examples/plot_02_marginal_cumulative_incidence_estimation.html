@@ -16,19 +16,22 @@
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
+  <!-- 
+    this give us a css class that will be invisible only if js is disabled 
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-
-  
-  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+  <link href="../_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
@@ -36,22 +39,26 @@
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=56c72d39" />
   
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
-  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
 
     <script src="../_static/documentation_options.js?v=01f34227"></script>
-    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'auto_examples/plot_marginal_cumulative_incidence_estimation';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'auto_examples/plot_02_marginal_cumulative_incidence_estimation';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Getting the SEER dataset" href="../downloading_seer.html" />
-    <link rel="prev" title="Survival analysis with SurvivalBoost" href="plot_survival_analysis.html" />
+    <link rel="prev" title="Survival analysis with SurvivalBoost" href="plot_01_survival_analysis.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
   </head>
   
   
@@ -67,19 +74,8 @@
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
   
-  <input type="checkbox"
-          class="sidebar-toggle"
-          id="pst-primary-sidebar-checkbox"/>
-  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
-  
-  <input type="checkbox"
-          class="sidebar-toggle"
-          id="pst-secondary-sidebar-checkbox"/>
-  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
-  
-  <div class="search-button__wrapper">
-    <div class="search-button__overlay"></div>
-    <div class="search-button__search-container">
+  <dialog id="pst-search-dialog">
+    
 <form class="bd-search d-flex align-items-center"
       action="../search.html"
       method="get">
@@ -87,7 +83,6 @@
   <input type="search"
          class="form-control"
          name="q"
-         id="search-input"
          placeholder="Search the docs ..."
          aria-label="Search the docs ..."
          autocomplete="off"
@@ -95,8 +90,8 @@
          autocapitalize="off"
          spellcheck="false"/>
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
-</form></div>
-  </div>
+</form>
+  </dialog>
 
   <div class="pst-async-banner-revealer d-none">
   <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
@@ -171,29 +166,37 @@
         <div class="navbar-item navbar-persistent--container">
           
 
- <script>
- document.write(`
-   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <span class="search-button__default-text">Search</span>
-    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-   </button>
- `);
- </script>
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
         </div>
       
       
         <div class="navbar-item">
 
-<script>
-document.write(`
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
-  </button>
-`);
-</script></div>
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/soda-inria/hazardous/" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
       
     </div>
     
@@ -202,15 +205,11 @@ document.write(`
   
     <div class="navbar-persistent--mobile">
 
- <script>
- document.write(`
-   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="fa-solid fa-magnifying-glass"></i>
-    <span class="search-button__default-text">Search</span>
-    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
-   </button>
- `);
- </script>
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
     </div>
   
 
@@ -229,7 +228,8 @@ document.write(`
       
       
       
-      <div class="bd-sidebar-primary bd-sidebar">
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
         
 
   
@@ -276,15 +276,27 @@ document.write(`
         
           <div class="navbar-item">
 
-<script>
-document.write(`
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
-  </button>
-`);
-</script></div>
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/soda-inria/hazardous/" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
         
       </div>
     
@@ -296,7 +308,7 @@ document.write(`
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="plot_survival_analysis.html">Survival analysis with SurvivalBoost</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_01_survival_analysis.html">Survival analysis with SurvivalBoost</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Estimating marginal cumulative incidence functions</a></li>
 </ul>
 </div>
@@ -325,8 +337,6 @@ document.write(`
       
         <div class="header-article-item">
 
-
-
 <nav aria-label="Breadcrumb" class="d-print-none">
   <ul class="bd-breadcrumbs">
     
@@ -338,7 +348,7 @@ document.write(`
     
     <li class="breadcrumb-item"><a href="index.html" class="nav-link">Examples</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page">Estimating...</li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Estimating marginal cumulative incidence functions</span></li>
   </ul>
 </nav>
 </div>
@@ -357,11 +367,11 @@ document.write(`
                   
   <div class="sphx-glr-download-link-note admonition note">
 <p class="admonition-title">Note</p>
-<p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-marginal-cumulative-incidence-estimation-py"><span class="std std-ref">Go to the end</span></a>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-02-marginal-cumulative-incidence-estimation-py"><span class="std std-ref">Go to the end</span></a>
 to download the full example code.</p>
 </div>
 <section class="sphx-glr-example-title" id="estimating-marginal-cumulative-incidence-functions">
-<span id="sphx-glr-auto-examples-plot-marginal-cumulative-incidence-estimation-py"></span><h1>Estimating marginal cumulative incidence functions<a class="headerlink" href="#estimating-marginal-cumulative-incidence-functions" title="Link to this heading">#</a></h1>
+<span id="sphx-glr-auto-examples-plot-02-marginal-cumulative-incidence-estimation-py"></span><h1>Estimating marginal cumulative incidence functions<a class="headerlink" href="#estimating-marginal-cumulative-incidence-functions" title="Link to this heading">#</a></h1>
 <p>This example demonstrates how to estimate the marginal cumulative incidence
 using <a class="reference internal" href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost"><code class="xref py py-class docutils literal notranslate"><span class="pre">hazardous.SurvivalBoost</span></code></a> and compares the results to the
 Aalen-Johansen estimator and to the theoretical cumulated incidence curves on
@@ -387,8 +397,8 @@ over-estimation bias for large time horizons.</p>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-<span class="kn">from</span> <span class="nn">hazardous</span> <span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator" title="sklearn.base.BaseEstimator" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-class"><span class="n">SurvivalBoost</span></a>
-<span class="kn">from</span> <span class="nn">hazardous.data</span> <span class="kn">import</span> <span class="n">make_synthetic_competing_weibull</span>
+<span class="kn">from</span> <span class="nn">hazardous</span> <span class="kn">import</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class"><span class="n">SurvivalBoost</span></a>
+<span class="kn">from</span> <span class="nn">hazardous.data</span> <span class="kn">import</span> <a href="../generated/hazardous.data.make_synthetic_competing_weibull.html#hazardous.data.make_synthetic_competing_weibull" title="hazardous.data.make_synthetic_competing_weibull" class="sphx-glr-backref-module-hazardous-data sphx-glr-backref-type-py-function"><span class="n">make_synthetic_competing_weibull</span></a>
 <span class="kn">from</span> <span class="nn">lifelines</span> <span class="kn">import</span> <span class="n">AalenJohansenFitter</span>
 
 <span class="n">n_samples</span> <span class="o">=</span> <span class="mi">3_000</span>
@@ -397,7 +407,7 @@ over-estimation bias for large time horizons.</p>
 <span class="n">event_dist_scales</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="n">n_events</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">event_dist_shapes</span><span class="p">)</span>
 
-<span class="n">_</span><span class="p">,</span> <span class="n">y_uncensored</span> <span class="o">=</span> <span class="n">make_synthetic_competing_weibull</span><span class="p">(</span>
+<span class="n">_</span><span class="p">,</span> <span class="n">y_uncensored</span> <span class="o">=</span> <a href="../generated/hazardous.data.make_synthetic_competing_weibull.html#hazardous.data.make_synthetic_competing_weibull" title="hazardous.data.make_synthetic_competing_weibull" class="sphx-glr-backref-module-hazardous-data sphx-glr-backref-type-py-function"><span class="n">make_synthetic_competing_weibull</span></a><span class="p">(</span>
     <span class="n">n_samples</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span>
     <span class="n">n_events</span><span class="o">=</span><span class="n">n_events</span><span class="p">,</span>
     <span class="n">censoring_relative_scale</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
@@ -440,7 +450,7 @@ events of interest).</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">calculate_variance</span> <span class="o">=</span> <span class="n">n_samples</span> <span class="o">&lt;=</span> <span class="mi">5_000</span>
 <span class="n">aj</span> <span class="o">=</span> <span class="n">AalenJohansenFitter</span><span class="p">(</span><span class="n">calculate_variance</span><span class="o">=</span><span class="n">calculate_variance</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
-<span class="n">survival_boost</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator" title="sklearn.base.BaseEstimator" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-class"><span class="n">SurvivalBoost</span></a><span class="p">(</span>
+<a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a> <span class="o">=</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class"><span class="n">SurvivalBoost</span></a><span class="p">(</span>
     <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span>
     <span class="n">n_iter</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
     <span class="n">max_leaf_nodes</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
@@ -456,7 +466,7 @@ events of interest).</p>
 <h2>CIFs estimated on uncensored data<a class="headerlink" href="#cifs-estimated-on-uncensored-data" title="Link to this heading">#</a></h2>
 <p>Let’s now estimate the CIFs on uncensored data and plot them against the
 theoretical CIFs:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_cumulative_incidence_functions</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">survival_boost</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">plot_cumulative_incidence_functions</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot cause-specific cumulative incidence per event using a dummy covariate&quot;&quot;&quot;</span>
     <span class="n">_</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">ncols</span><span class="o">=</span><span class="n">n_events</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -492,13 +502,13 @@ theoretical CIFs:</p>
     <span class="c1"># Non-informative covariate because scikit-learn estimators expect at least</span>
     <span class="c1"># one feature.</span>
     <span class="n">X_dummy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">survival_boost</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">tic</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
-        <span class="n">survival_boost</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_dummy</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost.fit" title="hazardous.SurvivalBoost.fit" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-method"><span class="n">survival_boost</span><span class="o">.</span><span class="n">fit</span></a><span class="p">(</span><span class="n">X_dummy</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
         <span class="n">duration</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">tic</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SurvivalBoost fit: </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s&quot;</span><span class="p">)</span>
         <span class="n">tic</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span>
-        <span class="n">cif_preds</span> <span class="o">=</span> <span class="n">survival_boost</span><span class="o">.</span><span class="n">predict_cumulative_incidence</span><span class="p">(</span>
+        <span class="n">cif_preds</span> <span class="o">=</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost.predict_cumulative_incidence" title="hazardous.SurvivalBoost.predict_cumulative_incidence" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-method"><span class="n">survival_boost</span><span class="o">.</span><span class="n">predict_cumulative_incidence</span></a><span class="p">(</span>
             <span class="n">X_dummy</span><span class="p">,</span> <span class="n">coarse_timegrid</span>
         <span class="p">)</span>
         <span class="n">duration</span> <span class="o">=</span> <span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">tic</span>
@@ -518,7 +528,7 @@ theoretical CIFs:</p>
             <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Theoretical incidence&quot;</span><span class="p">,</span>
         <span class="p">),</span>
 
-        <span class="k">if</span> <span class="n">survival_boost</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">cif_pred</span> <span class="o">=</span> <span class="n">cif_preds</span><span class="p">[:,</span> <span class="n">event_id</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
                 <span class="n">coarse_timegrid</span><span class="p">,</span>
@@ -545,19 +555,19 @@ theoretical CIFs:</p>
 
 
 <span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span>
-    <span class="n">survival_boost</span><span class="o">=</span><span class="n">survival_boost</span><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="n">aj</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_uncensored</span>
+    <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="o">=</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="n">aj</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_uncensored</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_001.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_001.png" alt="Cause-specific cumulative incidence functions (0.0% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.625 s
-SurvivalBoost fit: 2.880 s
-SurvivalBoost prediction: 2.964 s
-Integrated theoretical cumulative incidence curve for event 1 in 3.027 s
-Aalen-Johansen for event 1 fit in 5.407 s
-Integrated theoretical cumulative incidence curve for event 2 in 5.516 s
-Aalen-Johansen for event 2 fit in 5.409 s
-Integrated theoretical cumulative incidence curve for event 3 in 5.491 s
-Aalen-Johansen for event 3 fit in 5.427 s
+<img src="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_001.png" srcset="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_001.png" alt="Cause-specific cumulative incidence functions (0.0% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.643 s
+SurvivalBoost fit: 2.719 s
+SurvivalBoost prediction: 2.934 s
+Integrated theoretical cumulative incidence curve for event 1 in 2.995 s
+Aalen-Johansen for event 1 fit in 4.926 s
+Integrated theoretical cumulative incidence curve for event 2 in 5.022 s
+Aalen-Johansen for event 2 fit in 4.973 s
+Integrated theoretical cumulative incidence curve for event 3 in 5.053 s
+Aalen-Johansen for event 3 fit in 4.885 s
 </pre></div>
 </div>
 </section>
@@ -566,7 +576,7 @@ Aalen-Johansen for event 3 fit in 5.427 s
 <p>Add some independent censoring with some arbitrary parameters to control the
 amount of censoring: lowering the expected value bound increases the amount
 of censoring.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">_</span><span class="p">,</span> <span class="n">y_censored</span> <span class="o">=</span> <span class="n">make_synthetic_competing_weibull</span><span class="p">(</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">_</span><span class="p">,</span> <span class="n">y_censored</span> <span class="o">=</span> <a href="../generated/hazardous.data.make_synthetic_competing_weibull.html#hazardous.data.make_synthetic_competing_weibull" title="hazardous.data.make_synthetic_competing_weibull" class="sphx-glr-backref-module-hazardous-data sphx-glr-backref-type-py-function"><span class="n">make_synthetic_competing_weibull</span></a><span class="p">(</span>
     <span class="n">n_samples</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span>
     <span class="n">n_events</span><span class="o">=</span><span class="n">n_events</span><span class="p">,</span>
     <span class="n">censoring_relative_scale</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
@@ -577,18 +587,18 @@ of censoring.</p>
     <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span><span class="n">survival_boost</span><span class="o">=</span><span class="n">survival_boost</span><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="n">aj</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_censored</span><span class="p">)</span>
+<span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="o">=</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="n">aj</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_censored</span><span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_002.png" srcset="../_images/sphx_glr_plot_marginal_cumulative_incidence_estimation_002.png" alt="Cause-specific cumulative incidence functions (40.4% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.592 s
-SurvivalBoost fit: 2.883 s
-SurvivalBoost prediction: 2.962 s
-Integrated theoretical cumulative incidence curve for event 1 in 3.025 s
-Aalen-Johansen for event 1 fit in 5.492 s
-Integrated theoretical cumulative incidence curve for event 2 in 5.604 s
-Aalen-Johansen for event 2 fit in 5.387 s
-Integrated theoretical cumulative incidence curve for event 3 in 5.469 s
-Aalen-Johansen for event 3 fit in 5.393 s
+<img src="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_002.png" srcset="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_002.png" alt="Cause-specific cumulative incidence functions (40.4% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.602 s
+SurvivalBoost fit: 2.705 s
+SurvivalBoost prediction: 2.917 s
+Integrated theoretical cumulative incidence curve for event 1 in 2.978 s
+Aalen-Johansen for event 1 fit in 4.898 s
+Integrated theoretical cumulative incidence curve for event 2 in 4.991 s
+Aalen-Johansen for event 2 fit in 4.894 s
+Integrated theoretical cumulative incidence curve for event 3 in 4.973 s
+Aalen-Johansen for event 3 fit in 4.898 s
 </pre></div>
 </div>
 <p>Note that the Aalen-Johansen estimator is unbiased and empirically recovers
@@ -603,16 +613,16 @@ introducing some bias). This is left as future work.</p>
 <p>Alternatively, we could try to enable a monotonicity constraint at training
 time, however, in practice this often causes a sever over-estimation bias for
 the large time horizons:</p>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 46.294 seconds)</p>
-<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-marginal-cumulative-incidence-estimation-py">
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 42.772 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-02-marginal-cumulative-incidence-estimation-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/2932d6ac7842b6d781c27c5737ae52fa/plot_marginal_cumulative_incidence_estimation.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_marginal_cumulative_incidence_estimation.ipynb</span></code></a></p>
+<p><a class="reference download internal" download="" href="../_downloads/8da6be5df74b4f584c69dbcd5de4f948/plot_02_marginal_cumulative_incidence_estimation.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_02_marginal_cumulative_incidence_estimation.ipynb</span></code></a></p>
 </div>
 <div class="sphx-glr-download sphx-glr-download-python docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/878bb6ffe7fba36a0655277b8151e4cd/plot_marginal_cumulative_incidence_estimation.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_marginal_cumulative_incidence_estimation.py</span></code></a></p>
+<p><a class="reference download internal" download="" href="../_downloads/07ad600aa649e25a01838605879dff29/plot_02_marginal_cumulative_incidence_estimation.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_02_marginal_cumulative_incidence_estimation.py</span></code></a></p>
 </div>
 <div class="sphx-glr-download sphx-glr-download-zip docutils container">
-<p><a class="reference download internal" download="" href="../_downloads/4f05ecd626e67565b19d5038f03572d5/plot_marginal_cumulative_incidence_estimation.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_marginal_cumulative_incidence_estimation.zip</span></code></a></p>
+<p><a class="reference download internal" download="" href="../_downloads/28dc0b4663d142f699c8b1869d27757f/plot_02_marginal_cumulative_incidence_estimation.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_02_marginal_cumulative_incidence_estimation.zip</span></code></a></p>
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
@@ -630,7 +640,7 @@ the large time horizons:</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="plot_survival_analysis.html"
+       href="plot_01_survival_analysis.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
@@ -654,7 +664,8 @@ the large time horizons:</p>
             
             
               
-                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
 
   <div class="sidebar-secondary-item">
@@ -673,7 +684,7 @@ the large time horizons:</p>
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/auto_examples/plot_marginal_cumulative_incidence_estimation.rst.txt">
+    <a href="../_sources/auto_examples/plot_02_marginal_cumulative_incidence_estimation.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>
@@ -692,8 +703,8 @@ the large time horizons:</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
-<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -713,7 +724,7 @@ the large time horizons:</p>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
     <br/>
   </p>
 </div>
@@ -726,7 +737,7 @@ the large time horizons:</p>
       
         <div class="footer-item">
 <p class="theme-version">
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.0.
 </p></div>
       
     </div>
