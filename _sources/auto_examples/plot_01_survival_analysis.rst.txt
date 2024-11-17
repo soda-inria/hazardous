@@ -1073,7 +1073,7 @@ doesn't depend on the patient features.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.879 seconds)
+   **Total running time of the script:** (0 minutes 6.993 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_survival_analysis.py:

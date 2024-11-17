@@ -37,7 +37,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
     <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=56c72d39" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=932f07db" />
   
   <!-- So that users can add custom icons -->
   <script src="../_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
@@ -559,15 +559,15 @@ theoretical CIFs:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_001.png" srcset="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_001.png" alt="Cause-specific cumulative incidence functions (0.0% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.643 s
-SurvivalBoost fit: 2.719 s
-SurvivalBoost prediction: 2.934 s
-Integrated theoretical cumulative incidence curve for event 1 in 2.995 s
-Aalen-Johansen for event 1 fit in 4.926 s
-Integrated theoretical cumulative incidence curve for event 2 in 5.022 s
-Aalen-Johansen for event 2 fit in 4.973 s
-Integrated theoretical cumulative incidence curve for event 3 in 5.053 s
-Aalen-Johansen for event 3 fit in 4.885 s
+<img src="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_001.png" srcset="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_001.png" alt="Cause-specific cumulative incidence functions (0.0% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.662 s
+SurvivalBoost fit: 2.690 s
+SurvivalBoost prediction: 2.927 s
+Integrated theoretical cumulative incidence curve for event 1 in 2.988 s
+Aalen-Johansen for event 1 fit in 4.937 s
+Integrated theoretical cumulative incidence curve for event 2 in 5.032 s
+Aalen-Johansen for event 2 fit in 5.018 s
+Integrated theoretical cumulative incidence curve for event 3 in 5.096 s
+Aalen-Johansen for event 3 fit in 4.976 s
 </pre></div>
 </div>
 </section>
@@ -590,15 +590,15 @@ of censoring.</p>
 <span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="o">=</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="n">aj</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_censored</span><span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_002.png" srcset="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_002.png" alt="Cause-specific cumulative incidence functions (40.4% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.602 s
+<img src="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_002.png" srcset="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_002.png" alt="Cause-specific cumulative incidence functions (40.4% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.591 s
 SurvivalBoost fit: 2.705 s
-SurvivalBoost prediction: 2.917 s
-Integrated theoretical cumulative incidence curve for event 1 in 2.978 s
-Aalen-Johansen for event 1 fit in 4.898 s
-Integrated theoretical cumulative incidence curve for event 2 in 4.991 s
-Aalen-Johansen for event 2 fit in 4.894 s
-Integrated theoretical cumulative incidence curve for event 3 in 4.973 s
-Aalen-Johansen for event 3 fit in 4.898 s
+SurvivalBoost prediction: 2.940 s
+Integrated theoretical cumulative incidence curve for event 1 in 3.000 s
+Aalen-Johansen for event 1 fit in 4.967 s
+Integrated theoretical cumulative incidence curve for event 2 in 5.058 s
+Aalen-Johansen for event 2 fit in 4.967 s
+Integrated theoretical cumulative incidence curve for event 3 in 5.045 s
+Aalen-Johansen for event 3 fit in 5.035 s
 </pre></div>
 </div>
 <p>Note that the Aalen-Johansen estimator is unbiased and empirically recovers
@@ -613,7 +613,7 @@ introducing some bias). This is left as future work.</p>
 <p>Alternatively, we could try to enable a monotonicity constraint at training
 time, however, in practice this often causes a sever over-estimation bias for
 the large time horizons:</p>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 42.772 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 43.187 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-02-marginal-cumulative-incidence-estimation-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/8da6be5df74b4f584c69dbcd5de4f948/plot_02_marginal_cumulative_incidence_estimation.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_02_marginal_cumulative_incidence_estimation.ipynb</span></code></a></p>
@@ -687,6 +687,41 @@ the large time horizons:</p>
     <a href="../_sources/auto_examples/plot_02_marginal_cumulative_incidence_estimation.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+
+
+  <div class="sphx-glr-sidebar-component">
+    
+      
+        <div class="sphx-glr-sidebar-item sphx-glr-download-python-sidebar" title="plot_02_marginal_cumulative_incidence_estimation.py">
+          <a download href="../_downloads/07ad600aa649e25a01838605879dff29/plot_02_marginal_cumulative_incidence_estimation.py">
+            <i class="fa-solid fa-download"></i>
+            Download source code
+          </a>
+        </div>
+      
+    
+      
+        <div class="sphx-glr-sidebar-item sphx-glr-download-jupyter-sidebar" title="plot_02_marginal_cumulative_incidence_estimation.ipynb">
+          <a download href="../_downloads/8da6be5df74b4f584c69dbcd5de4f948/plot_02_marginal_cumulative_incidence_estimation.ipynb">
+            <i class="fa-solid fa-download"></i>
+            Download Jupyter notebook
+          </a>
+        </div>
+      
+    
+      
+        <div class="sphx-glr-sidebar-item sphx-glr-download-zip-sidebar" title="plot_02_marginal_cumulative_incidence_estimation.zip">
+          <a download href="../_downloads/28dc0b4663d142f699c8b1869d27757f/plot_02_marginal_cumulative_incidence_estimation.zip">
+            <i class="fa-solid fa-download"></i>
+            Download zipped
+          </a>
+        </div>
+      
+    
   </div>
 </div>
 
