@@ -187,14 +187,13 @@ In this dataset, approximately 42% of the data is censored..
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 49-54
+.. GENERATED FROM PYTHON SOURCE LINES 49-53
 
 .. code-block:: Python
 
     from sklearn.model_selection import train_test_split
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 
 
 
@@ -203,7 +202,7 @@ In this dataset, approximately 42% of the data is censored..
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 55-71
+.. GENERATED FROM PYTHON SOURCE LINES 54-70
 
 Using SurvivalBoost to estimate the survival function
 -----------------------------------------------------
@@ -222,7 +221,7 @@ SurvivalBoost is a scikit-learn compatible model which expects a covariates data
 (or array-like) ``X``, and a target dataframe ``y`` with columns "event" and
 "duration". This allows SurvivalBoost to estimate the survival function :math:`S`.
 
-.. GENERATED FROM PYTHON SOURCE LINES 72-78
+.. GENERATED FROM PYTHON SOURCE LINES 71-77
 
 .. code-block:: Python
 
@@ -649,7 +648,7 @@ SurvivalBoost is a scikit-learn compatible model which expects a covariates data
     <br />
     <br />
 
-.. GENERATED FROM PYTHON SOURCE LINES 79-84
+.. GENERATED FROM PYTHON SOURCE LINES 78-83
 
 SurvivalBoost can then predict the survival function for each patient,
 according to some time grid of horizons.
@@ -657,7 +656,7 @@ according to some time grid of horizons.
 with the parameter ``times``.
 When ``times`` is set to ``None``, the model will used the learned time grid.
 
-.. GENERATED FROM PYTHON SOURCE LINES 85-94
+.. GENERATED FROM PYTHON SOURCE LINES 84-93
 
 .. code-block:: Python
 
@@ -677,11 +676,11 @@ When ``times`` is set to ``None``, the model will used the learned time grid.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 95-96
+.. GENERATED FROM PYTHON SOURCE LINES 94-95
 
 Let's plot the estimated survival function for some patients.
 
-.. GENERATED FROM PYTHON SOURCE LINES 96-127
+.. GENERATED FROM PYTHON SOURCE LINES 95-126
 
 .. code-block:: Python
 
@@ -728,7 +727,7 @@ Let's plot the estimated survival function for some patients.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 128-138
+.. GENERATED FROM PYTHON SOURCE LINES 127-137
 
 Measuring features impact on predictions
 ----------------------------------------
@@ -741,7 +740,7 @@ features to eliminate correlations.
 We create a synthetic dataset where age (``x8``) is resampled to reduce
 confounder bias.
 
-.. GENERATED FROM PYTHON SOURCE LINES 139-187
+.. GENERATED FROM PYTHON SOURCE LINES 138-186
 
 .. code-block:: Python
 
@@ -805,7 +804,7 @@ confounder bias.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 188-193
+.. GENERATED FROM PYTHON SOURCE LINES 187-192
 
 Unsurprisingly, the cumulative incidence of death mostly increases with age.
 We can do the same thing with chemotherapy treatement.
@@ -813,7 +812,7 @@ We can do the same thing with chemotherapy treatement.
 Let's create a synthetic dataset where chemotherapy (``x6``)
 alternates between 0 and 1.
 
-.. GENERATED FROM PYTHON SOURCE LINES 194-235
+.. GENERATED FROM PYTHON SOURCE LINES 193-234
 
 .. code-block:: Python
 
@@ -870,7 +869,7 @@ alternates between 0 and 1.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 236-304
+.. GENERATED FROM PYTHON SOURCE LINES 235-303
 
 People treated with chemotherapy likely have more advanced stages of cancer, which is
 reflected by the lower estimated survival function. This serves as a reminder that
@@ -941,7 +940,7 @@ summarize the Brier score in time:
     \mathrm{BS(t)} dt
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 305-315
+.. GENERATED FROM PYTHON SOURCE LINES 304-314
 
 .. code-block:: Python
 
@@ -963,17 +962,17 @@ summarize the Brier score in time:
 
  .. code-block:: none
 
-    IBS for SurvivalBoost: 0.1382
+    IBS for SurvivalBoost: 0.1439
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 316-318
+.. GENERATED FROM PYTHON SOURCE LINES 315-317
 
 We can compare this to the Integrated Brier score of a simple Kaplan-Meier estimator,
 which doesn't take the patient features into account.
 
-.. GENERATED FROM PYTHON SOURCE LINES 319-339
+.. GENERATED FROM PYTHON SOURCE LINES 318-338
 
 .. code-block:: Python
 
@@ -1005,16 +1004,16 @@ which doesn't take the patient features into account.
 
  .. code-block:: none
 
-    IBS for Kaplan-Meier: 0.1566
+    IBS for Kaplan-Meier: 0.1653
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 340-341
+.. GENERATED FROM PYTHON SOURCE LINES 339-340
 
 Let's also compute the concordance index for both the Kaplan-Meier and SurvivalBoost.
 
-.. GENERATED FROM PYTHON SOURCE LINES 344-353
+.. GENERATED FROM PYTHON SOURCE LINES 343-352
 
 .. code-block:: Python
 
@@ -1040,13 +1039,13 @@ Let's also compute the concordance index for both the Kaplan-Meier and SurvivalB
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 354-357
+.. GENERATED FROM PYTHON SOURCE LINES 353-356
 
 0.5 corresponds to random chance, which makes sense as the Kaplan-Meier estimator
 doesn't depend on the patient features.
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 358-365
+.. GENERATED FROM PYTHON SOURCE LINES 357-364
 
 .. code-block:: Python
 
@@ -1073,7 +1072,7 @@ doesn't depend on the patient features.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 6.993 seconds)
+   **Total running time of the script:** (0 minutes 7.376 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_survival_analysis.py:
