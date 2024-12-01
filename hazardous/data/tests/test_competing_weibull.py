@@ -1,4 +1,5 @@
 import pytest
+from numpy.testing import assert_array_equal
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import cross_val_score
@@ -121,3 +122,22 @@ def test_competing_weibull_with_censoring(seed):
     # Check that high scale censoring keeps approximate balance between events:
     event_counts = y_high_scale.query("event != 0")["event"].value_counts().sort_index()
     assert event_counts.max() < 2 * event_counts.min(), event_counts
+
+
+@pytest.mark.parametrize("seed", range(3))
+def test_make_synthetic_competing_weibull_return(seed):
+    n_samples = 1000
+    df = make_synthetic_competing_weibull(
+        n_events=3,
+        n_samples=n_samples,
+        return_X_y=False,
+        random_state=seed,
+    )
+    X, y = make_synthetic_competing_weibull(
+        n_events=3,
+        n_samples=n_samples,
+        return_X_y=True,
+        random_state=seed,
+    )
+    assert_array_equal(df["data"], X)
+    assert_array_equal(df["target"], y)
