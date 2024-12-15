@@ -21,8 +21,34 @@ def concordance_index_incidence(
     ipcw_estimator="km",
     tied_tol=1e-8,
 ):
-    """Time-dependent concordance index for prognostic models with competing risks \
+    r"""Time-dependent concordance index for prognostic models with competing risks \
     using inverse probability of censoring weighting.
+
+    .. math::
+
+        \mathrm{C}(t) = \frac{\sum_{i=1}^n \sum_{j=1}^n (\tilde{A}_{ij}
+        \hat{W}_{ij, 1}^{-1} + \tilde{B}_{ij} \hat{W}_{ij, 2}^{-1}) Q^{ij}(t)
+        \tilde{N}^1_i(t)}
+        {\sum_{i=1}^n \sum_{j=1}^n (\tilde{A}_{ij}
+        \hat{W}_{ij, 1}^{-1} + \tilde{B}_{ij} \hat{W}_{ij, 2}^{-1}) \tilde{N}^1_i(t)}
+
+    where:
+
+    .. math::
+
+        \begin{align}
+        \tilde{N}^1_i(t) &= I\{\tilde{T} \leq t, \tilde{D}_i = 1\} \\
+        \tilde{A}_{ij} &= I\{\tilde{T}_i < \tilde{T}_j\} \\
+        \tilde{B}_{ij} &= I\{\tilde{T}_i \geq \tilde{T}_j, D_j = 2\} \\
+        \hat{W}_{ij,1} &= \hat{G}(\tilde{T}_i-|X_i) \hat{G}(\tilde{T}_i|X_j) \\
+        \hat{W}_{ij,2} &= \hat{G}(\tilde{T}_i-|X_i) \hat{G}(\tilde{T}_j-|X_j) \\
+        Q_{ij}(t) &= I\{M(t, X_i) > M(t, X_j)\}
+        \end{align}
+
+    where :math:`D_j = 1` and :math:`D_j = 2` respectively indicate individuals
+    having experienced the event of interest and a competing event, :math:`\hat{G}`
+    is a IPCW estimator, and :math:`Q_{ij}(t)` is an indicator for the order of
+    predicted risk at :math:`t`.
 
     The concordance index (C-index) is a common metric in survival analysis that
     evaluates whether the model predictions correctly order pairs of individuals with
@@ -31,7 +57,7 @@ def concordance_index_incidence(
     ratio of the number of concordant pairs to the total number of pairs.
     This implementation extends the C-index to the competing risks setting, where
     multiple alternative events are considered, aiming to determine which event occurs
-    first and when, following the formulas and notations in [1]_.
+    first and when, following the formulas and notations in [Wolbers2014]_.
 
     Due to the right-censoring in the data, the order of some pairs is unknown,
     so we define the notion of comparable pairs, i.e. the pairs for which
@@ -39,9 +65,8 @@ def concordance_index_incidence(
     A pair :math:`(i, j)` is comparable, with :math:`i` experiencing the event of
     interest at time :math:`T_i` if:
 
-    - :math:`j` experiences the event of interest at a strictly greater time
+    - :math:`j` is censored or experience any event at a strictly greater time
       :math:`T_j > T_i` (pair of type A)
-    - :math:`j` is censored at time :math:`T_j = T_i` or greater (pair of type A)
     - :math:`j` experiences a competing event before or at time :math:`T_i`
       (pair of type B)
 
@@ -50,16 +75,18 @@ def concordance_index_incidence(
     be counted as :math:`1/2` for the count of comparable pairs.
 
     A pair is then considered concordant if the predicted incidence of the event of
-    interest for :math:`i` at time :math:`\\tau` is larger than the predicted incidence
+    interest for :math:`i` at time :math:`\tau` is larger than the predicted incidence
     for :math:`j`. If both predicted incidences are ties, the pair is counted as
     :math:`1/2` for the count of concordant pairs.
 
     The C-index has been shown to depend on the censoring distribution, and an
     inverse probability of censoring weighting (IPCW) allows to overcome this
-    limitation [2]_, [3]_. By default, the IPCW is implemented with a Kaplan-Meier
-    estimator. Additionnally, the C-index is not a proper metric to evaluate
-    a survival model [4]_, and alternatives as the integrated Brier score
-    (``integrated_brier_score_incidence``) should be considered.
+    limitation [Uno2011]_, [Gerds2013]_. By default, the IPCW is implemented with a
+    Kaplan-Meier estimator. Additionnally, the C-index is not a proper metric to
+    evaluate a survival model [Blanche2019]_, and alternatives as the integrated Brier
+    score (``integrated_brier_score_incidence``) should be considered.
+    The C-index is a ranking metric and, unlike proper scoring rule metrics,
+    cannot evaluate the calibration of the estimator.
 
     Parameters
     ----------
@@ -81,14 +108,14 @@ def concordance_index_incidence(
         The train target, consisting in the 'event' and 'duration' columns.
 
     X_train: array or dataframe of shape (n_samples_train, n_features), default=None
-        Covariates, used to learn a censor model if the inverse
-        probability of censoring weights (IPCW), if the IPCW model is conditional
-        on features (for instance Cox). Not used if ipcw=None or 'km'.
+        Covariates, used to learn a censor model if the inverse probability of
+        censoring weights (IPCW) is conditional on features (for instance Cox).
+        Unused if ipcw is None or 'km'.
 
     X_test: array or dataframe of shape (n_samples_test, n_features), default=None
-        Covariates, used to predict weights a censor model if the inverse
-        probability of censoring weights (IPCW), if the IPCW model is conditional
-        on features (for instance Cox). Not used if ipcw=None or 'km'.
+        Covariates, used to predict weights a censor model if the inverse probability
+        of censoring weights (IPCW) is conditional on features (for instance Cox).
+        Unused if ipcw is None or 'km'.
 
     event_of_interest: int, default=1
         For competing risks, the event of interest.
@@ -103,31 +130,24 @@ def concordance_index_incidence(
 
     Returns
     -------
-    cindex: (n_taus,)
+    cindex: array of shape (n_taus,)
         Value of the concordance index for each tau in taus.
 
     References
     ----------
-    .. [1] Wolbers, M., Blanche, P., Koller, M. T., Witteman, J. C., &
-           Gerds, T. A. (2014).
-           Concordance for prognostic models with competing risks.
-           Biostatistics, 15(3), 526-539.
+    .. [Wolbers2014] M. Wolbers, P. Blanche, M. T. Koller, J. C. Witteman, T. A. Gerds,
+       "Concordance for prognostic models with competing risks", 2014
 
-    .. [2] Uno, H., Cai, T., Pencina, M. J., D'Agostino, R. B., &
-           Wei, L. J. (2011).
-           On the C‐statistics for evaluating overall adequacy of risk
-           prediction procedures with censored survival data.
-           Statistics in medicine, 30(10), 1105-1117.
+    .. [Uno2011] H. Uno, T. Cai, M. J. Pencina, R. B. D'Agostino,  L. J. Wei, "On the
+       C-statistics for evaluating overall adequacy of risk prediction
+       procedures with censored survival data", 2011
 
-    .. [3] Gerds, T. A., Kattan, M. W., Schumacher, M., & Yu, C. (2013).
-           Estimating a time‐dependent concordance index for survival
-           prediction models with covariate dependent censoring.
-           Statistics in medicine, 32(13), 2173-2184.
+    .. [Gerds2013] T. A. Gerds, M. W. Kattan, M. Schumacher, C. Yu, "Estimating a
+       time-dependent concordance index for survival prediction models
+       with covariate dependent censoring", 2013
 
-    .. [4] Blanche, P., Kattan, M. W., & Gerds, T. A. (2019).
-           The c-index is not proper for the evaluation of-year predicted risks.
-           Biostatistics, 20(2), 347-357.
-
+    .. [Blanche2019] P. Blanche, M. W. Kattan, T. A. Gerds, "The c-index is not proper
+       for the evaluation of-year predicted risks", 2019
     """
     c_index_report = _concordance_index_incidence_report(
         y_test,
@@ -141,7 +161,7 @@ def concordance_index_incidence(
         ipcw_estimator=ipcw_estimator,
         tied_tol=tied_tol,
     )
-    return c_index_report["cindex"]
+    return np.array(c_index_report["cindex"])
 
 
 def _concordance_index_incidence_report(
@@ -159,7 +179,7 @@ def _concordance_index_incidence_report(
     """Report version of function `concordance_index_incidence`.
 
     Running this function directly is useful to get more insights about
-    the underlying statistics of the c-index.
+    the underlying statistics of the C-index.
     All returned lists have the same length as taus.
 
     Returns
@@ -168,8 +188,8 @@ def _concordance_index_incidence_report(
         Value of the concordance index
 
     n_pairs_a: list of int
-        Number of comparable pairs with T_i <= T_j (type A) without ties for D_j != 0
-        those are the only comparable pairs for survival without competing events.
+        Number of comparable pairs with T_i < T_j (type A) without ties.
+        Those are the only comparable pairs for survival without competing events.
 
     n_concordant_pairs_a: list of int
         Number of concordant pairs among A pairs without ties.
@@ -257,13 +277,13 @@ def _concordance_index_incidence_report(
 
 
 def _concordance_index_tau(y_test, y_pred, ipcw, event_of_interest, tied_tol=1e-8):
-    """Compute the cindex and the associated statistics for a given tau."""
+    """Compute the C-index and the associated statistics for a given tau."""
     event, duration = check_y_survival(y_test)
     binary_event = (event == event_of_interest).astype("int32")
     if not binary_event.any():
         warnings.warn(
             f"There is not any event for {event_of_interest=!r}. "
-            "The cindex is undefined."
+            "The C-index is undefined."
         )
 
     stats_a = _concordance_summary_statistics(
@@ -316,7 +336,7 @@ def _concordance_index_tau(y_test, y_pred, ipcw, event_of_interest, tied_tol=1e-
 def _concordance_summary_statistics(
     event, duration, y_pred, ipcw, pair_type, tied_tol=1e-8
 ):
-    "Compute the C-index with a quadratic time complexity."
+    """Compute the C-index with a quadratic time complexity."""
     event, duration, y_pred, ipcw = _sort_by_duration(
         event, duration, y_pred, ipcw, pair_type=pair_type
     )
@@ -407,3 +427,6 @@ def interpolate_preds(y_pred, time_grid, tau):
         y_pred_tau[idx] = y_pred_sample_at_tau
 
     return y_pred_tau
+
+
+# %%
