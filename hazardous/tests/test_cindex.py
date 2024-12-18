@@ -457,7 +457,12 @@ def test_concordance_index_incidence_report_competitive():
     time_grid = [10, 20, 30]
 
     res = _concordance_index_incidence_report(
-        y_test, y_pred, time_grid, taus=None, y_train=y_test, event_of_interest=1
+        y_test,
+        y_pred,
+        y_train=y_test,
+        time_grid=time_grid,
+        taus=None,
+        event_of_interest=1,
     )
     assert res == {
         "cindex": [1.0],
@@ -472,7 +477,12 @@ def test_concordance_index_incidence_report_competitive():
     }
 
     res = _concordance_index_incidence_report(
-        y_test, y_pred, time_grid, taus=None, y_train=y_test, event_of_interest=2
+        y_test,
+        y_pred,
+        y_train=y_test,
+        time_grid=time_grid,
+        taus=None,
+        event_of_interest=2,
     )
 
     assert res == {
