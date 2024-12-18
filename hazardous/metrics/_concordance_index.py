@@ -67,12 +67,9 @@ def concordance_index_incidence(
 
     - :math:`j` is censored or experience any event at a strictly greater time
       :math:`T_j > T_i` (pair of type A)
+    - :math:`j` is censored at the exact same time :math:`T_i = T_j` (pair of type A).
     - :math:`j` experiences a competing event before or at time :math:`T_i`
       (pair of type B)
-
-    The pair :math:`(i, j)` is considered a tie for time if :math:`j` experiences
-    the event of interest at the same time (:math:`T_j=T_i`). This tied time pair will
-    be counted as :math:`1/2` for the count of comparable pairs.
 
     A pair is then considered concordant if the predicted incidence of the event of
     interest for :math:`i` at time :math:`\tau` is larger than the predicted incidence
@@ -188,14 +185,15 @@ def _concordance_index_incidence_report(
         Value of the concordance index
 
     n_pairs_a: list of int
-        Number of comparable pairs with T_i < T_j (type A) without ties.
+        Number of comparable pairs with (T_i < T_j) | ((T_i = T_j) & (D_j = 0))
+        (type A).
         Those are the only comparable pairs for survival without competing events.
 
     n_concordant_pairs_a: list of int
         Number of concordant pairs among A pairs without ties.
 
     n_ties_times_a: list of int
-        Number of tied pairs of type A with D_i = D_j = 1.
+        Number of tied pairs of type A with (D_i = D_j = 1) & (T_i = T_j).
 
     n_ties_pred_a: list of int
         Number of pairs of type A with np.abs(y_pred_i - y_pred_j) <= tied_tol
@@ -357,11 +355,11 @@ def _concordance_summary_statistics(
 
     stats = Counter()
     for y_pred_i, duration_i, ipcw_i in zip(y_pred_event, duration_event, ipcw_event):
-        # We select all acceptable pairs by only keeping elements strictly higher than
-        # `duration`, which corresponds to A_{ij} = I(T_i < T_j).
-        # Using `side=right` returns the index of the smallest element in `duration`
-        # strictly higher than `duration_i`.
-        idx_acceptable = np.searchsorted(duration, duration_i, side="right")
+        idx_acceptable, n_ties_times = _get_idx_acceptable(
+            event, duration, duration_i, pair_type
+        )
+        stats["n_ties_times"] += n_ties_times
+
         stats["n_pairs"] += duration.shape[0] - idx_acceptable
         stats["weighted_pairs"] += _compute_weights(
             ipcw_i, ipcw[idx_acceptable:], pair_type
@@ -379,8 +377,6 @@ def _concordance_summary_statistics(
             ipcw_i, ipcw[idx_acceptable:][mask_concordant & ~mask_ties_pred], pair_type
         )
 
-        stats["n_ties_times"] = (duration_event == duration_i).sum() - 1
-
     return stats
 
 
@@ -389,18 +385,45 @@ def _sort_by_duration(event, duration, y_pred, ipcw, pair_type):
 
     The pair type selects whether we sort duration by ascending or descending order.
     Indeed, to be comparable:
-    - A pair of type A requires T_i < T_j
+    - A pair of type A requires (T_i < T_j) | ((T_i = T_j) & (D_j = 0))
     - A pair of type B requires T_i >= T_j
     """
     if pair_type == "b":
         duration *= -1
-    indices = np.argsort(duration)
+    # Sort by ascending duration first, then by descending event.
+    # After reordering, we would have:
+    # duration = [10, 10, 10, 11]
+    # event = [2, 1, 0, 1]
+    indices = np.lexsort((-event, duration))
     event = event[indices]
     duration = duration[indices]
     y_pred = y_pred[indices]
     ipcw = ipcw[indices]
 
     return event, duration, y_pred, ipcw
+
+
+def _get_idx_acceptable(event, duration, duration_i, pair_type):
+    """Returns idx_acceptable and n_times_ties"""
+    if pair_type == "a":
+        # We select all acceptable pairs by only keeping elements strictly higher than
+        # `duration`, which corresponds to A_{ij} = I(T_i < T_j).
+        # We also select censored pairs where T_i = T_j and D_j = 0.
+        # Using searchsorted with `side=right` returns the index of the smallest
+        # element in `duration` strictly higher than `duration_i`.
+        idx_acceptable = np.searchsorted(duration, duration_i, side="right")
+        idx_with_ties = np.searchsorted(duration, duration_i, side="left")
+        n_censored_ties = (event[idx_with_ties:idx_acceptable] == 0).sum()
+        # +1 to remove the individual `i` from the ties count.
+        n_times_ties = (event[idx_with_ties + 1 : idx_acceptable] == 1).sum()
+        return idx_acceptable - n_censored_ties, n_times_ties
+    else:
+        # We select all acceptable pairs by keeping elements higher or equal than
+        # `duration`, which corresponds to B_{ij} = I((T_j >= T_i)) & (D_j = 2))
+        # as the duration has been filtered to only keep D_j = 2.
+        # Using searchsorted with `side=left` returns the index of the smallest element
+        # in `duration` higher or equal than `duration_i`.
+        return np.searchsorted(duration, duration_i, side="left"), 0
 
 
 def _compute_weights(ipcw_i, array_ipcw_j, pair_type):

@@ -17,6 +17,7 @@ from hazardous.metrics._concordance_index import (
     _concordance_index_incidence_report,
     _concordance_index_tau,
     _concordance_summary_statistics,
+    _get_idx_acceptable,
     concordance_index_incidence,
     interpolate_preds,
 )
@@ -253,7 +254,7 @@ def test_summary_statistics_a(bunch, expected):
                     weighted_concordant_pairs=33.0,
                     n_pairs=4,
                     n_concordant_pairs=4,
-                    n_ties_times=1,
+                    n_ties_times=0,
                     n_ties_pred=0,
                     weighted_ties_pred=0.0,
                 )
@@ -355,7 +356,7 @@ def test_summary_statistics_b(bunch, expected):
                 n_pairs_a=4,
                 n_concordant_pairs_a=4,
                 n_ties_pred_a=0,
-                n_ties_times_a=1,
+                n_ties_times_a=2,
                 n_pairs_b=0,
                 n_concordant_pairs_b=0,
                 n_ties_pred_b=0,
@@ -715,7 +716,7 @@ def test_sksurv_consistency_synthetic():
         (1, 0.69160605),
         (2, 0.68663299),
         (3, 0.69568347),
-        (4, 0.64405581),
+        (4, 0.64321448),
     ],
 )
 def test_sksurv_consistancy_kidney(random_state, sksurv_cindex):
@@ -751,3 +752,17 @@ def test_sksurv_consistancy_kidney(random_state, sksurv_cindex):
     #     tau=None,
     # )[0]
     assert_almost_equal(result["cindex"][0], sksurv_cindex, decimal=4)
+
+
+@pytest.mark.parametrize("pair_type, expected_idx_acceptable", [("a", 2), ("b", 1)])
+def test_get_idx_acceptable(pair_type, expected_idx_acceptable):
+    event = np.array([1, 1, 0, 1, 0, 1, 1])
+    duration = np.array([0, 1, 1, 2, 2, 4, 5])
+    duration_i = 1
+
+    idx_acceptable, time_ties = _get_idx_acceptable(
+        event, duration, duration_i, pair_type
+    )
+
+    assert time_ties == 0
+    assert idx_acceptable == expected_idx_acceptable
