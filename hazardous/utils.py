@@ -53,3 +53,17 @@ def check_event_of_interest(k):
             f"got: event_of_interest={k}"
         )
     return
+
+
+def make_time_grid(duration, n_steps=20):
+    t_min, t_max = duration.min(), duration.max()
+    return np.linspace(t_min, t_max, n_steps)
+
+
+def make_recarray(y):
+    event = y["event"].values
+    duration = y["duration"].values
+    return np.array(
+        [(event[i], duration[i]) for i in range(y.shape[0])],
+        dtype=[("e", bool), ("t", float)],
+    )

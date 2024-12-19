@@ -164,5 +164,9 @@ cython_debug/
 doc/generated/
 
 
+# Remove files auto-generated from mac
+*.DS_Store
+
 # This dataset should not be redistributed, because users have to sign an agreement.
 hazardous/data/seer_cancer_cardio_raw_data.txt
+hazardous/data/*.txt
