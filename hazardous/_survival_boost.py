@@ -633,3 +633,77 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                 )
             ibs_events.append(ibs_event)
         return -np.mean(ibs_events)
+
+
+class BaggedSurvivalBoost(BaseEstimator, ClassifierMixin):
+    def __init__(
+        # TODO: run a grid search on a few datasets to find good defaults.
+        self,
+        hard_zero_fraction=0.1,
+        # TODO: implement convergence criterion and use max_iter instead of
+        # n_iter.
+        n_iter=100,
+        learning_rate=0.05,
+        max_leaf_nodes=31,
+        max_depth=None,
+        min_samples_leaf=50,
+        show_progressbar=True,
+        n_time_grid_steps=100,
+        time_horizon=None,
+        ipcw_strategy="alternating",
+        n_iter_before_feedback=20,
+        random_state=None,
+        n_horizons_per_observation=3,
+        bagging=5,
+    ):
+        self.hard_zero_fraction = hard_zero_fraction
+        self.n_iter = n_iter
+        self.learning_rate = learning_rate
+        self.max_depth = max_depth
+        self.max_leaf_nodes = max_leaf_nodes
+        self.min_samples_leaf = min_samples_leaf
+        self.show_progressbar = show_progressbar
+        self.n_time_grid_steps = n_time_grid_steps
+        self.time_horizon = time_horizon
+        self.n_iter_before_feedback = n_iter_before_feedback
+        self.ipcw_strategy = ipcw_strategy
+        self.random_state = random_state
+        self.n_horizons_per_observation = n_horizons_per_observation
+        self.bagging = bagging  # number of models to train
+
+    def fit(self, X, y, times=None):
+        self.models = []
+        survival_boost_params = self.get_params()
+        survival_boost_params.pop("random_state")
+        survival_boost_params.pop("bagging")
+        for i in range(self.bagging):
+            model = SurvivalBoost(
+                random_state=self.random_state + i, **survival_boost_params
+            )
+            model.fit(X, y, times)
+            self.models.append(model)
+        return self
+
+    def predict_proba(self, X, time_horizon=None):
+        self.predictions = []
+        for model in self.models:
+            self.predictions.append(model.predict_proba(X, time_horizon))
+        return np.mean(self.predictions, axis=0)
+
+    def predict_cumulative_incidence(self, X, times=None):
+        self.predictions = []
+        for model in self.models:
+            self.predictions.append(model.predict_cumulative_incidence(X, times))
+        return np.mean(self.predictions, axis=0)
+
+    def predict_survival_function(self, X, times=None):
+        self.predictions = []
+        for model in self.models:
+            self.predictions.append(model.predict_survival_function(X, times))
+        return np.mean(self.predictions, axis=0)
+
+    def score(self, X, y):
+        self.scores = []
+        for model in self.models:
+            self.scores.append(model.score(X, y))
+        return np.mean(self.scores)
