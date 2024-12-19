@@ -22,6 +22,7 @@ import pandas as pd
 
 from pycox.datasets import metabric
 
+
 np.random.seed(0)
 
 df = metabric.read_df()
@@ -48,6 +49,7 @@ y["event"].value_counts(normalize=True)
 # %%
 from sklearn.model_selection import train_test_split
 
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2)
 
@@ -71,8 +73,8 @@ X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.
 # "duration". This allows SurvivalBoost to estimate the survival function :math:`S`.
 from hazardous import SurvivalBoost
 
-survival_boost = SurvivalBoost(show_progressbar=False).fit(X_train, y_train)
 
+survival_boost = SurvivalBoost(show_progressbar=False).fit(X_train, y_train)
 survival_boost
 
 # %%
@@ -94,6 +96,7 @@ incidence_curves = predicted_curves[:, 1]  # cumulative incidence of the event (
 # %%
 # Let's plot the estimated survival function for some patients.
 import matplotlib.pyplot as plt
+
 
 fig, ax = plt.subplots()
 
@@ -304,6 +307,7 @@ plt.show()
 #
 from hazardous.metrics import integrated_brier_score_survival
 
+
 ibs_survboost = integrated_brier_score_survival(
     y_train,
     y_test,
@@ -317,6 +321,7 @@ print(f"IBS for SurvivalBoost: {ibs_survboost:.4f}")
 # We can compare this to the Integrated Brier score of a simple Kaplan-Meier estimator,
 # which doesn't take the patient features into account.
 from lifelines import KaplanMeierFitter
+
 
 km_model = KaplanMeierFitter()
 km_model.fit(y["duration"], y["event"])
@@ -333,33 +338,47 @@ ibs_km = integrated_brier_score_survival(
     survival_curves_km,
     times=survival_boost.time_grid_,
 )
-print(f"IBS for Kaplan-Meier: {ibs_km:.4f}")
-
+print(f"IBS for Kaplan-Meier at: {ibs_km:.4f}")
 
 # %%
 #
 # Let's also compute the concordance index for both the Kaplan-Meier and SurvivalBoost.
 
 # %%
-from lifelines.utils import concordance_index
+from hazardous.metrics import concordance_index_incidence
 
-concordance_index_km = concordance_index(
-    event_observed=y_test["event"],
-    event_times=y_test["duration"],
-    predicted_scores=survival_curves_km.mean(axis=1),
+
+quantiles = [0.25, 0.5, 0.75]
+taus = np.quantile(survival_boost.time_grid_, quantiles)
+concordance_index_km = concordance_index_incidence(
+    y_test,
+    y_pred=1 - survival_curves_km,
+    y_train=y_train,
+    time_grid=survival_boost.time_grid_,
+    taus=taus,
 )
-print(f"Concordance index for Kaplan-Meier: {concordance_index_km:.2f}")
+print(
+    f"Concordance index at quantiles {quantiles} "
+    f"for Kaplan-Meier: {concordance_index_km}"
+)
 
 # %%
 #
 # 0.5 corresponds to random chance, which makes sense as the Kaplan-Meier estimator
 # doesn't depend on the patient features.
 #
-concordance_index_survboost = concordance_index(
-    event_observed=y_test["event"],
-    event_times=y_test["duration"],
-    predicted_scores=survival_curves.mean(axis=1),
+concordance_index_survboost = concordance_index_incidence(
+    y_test,
+    y_pred=incidence_curves,
+    y_train=y_train,
+    time_grid=survival_boost.time_grid_,
+    taus=taus,
 )
-print(f"Concordance index for SurvivalBoost: {concordance_index_survboost:.2f}")
+print(
+    f"Concordance index at quantiles {quantiles} "
+    f"for SurvivalBoost: {concordance_index_survboost.round(3)}"
+)
+
+# %%
 
 # %%
