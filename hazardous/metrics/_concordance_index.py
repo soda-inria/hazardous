@@ -1,4 +1,3 @@
-# %%
 import warnings
 from collections import Counter, defaultdict
 
@@ -36,7 +35,8 @@ def concordance_index_incidence(
 
         \begin{align}
         \tilde{N}^1_i(t) &= I\{\tilde{T} \leq t, \tilde{D}_i = 1\} \\
-        \tilde{A}_{ij} &= I\{\tilde{T}_i < \tilde{T}_j\} \\
+        \tilde{A}_{ij} &= I\{\tilde{T}_i < \tilde{T}_j \cup (\tilde{T}_i =
+        \tilde{T}_j \cap D_j = 0)\} \\
         \tilde{B}_{ij} &= I\{\tilde{T}_i \geq \tilde{T}_j, D_j = 2\} \\
         \hat{W}_{ij,1} &= \hat{G}(\tilde{T}_i-|X_i) \hat{G}(\tilde{T}_i|X_j) \\
         \hat{W}_{ij,2} &= \hat{G}(\tilde{T}_i-|X_i) \hat{G}(\tilde{T}_j-|X_j) \\
@@ -98,6 +98,7 @@ def concordance_index_incidence(
 
     ipcw_estimator : None, 'km', or fitted estimator, default="km"
         The inverse probability of censoring weighted (IPCW) estimator.
+
         - Pass None to set uniform weights to all samples.
         - Pass "km" to use the Kaplan-Meier IPCW estimator. It fits using y_train,
           which must be set.
@@ -159,7 +160,7 @@ def _concordance_index_incidence_report(
     event_of_interest=1,
     tied_tol=1e-8,
 ):
-    """Report version of function `concordance_index_incidence`.
+    """Report version of function ``concordance_index_incidence``.
 
     Running this function directly is useful to get more insights about
     the underlying statistics of the C-index.
@@ -436,6 +437,3 @@ def interpolate_preds(y_pred, time_grid, tau):
         y_pred_tau[idx] = y_pred_sample_at_tau
 
     return y_pred_tau
-
-
-# %%

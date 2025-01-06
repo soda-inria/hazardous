@@ -1,4 +1,6 @@
 """
+.. _example_intro:
+
 =====================================
 Survival analysis with SurvivalBoost
 =====================================
@@ -15,6 +17,7 @@ We will use the The Molecular Taxonomy of Breast Cancer International Consortium
 (METABRIC) dataset as an example, which is available through ``pycox.datasets``. This
 is the processed data set used in the
 `DeepSurv paper (Katzman et al. 2018) <https://doi.org/10.1186/s12874-018-0482-1>`_.
+
 """
 # %%
 import numpy as np
@@ -249,60 +252,26 @@ plt.show()
 # The Brier score and the C-index are measures that **assess the quality of a
 # predicted survival curve** on a finite data sample.
 #
-# - **The Brier score in time is a strictly proper scoring rule**, which means that an
-#   estimate of the survival probabilities at a given time :math:`t` has minimal Brier
+# - The :func:`Brier score in time <hazardous.metrics.brier_score_survival>` is
+#   **a strictly proper scoring rule**, which means that an estimate of the survival
+#   probabilities at a given time :math:`t` has minimal Brier
 #   score if and only if it matches the oracle survival probabilities induced by
 #   the underlying data generating process. In that respect, the **Brier score**
 #   assesses both the **calibration** and the **ranking power** of a survival
 #   probability estimator. It is comprised between 0 and 1 (lower is better). It
 #   answers the question *"how close to the real probabilities are our estimates?"*.
 #
-# - On the other hand, the **C-index** only assesses the **ranking power**: it
+# - On the other hand, the
+#   :func:`C-index <hazardous.metrics.concordance_index_incidence>`
+#   only assesses the **ranking power**: it
 #   represents the probability that, for a randomly selected pair of patients,
 #   the patient with the higher estimated survival probability will survive
 #   longer than the other. It is comprised between 0 and 1 (higher is better),
 #   with 0.5 corresponding to random predictions.
 #
-# .. dropdown:: Mathematical formulation (Brier score)
-#
-#     .. math::
-#
-#         \mathrm{BS}^c(t) = \frac{1}{n} \sum_{i=1}^n I(d_i \leq t \cap \delta_i = 1)
-#         \frac{(0 - \hat{S}(t | \mathbf{x}_i))^2}{\hat{G}(d_i)} + I(d_i > t)
-#         \frac{(1 - \hat{S}(t | \mathbf{x}_i))^2}{\hat{G}(t)}
-#
-#     In the survival analysis context, the Brier Score can be seen as the Mean
-#     Squared Error (MSE) between our probability :math:`\hat{S}(t)` and our
-#     target label :math:`\delta_i \in {0, 1}`, weighted by the inverse probability
-#     of censoring :math:`\frac{1}{\hat{G}(t)}`.
-#     In practice we estimate :math:`\hat{G}(t)` using a variant of
-#     the Kaplan-Estimator with swapped event indicator.
-#
-#     - When no event or censoring has happened at :math:`t` yet, i.e.
-#       :math:`I(d_i > t)`, we penalize a low probability of survival with
-#       :math:`(1 - \hat{S}(t|\mathbf{x}_i))^2`.
-#     - Conversely, when an individual has experienced an event before :math:`t`, i.e.
-#       :math:`I(d_i \leq t \cap \delta_i = 1)`, we penalize a high probability
-#       of survival with :math:`(0 - \hat{S}(t|\mathbf{x}_i))^2`.
-#
-# .. dropdown:: Mathematical formulation (Harrell's C-index)
-#
-#     .. math::
-#
-#         \mathrm{C_{index}} = \frac{\sum_{i,j} I(d_i < d_j \space \cap \space
-#         \delta_i = 1 \space \cap \space \mu_i < \mu_j)}
-#         {\sum_{i,j} I(d_i < d_j \space \cap \space \delta_i = 1)}
-#
-#     where :math:`\mu_i` and :math:`\mu_j` are the time-averaged predicted survival
-#     probabilities for individual :math:`i` and :math:`j`.
-#
-# Additionnaly, we compute the Integrated Brier Score (IBS), which we will use to
-# summarize the Brier score in time:
-#
-# .. math::
-#
-#     \mathrm{IBS} = \frac{1}{t_{max} - t_{min}}\int^{t_{max}}_{t_{min}}
-#     \mathrm{BS(t)} dt
+# Additionnaly, we compute the
+# :func:`Integrated Brier Score <hazardous.metrics.integrated_brier_score_survival>`
+# (IBS), which we will use to summarize the Brier score in time:
 #
 from hazardous.metrics import integrated_brier_score_survival
 
