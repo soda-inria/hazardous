@@ -30,6 +30,7 @@ Metrics
     metrics.brier_score_incidence
     metrics.integrated_brier_score_survival
     metrics.integrated_brier_score_incidence
+    metrics.accuracy_in_time
 
 Datasets
 --------
