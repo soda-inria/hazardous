@@ -36,9 +36,28 @@ sns.histplot(
 # %%
 # We train a Survival Boost model and compute its accuracy in time.
 import numpy as np
+import pandas as pd
 from hazardous import SurvivalBoost
 from hazardous.metrics import accuracy_in_time
 
+y_test = pd.DataFrame({"event": [1, 0, 1], "duration": [5, 10, 15]})
+y_pred = np.array(
+    [
+        [[0.2, 0.5], [0.8, 0.5]],  # Sample 1
+        [[0.7, 0.6], [0.3, 0.4]],  # Sample 2
+        [[0.1, 0.4], [0.9, 0.6]],  # Sample 3
+    ]
+)
+# (1, 2) correct = 2/3, then (3) correct and (2) doesn't count = 1/2
+expected_acc_in_time = np.array([2 / 3, 1 / 2])
+
+time_grid = np.array([5, 10])
+expected_taus = time_grid
+
+acc_in_time, taus = accuracy_in_time(y_test, y_pred, time_grid)
+acc_in_time, taus
+
+# %%
 
 results = []
 

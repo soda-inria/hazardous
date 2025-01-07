@@ -105,7 +105,7 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
 
     elif quantiles is None and taus is None:
         n_quantiles = min(time_grid.shape[0], 8)
-        quantiles = np.linspace(1 / n_quantiles, 1, n_quantiles)
+        quantiles = np.linspace(0, 1, n_quantiles)
         taus = np.quantile(time_grid, quantiles)
 
     acc_in_time = []
