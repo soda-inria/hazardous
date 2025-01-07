@@ -1,6 +1,6 @@
 import numpy as np
 
-from hazardous.utils import check_y_survival
+from ..utils import check_y_survival
 
 
 def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
@@ -8,7 +8,7 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
 
     .. math::
 
-        \mathrm{acc}(\zeta) = \frac{1}{n_{nc}} \sum_{i=1}^n I\{\hat{y}_i\=y_{i,\zeta}\}
+        \mathrm{acc}(\zeta) = \frac{1}{n_{nc}} \sum_{i=1}^n I\{\hat{y}_i=y_{i,\zeta}\}
         \overline{I\{\delta_i = 0 \cap t_i \leq \zeta \}}
 
     where:
@@ -18,7 +18,7 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
     - :math:`\delta_i` is the event experienced by the individual :math:`i` at
       :math:`t_i`
     - :math:`\hat{y} = \text{arg}\max\limits_{k \in [1, K]} \hat{F}_k(\zeta|X=x_i)` is
-      the most probable event for individual :math:`i` at :math:`\zeta`
+      the most probable predicted event for individual :math:`i` at :math:`\zeta`
     - :math:`y_{i,\zeta} = \delta_i I\{t_i \leq \zeta \}` is the observed event
       for individual :math:`i` at :math:`\zeta`
 
@@ -26,16 +26,16 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
     whether observed events are predicted as the most likely at given times.
     It is defined as the probability that the maximum predicted cumulative incidence
     function (CIF) accross :math:`k` events corresponds to the observed event at a
-    fixed time horizon :math:`zeta`.
+    fixed time horizon :math:`\zeta`.
 
     We remove individuals that were censored at times :math:`t \leq \zeta`, so the
-    accuracy in time essentially represents the accuracy of the estimator up to
-    :math:`zeta`.
+    accuracy in time essentially represents the accuracy of the estimator on
+    observed events up to :math:`\zeta`.
 
     While the C-index can help clinicians to priorize treatment allocation by ranking
     individuals by risk of a given event of interest, the accuracy in time answers
-    a different question: `what is the most likely event that this individual will
-    experience at some fixed time horizon?`. Conceptually, it helps clinicians choose
+    a different question: "`what is the most likely event that this individual will
+    experience at some fixed time horizon?`". Conceptually, it helps clinicians choose
     the right treatment by priorizing the risk for a given individual.
 
     Parameters
@@ -68,6 +68,12 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
 
     taus : array of shape (n_quantiles or n_taus)
         The fixed time horizons effectively used to compute the accuracy in time.
+
+    References
+    ----------
+    .. [Alberge2024] J. Alberge, V. Maladiere,  O. Grisel, J. Abécassis, G. Varoquaux,
+        "Survival Models: Proper Scoring Rule and Stochastic Optimization
+        with Competing Risks", 2024
     """
     event_true, _ = check_y_survival(y_test)
 
@@ -109,8 +115,8 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
 
         tau_idx = np.searchsorted(time_grid, tau)
 
-        # If tau is beyond the time_grid, we extrapolate its accuracy as the accuracy at
-        # max(time_grid).
+        # If tau is beyond the time_grid, we extrapolate its accuracy as
+        # the accuracy at max(time_grid).
         if tau_idx == time_grid.shape[0]:
             tau_idx = -1
 
@@ -118,8 +124,8 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
         y_pred_class = y_pred_at_t[~mask_past_censored, :].argmax(axis=1)
 
         y_test_class = y_test["event"] * (y_test["duration"] <= tau)
-        y_test_class = y_test_class.loc[~mask_past_censored]
+        y_test_class = y_test_class.loc[~mask_past_censored].values
 
-        acc_in_time.append((y_test_class.values == y_pred_class).mean())
+        acc_in_time.append((y_test_class == y_pred_class).mean())
 
     return np.array(acc_in_time), np.asarray(taus)
