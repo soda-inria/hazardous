@@ -1,7 +1,7 @@
 API
 ===
 
-This page lists all the public functions and classes of the `hazardous`
+This page lists all the public functions and classes of the ``hazardous``
 package:
 
 .. currentmodule:: hazardous
