@@ -34,7 +34,7 @@ class SurvivalMixin:
         """
         y_pred = self.predict_cumulative_incidence(X)
         return -mean_integrated_brier_score(
-            y_train=self.weighted_targets_.y_train,
+            y_train=self.y_train_,
             y_test=y,
             y_pred=y_pred,
             time_grid=self.time_grid_,

@@ -387,6 +387,8 @@ class SurvivalBoost(BaseEstimator, SurvivalMixin):
             self.time_grid_ = times.copy()
             self.time_grid_.sort()
 
+        self.estimator_ = self._build_base_estimator()
+
         self.weighted_targets_ = self._check_target_sampling(y)
 
         iterator = range(self.n_iter)
@@ -553,8 +555,6 @@ class SurvivalBoost(BaseEstimator, SurvivalMixin):
         )
 
     def _check_target_sampling(self, y):
-        self.estimator_ = self._build_base_estimator()
-
         if self.ipcw_strategy == "alternating":
             ipcw_estimator = AlternatingCensoringEstimator(
                 incidence_estimator=self.estimator_
@@ -574,5 +574,6 @@ class SurvivalBoost(BaseEstimator, SurvivalMixin):
             ipcw_estimator=ipcw_estimator,
             n_iter_before_feedback=self.n_iter_before_feedback,
         )
+        self.y_train_ = y
 
         return weighted_targets

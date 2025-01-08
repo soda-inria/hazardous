@@ -132,7 +132,8 @@ plot_survival_curves(
 # Bagging for curves smoothing
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
-# Bagging can help us smooth our survival and incidence curves.
+# Bagging can help us smooth our survival and incidence curves, at the cost of
+# fitting ``SurvivalBoost`` multiple times.
 
 from hazardous import BaggingSurvival
 
@@ -141,7 +142,6 @@ bagging_est = BaggingSurvival(
     survival_boost,
     n_estimators=5,
     bootstrap=False,
-    verbose=1,
 ).fit(X, y)
 
 smooth_curves = bagging_est.predict_cumulative_incidence(

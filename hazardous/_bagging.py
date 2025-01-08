@@ -52,7 +52,7 @@ class BaggingSurvival(BaseBagging, SurvivalMixin):
         )
 
     def _get_estimator(self):
-        """Resolve which estimator to return (default is DecisionTreeClassifier)"""
+        """Resolve which estimator to return"""
         if self.estimator is None:
             return SurvivalBoost(show_progressbar=False)
         return self.estimator
@@ -97,7 +97,7 @@ class BaggingSurvival(BaseBagging, SurvivalMixin):
             duration,
             base_estimator.n_time_grid_steps,
         )
-        self.weighted_targets_ = base_estimator._check_target_sampling(y)
+        self.y_train_ = y  # XXX: Used by SurvivalMixin.score()
         self.time_horizon_ = base_estimator.time_horizon
 
         return y

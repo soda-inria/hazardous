@@ -579,7 +579,7 @@ def mean_integrated_brier_score(y_train, y_test, y_pred, time_grid):
         raise ValueError(f"y_pred must be 3D, got shape: {y_pred.shape}")
 
     ibs_events = []
-    for event_idx in y_pred.shape[1]:
+    for event_idx in range(y_pred.shape[1]):
         if event_idx == 0:
             ibs_event = integrated_brier_score_survival(
                 y_train=y_train,
