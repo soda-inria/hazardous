@@ -572,3 +572,29 @@ def integrated_brier_score_incidence(
         event_of_interest=event_of_interest,
     )
     return computer.integrated_brier_score_incidence(y_test, y_pred, times)
+
+
+def mean_integrated_brier_score(y_train, y_test, y_pred, time_grid):
+    if y_pred.ndim != 3:
+        raise ValueError(f"y_pred must be 3D, got shape: {y_pred.shape}")
+
+    ibs_events = []
+    for event_idx in y_pred.shape[1]:
+        if event_idx == 0:
+            ibs_event = integrated_brier_score_survival(
+                y_train=y_train,
+                y_test=y_test,
+                y_pred=y_pred[:, event_idx],
+                times=time_grid,
+            )
+        else:
+            ibs_event = integrated_brier_score_incidence(
+                y_train=y_train,
+                y_test=y_test,
+                y_pred=y_pred[:, event_idx],
+                times=time_grid,
+                event_of_interest=event_idx,
+            )
+        ibs_events.append(ibs_event)
+
+    return np.mean(ibs_events)
