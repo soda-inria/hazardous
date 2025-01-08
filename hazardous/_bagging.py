@@ -3,15 +3,19 @@ from warnings import warn
 
 import numpy as np
 from joblib import Parallel, delayed, effective_n_jobs
-from sklearn.base import _fit_context, check_array, check_is_fitted
+from sklearn.base import check_array, check_is_fitted
 from sklearn.ensemble._bagging import BaseBagging
 from sklearn.utils._param_validation import HasMethods
-from sklearn.utils.validation import validate_data
 
 from ._survival_boost import SurvivalBoost
 from .base import SurvivalMixin
 from .metrics import mean_integrated_brier_score
-from .utils import check_y_survival, get_unique_events, make_time_grid
+from .utils import (
+    _dict_to_recarray,
+    check_y_survival,
+    get_unique_events,
+    make_time_grid,
+)
 
 
 class BaggingSurvival(BaseBagging, SurvivalMixin):
@@ -102,27 +106,16 @@ class BaggingSurvival(BaseBagging, SurvivalMixin):
 
         return y
 
-    @_fit_context(
-        # Bagging.estimator is not validated yet
-        prefer_skip_nested_validation=False
-    )
     def fit(self, X, y, **fit_params):
-        X = validate_data(
-            self,
-            X,
-            y="no_validation",
-            accept_sparse=["csr", "csc"],
-            dtype=None,
-            ensure_all_finite=False,
-        )
-        return self._fit(X, y, max_samples=self.max_samples, **fit_params)
+        y = _dict_to_recarray(y)
+        return super().fit(X, y, **fit_params)
 
     def predict_cumulative_incidence(self, X, times=None):
         """TODO"""
         check_is_fitted(self)
 
         # Check data
-        X = check_array(X, ensure_all_finite="allow-nan")
+        X = check_array(X, force_all_finite="allow-nan")
 
         # Parallel loop
         n_jobs, _, starts = _partition_estimators(self.n_estimators, self.n_jobs)
@@ -156,7 +149,7 @@ class BaggingSurvival(BaseBagging, SurvivalMixin):
         check_is_fitted(self)
 
         # Check data
-        X = check_array(X, ensure_all_finite="allow-nan")
+        X = check_array(X, force_all_finite="allow-nan")
 
         # Parallel loop
         n_jobs, _, starts = _partition_estimators(self.n_estimators, self.n_jobs)

@@ -16,6 +16,7 @@ def _dict_to_recarray(y, cast_event_to_bool=False):
     )
     y_out["event"] = y["event"]
     y_out["duration"] = y["duration"]
+
     return y_out
 
 
