@@ -16,21 +16,27 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
     - :math:`\zeta` is a fixed time horizon
     - :math:`n_{nc}` is the number of uncensored individuals at :math:`\zeta`
     - :math:`\delta_i` is the event experienced by the individual :math:`i` at
-      :math:`t_i`
-    - :math:`\hat{y} = \text{arg}\max\limits_{k \in [1, K]} \hat{F}_k(\zeta|X=x_i)` is
-      the most probable predicted event for individual :math:`i` at :math:`\zeta`
+        :math:`t_i`
+    - :math:`\hat{y} = \text{arg}\max\limits_{k \in [0, K]} \hat{F}_k(\zeta|X=x_i)`
+        where :math:`\hat{F}_0(\zeta|X=x_i) \defeq \hat{S}(\zeta|X=x_i)` is
+        the most probable predicted event for individual :math:`i` at :math:`\zeta`
     - :math:`y_{i,\zeta} = \delta_i I\{t_i \leq \zeta \}` is the observed event
-      for individual :math:`i` at :math:`\zeta`
+        for individual :math:`i` at :math:`\zeta`
 
-    The accuracy in time is a metrics introduced in [Alberge2024]_ which evaluates
+    The accuracy in time is a metric introduced in [Alberge2024]_ which evaluates
     whether observed events are predicted as the most likely at given times.
-    It is defined as the probability that the maximum predicted cumulative incidence
-    function (CIF) accross :math:`k` events corresponds to the observed event at a
-    fixed time horizon :math:`\zeta`.
+    This metric measures if the highest predicted event (one of the event of interest
+    or the survival one) corresponds to the one observed at :math:`\zeta` for each
+    patient.
 
     We remove individuals that were censored at times :math:`t \leq \zeta`, so the
     accuracy in time essentially represents the accuracy of the estimator on
     observed events up to :math:`\zeta`.
+
+    In the beginning, every model's accuracy in time will be high because it will
+    predict that the patients have survived, which will be true in most cases. This
+    metric's discriminative power will be for advanced times when the model has to
+    select which event will happen for a given patient.
 
     While the C-index can help clinicians to priorize treatment allocation by ranking
     individuals by risk of a given event of interest, the accuracy in time answers
