@@ -23,13 +23,13 @@ class BaggingSurvival(BaseBagging, SurvivalMixin):
 
     _parameter_constraints = deepcopy(BaseBagging._parameter_constraints)
     _parameter_constraints["estimator"] = [
-        HasMethods(["fit", "predict_cumulative_incidence"])
+        HasMethods(["fit", "score", "predict_cumulative_incidence"])
     ]
 
     def __init__(
         self,
         estimator=None,
-        n_estimators=10,
+        n_estimators=3,
         *,
         max_samples=1.0,
         max_features=1.0,
