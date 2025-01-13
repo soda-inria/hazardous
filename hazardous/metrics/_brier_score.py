@@ -38,7 +38,6 @@ class IncidenceScoreComputer:
         y_train,
         event_of_interest="any",
         ipcw_estimator=None,
-        y_censor=None,
     ):
         self.y_train = y_train
         self.event_train, self.duration_train = check_y_survival(y_train)
@@ -46,25 +45,14 @@ class IncidenceScoreComputer:
         self.any_event_train = self.event_train > 0
         self.event_of_interest = event_of_interest
 
-        if y_censor is not None:
-            self.event_censor, self.duration_censor = check_y_survival(y_censor)
-            self.y_censor = y_censor
-            self.any_event_censor = self.event_censor > 0
-
-        else:
-            self.event_censor = self.event_train
-            self.duration_censor = self.duration_train
-            self.y_censor = y_train
-            self.any_event_censor = self.any_event_train
-
-        y_ = dict(
-            event=self.any_event_censor,
-            duration=self.duration_censor,
+        y = dict(
+            event=self.any_event_train,
+            duration=self.duration_train,
         )
-        # Estimate the censoring distribution from the censor set.
+        # Estimate the censoring distribution from the training set.
         if ipcw_estimator is None:
             ipcw_estimator = KaplanMeierIPCW()
-        self.ipcw_estimator = ipcw_estimator.fit(y_)
+        self.ipcw_estimator = ipcw_estimator.fit(y)
 
     def brier_score_survival(self, y_true, y_pred, times):
         """Time-dependent Brier score of a survival function estimate.
