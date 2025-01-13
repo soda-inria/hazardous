@@ -8,20 +8,22 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
 
     .. math::
 
-        \mathrm{acc}(\zeta) = \frac{1}{n_{nc}} \sum_{i=1}^n I\{\hat{y}_i=y_{i,\zeta}\}
+        \mathrm{acc}(\zeta) = \frac{1}{n_{nc}} \sum_{i=1}^n ~ I\{\hat{y}_i=y_{i,\zeta}\}
         \overline{I\{\delta_i = 0 \cap t_i \leq \zeta \}}
 
     where:
 
-    - :math:`\zeta` is a fixed time horizon
-    - :math:`n_{nc}` is the number of uncensored individuals at :math:`\zeta`
+    - :math:`\zeta` is a fixed time horizon.
+    - :math:`n_{nc}` is the number of uncensored individuals at :math:`\zeta`.
     - :math:`\delta_i` is the event experienced by the individual :math:`i` at
-        :math:`t_i`
+      :math:`t_i`.
     - :math:`\hat{y} = \text{arg}\max\limits_{k \in [0, K]} \hat{F}_k(\zeta|X=x_i)`
-        where :math:`\hat{F}_0(\zeta|X=x_i) \defeq \hat{S}(\zeta|X=x_i)` is
-        the most probable predicted event for individual :math:`i` at :math:`\zeta`
-    - :math:`y_{i,\zeta} = \delta_i I\{t_i \leq \zeta \}` is the observed event
-        for individual :math:`i` at :math:`\zeta`
+      where :math:`\hat{F}_0(\zeta|X=x_i) \triangleq \hat{S}(\zeta|X=x_i)`.
+
+      :math:`\hat{y}` is the most probable predicted event for individual :math:`i`
+      at :math:`\zeta`.
+    - :math:`y_{i,\zeta} = \delta_i ~ I\{t_i \leq \zeta \}` is the observed event
+      for individual :math:`i` at :math:`\zeta`.
 
     The accuracy in time is a metric introduced in [Alberge2024]_ which evaluates
     whether observed events are predicted as the most likely at given times.
