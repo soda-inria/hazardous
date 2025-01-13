@@ -6,46 +6,60 @@
 HΛZΛRDOUS
 =========
 
-Gradient-boosting survival analysis
------------------------------------
+Gradient-boosting Survival Analysis and Competing Risks
+-------------------------------------------------------
 
 .. container:: index-features
 
-   * survival and competing risks
+   * Survival Analysis, Competing Risks
 
    * scikit-learn compatible
 
    * scalable gradient boosting
 
-A scalable **time-to-event and competing risk prediction model**
-implemented in Python.
+**hazardous** is a Python library for **survival analysis - i.e. time-to-event prediction - 
+and competing risks** predictions. The model proposed in this library is
+a **scalable** gradient-boosting called **SurvivalBoost**.
 
-.. container:: index-box sd-card
+With a **scikit-learn compatible API**, we also provide different useful
+metrics for the evaluation of the model such as the **Integrated Brier Score**
+or the **C-index** adapted for competing risks setting.
 
-   **Competing risks settings**
 
-   Predicting which event will happen first, and when, from data where some
-   events have not yet been observed:
 
-   .. image:: competing_risk_diagram.svg
+What is the Competing risks setting?
+-------------------------------------
+Compared to the Survival Analysis setting, the Competing Risks setting
+considers that the event of interest is not the only event of interest 
+that may happen.
+Predicting which event will happen first, and when, from data where some
+events have not yet been observed:
 
-The model is **a gradient-boosting variant**, that offers prediction for
+.. image:: competing_risk_diagram.svg
+
+What is SurvivalBoost?
+----------------------
+**SurvivalBoost** is **a gradient-boosting variant**, that offers prediction for
 survival and competing risks settings, fully compatible with
 `scikit-learn <https://scikit-learn.org>`_. It can be used with
 scikit-learn tools such as pipelines, column transformers,
 cross-validation, hyper-parameter search tools, etc.
+Using a novel strictly proper scoring rule, the model is trained to predict the
+cumulative incidence function and the survival function at any horizon.
+SurvivalBoost puts a focus on predictive the accuracy -defined as the ability to predict 
+the observed event- rather than on inference. 
 
-.. This package will also offer neural network based estimators by leveraging
-   `PyTorch <https://pytorch.org>`_ and `skorch
-   <https://skorch.readthedocs.io/>`_.
+More information about the theory behind the model is described in `Survival Models:
+Proper Scoring Rule and Stochastic Optimization with Competing Risks
+<https://arxiv.org/pdf/2410.16765>`_.
 
-This library puts a focus on predictive accuracy rather than on inference.
+The library depends on `lifelines <https://lifelines.readthedocs.io/en/latest/>`_ 
+for the Kaplan-Meier estimator used in SurvivalBoost. We thank the authors of 
+lifelines for their work.
+
 Quantifying the statistical association or causal effect of covariates with/on
 the cumulated event incidence or instantaneous hazard rate is not in the scope
 of this library at this time.
-
-The theory behind the model is described in `this paper
-<https://arxiv.org/abs/2406.14085>`_.
 
 - License: MIT
 - GitHub repository: https://github.com/soda-inria/hazardous
