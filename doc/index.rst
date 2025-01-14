@@ -27,7 +27,7 @@ or the **C-index** adapted for competing risks setting.
 
 
 
-What is the Competing risks setting?
+What is the difference between Survival Analysis and the Competing risks setting?
 -------------------------------------
 Compared to the Survival Analysis setting, the Competing Risks setting
 considers that the event of interest is not the only event of interest 
@@ -53,13 +53,19 @@ More information about the theory behind the model is described in `Survival Mod
 Proper Scoring Rule and Stochastic Optimization with Competing Risks
 <https://arxiv.org/pdf/2410.16765>`_.
 
-The library depends on `lifelines <https://lifelines.readthedocs.io/en/latest/>`_ 
-for the Kaplan-Meier estimator used in SurvivalBoost. We thank the authors of 
-lifelines for their work.
+.. seealso::
 
-Quantifying the statistical association or causal effect of covariates with/on
-the cumulated event incidence or instantaneous hazard rate is not in the scope
-of this library at this time.
+   The library depends on `lifelines <https://lifelines.readthedocs.io/en/latest/>`_ 
+   for the Kaplan-Meier estimator used in SurvivalBoost. We thank the authors of 
+   lifelines for their work and their contribution to the community of survival analysis
+   with the implementation of models -e.g. Kaplan-Meier, Cox model, Aalen-Johansen- and
+   metrics -e.g. C-index, Brier Score-.
+
+
+.. note::
+   Quantifying the statistical association or causal effect of covariates with/on
+   the cumulated event incidence or instantaneous hazard rate is not in the scope
+   of this library at this time.
 
 - License: MIT
 - GitHub repository: https://github.com/soda-inria/hazardous
