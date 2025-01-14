@@ -154,14 +154,6 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
             #   sampled time horizon;
             # * 0 when an event has happened before the sampled time horizon.
             #   The sample weight is zero in that case.
-            n_samples = self.duration_train.shape[0]
-            sampled_time_horizons = self.time_sampler.sample(n_samples)
-
-            # Add some hard zeros to make sure that the model learns to
-            # predict 0 incidence at t=0.
-            n_hard_zeros = max(int(self.hard_zero_fraction * n_samples), 1)
-            hard_zero_indices = self.rng.choice(n_samples, n_hard_zeros, replace=False)
-            sampled_time_horizons[hard_zero_indices] = 0.0
 
             if not hasattr(self, "inv_any_survival_train"):
                 self.inv_any_survival_train = self.ipcw_estimator.compute_ipcw_at(
