@@ -46,6 +46,7 @@ class _TimeSamplerUniform(_TimeSampler):
 
     def sample(self, size):
         check_is_fitted(self, "t_max_")
+        print(self.t_min, self.t_max_)
         return self.rng.uniform(self.t_min, self.t_max_, size)
 
 
@@ -53,16 +54,16 @@ class _TimeSamplerKM(_TimeSampler):
     q_max = 1.0
 
     def fit(self, y):
-        self.kaplan_meier_sampler_ = _KaplanMeierSampler().fit(y)
+        self.km_sampler_ = _KaplanMeierSampler().fit(y)
         # When there are residuals in the estimated survival probabilities,
         # we set the minimum quantile to sample as the minimum estimated probability.
-        self.q_min_ = self.kaplan_meier_sampler_.min_survival_prob_
+        self.q_min_ = self.km_sampler_.min_survival_prob_
         return self
 
     def sample(self, size):
-        check_is_fitted(self, ["q_min_", "kaplan_meier_sampler_"])
+        check_is_fitted(self, ["q_min_", "km_sampler_"])
         quantiles = self.rng.uniform(self.q_min_, self.q_max, size)
-        return self.kaplan_meier_sampler_.inverse_surv_func_(quantiles)
+        return self.km_sampler_.inverse_surv_func_(quantiles)
 
 
 class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
@@ -109,7 +110,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         y_train,
         time_sampler="kaplan-meier",
         ipcw_estimator=None,
-        hard_zero_fraction=0.01,
+        hard_zero_fraction=0.1,
         n_iter_before_feedback=20,
         random_state=None,
     ):
@@ -154,20 +155,18 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
             #   sampled time horizon;
             # * 0 when an event has happened before the sampled time horizon.
             #   The sample weight is zero in that case.
-            n_samples_censor = self.duration_censor.shape[0]
-            sampled_time_horizons = self.time_sampler.sample(n_samples_censor)
+            n_samples = self.duration_train.shape[0]
+            sampled_time_horizons = self.time_sampler.sample(n_samples)
 
             # Add some hard zeros to make sure that the model learns to
             # predict 0 incidence at t=0.
-            n_hard_zeros = max(int(self.hard_zero_fraction * n_samples_censor), 1)
-            hard_zero_indices = self.rng.choice(
-                n_samples_censor, n_hard_zeros, replace=False
-            )
+            n_hard_zeros = max(int(self.hard_zero_fraction * n_samples), 1)
+            hard_zero_indices = self.rng.choice(n_samples, n_hard_zeros, replace=False)
             sampled_time_horizons[hard_zero_indices] = 0.0
 
             if not hasattr(self, "inv_any_survival_train"):
                 self.inv_any_survival_train = self.ipcw_estimator.compute_ipcw_at(
-                    self.duration_censor, ipcw_training=True, X=X
+                    self.duration_train, ipcw_training=True, X=X
                 )
 
             censored_observations = self.any_event_train == 0
@@ -644,6 +643,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             max_leaf_nodes=self.max_leaf_nodes,
             max_depth=self.max_depth,
             min_samples_leaf=self.min_samples_leaf,
+            random_state=self.random_state,
         )
 
     def score(self, X, y):

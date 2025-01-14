@@ -143,7 +143,7 @@ class KaplanMeierIPCW:
         ipcw : np.ndarray of shape (n_times,)
             The IPCW for times
         """
-        return self.censoring_survival_func_(times)
+        return self.kaplan_meier_sampler_.survival_func_(times)
 
 
 class AlternatingCensoringEstimator(KaplanMeierIPCW):
