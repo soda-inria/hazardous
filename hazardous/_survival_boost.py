@@ -46,7 +46,6 @@ class _TimeSamplerUniform(_TimeSampler):
 
     def sample(self, size):
         check_is_fitted(self, "t_max_")
-        print(self.t_min, self.t_max_)
         return self.rng.uniform(self.t_min, self.t_max_, size)
 
 
