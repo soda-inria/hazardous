@@ -43,3 +43,13 @@ div.docutils.container.index-box {
     }
 }
 
+/* Download/laucher links and top hint (sphinx-gallery) */
+
+.sphx-glr-download-link-note,
+.binder-badge,
+.lite-badge,
+.sphx-glr-download-jupyter,
+.sphx-glr-download-python,
+.sphx-glr-download-zip {
+  display: none;
+}
