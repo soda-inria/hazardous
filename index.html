@@ -334,33 +334,63 @@
                   
   <section id="hzrdous">
 <h1>HΛZΛRDOUS<a class="headerlink" href="#hzrdous" title="Link to this heading">#</a></h1>
-<section id="gradient-boosting-survival-analysis">
-<h2>Gradient-boosting survival analysis<a class="headerlink" href="#gradient-boosting-survival-analysis" title="Link to this heading">#</a></h2>
+<section id="gradient-boosting-survival-analysis-and-competing-risks">
+<h2>Gradient-boosting Survival Analysis and Competing Risks<a class="headerlink" href="#gradient-boosting-survival-analysis-and-competing-risks" title="Link to this heading">#</a></h2>
 <div class="index-features docutils container">
 <ul class="simple">
-<li><p>survival and competing risks</p></li>
+<li><p>Survival Analysis, Competing Risks</p></li>
 <li><p>scikit-learn compatible</p></li>
 <li><p>scalable gradient boosting</p></li>
 </ul>
 </div>
-<p>A scalable <strong>time-to-event and competing risk prediction model</strong>
-implemented in Python.</p>
-<div class="index-box sd-card docutils container">
-<p><strong>Competing risks settings</strong></p>
-<p>Predicting which event will happen first, and when, from data where some
-events have not yet been observed:</p>
+<p><strong>hazardous</strong> is a Python library for <strong>survival analysis</strong> -i.e. time-to-event prediction-
+and <strong>competing risks</strong> settings. It introduces <strong>SurvivalBoost</strong>, a <strong>scalable</strong>
+gradient-boosting model designed for this task.</p>
+<p>With a <strong>scikit-learn-compatible API</strong>, the library also offers various metrics
+for model evaluation adapted for the competing risks setting:</p>
+<ul class="simple">
+<li><p><strong>Integrated Brier Score</strong></p></li>
+<li><p><strong>C-index</strong></p></li>
+<li><p><strong>Accuracy in Time</strong>: the ability to predict the observed event at a given time horizon.</p></li>
+</ul>
+</section>
+<section id="what-is-the-difference-between-survival-analysis-and-the-competing-risks-setting">
+<h2>What is the difference between Survival Analysis and the Competing risks setting?<a class="headerlink" href="#what-is-the-difference-between-survival-analysis-and-the-competing-risks-setting" title="Link to this heading">#</a></h2>
+<p>In contrast to the Survival Analysis setting, the Competing Risks setting accounts
+for the possibility that multiple event of interest may occur,
+not just a single event.</p>
+<p>It focuses on predicting which event will occur first and when, based on data where
+some events have not yet been observed.</p>
 <img alt="_images/competing_risk_diagram.svg" src="_images/competing_risk_diagram.svg" />
-</div>
-<p>The model is <strong>a gradient-boosting variant</strong>, that offers prediction for
+</section>
+<section id="what-is-survivalboost">
+<h2>What is SurvivalBoost?<a class="headerlink" href="#what-is-survivalboost" title="Link to this heading">#</a></h2>
+<p><strong>SurvivalBoost</strong> is <strong>a gradient-boosting variant</strong>, that offers prediction for
 survival and competing risks settings, fully compatible with
 <a class="reference external" href="https://scikit-learn.org">scikit-learn</a>. It can be used with
 scikit-learn tools such as pipelines, column transformers,
-cross-validation, hyper-parameter search tools, etc.</p>
-<p>This library puts a focus on predictive accuracy rather than on inference.
-Quantifying the statistical association or causal effect of covariates with/on
-the cumulated event incidence or instantaneous hazard rate is not in the scope
-of this library at this time.</p>
-<p>The theory behind the model is described in <a class="reference external" href="https://arxiv.org/abs/2406.14085">this paper</a>.</p>
+cross-validation, hyper-parameter search tools, etc.
+Using a novel strictly proper scoring rule, the model is trained to predict the
+cumulative incidence function and the survival function at any horizon.
+SurvivalBoost puts a focus on predictive the accuracy -defined as the ability to predict
+the observed event- rather than on inference.</p>
+<p>Additional theoretical details about the model can be found in <a class="reference external" href="https://arxiv.org/pdf/2410.16765">Survival Models:
+Proper Scoring Rule and Stochastic Optimization with Competing Risks</a>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>The library relies on <a class="reference external" href="https://lifelines.readthedocs.io/en/latest/">lifelines</a>
+for the Kaplan-Meier estimator used in SurvivalBoost. We extend our gratitude to
+the authors of lifelines for their significant contributions to the survival
+analysis community, including the implementation of models such as
+the Kaplan-Meier, Cox model, and Aalen-Johansen, as well as metrics
+like the C-index and Brier Score.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Quantifying the statistical association or causal effect of covariates on the
+cumulative event incidence or instantaneous hazard rate is currently beyond
+the scope of this library.</p>
+</div>
 <ul class="simple">
 <li><p>License: MIT</p></li>
 <li><p>GitHub repository: <a class="github reference external" href="https://github.com/soda-inria/hazardous">soda-inria/hazardous</a></p></li>
@@ -421,7 +451,9 @@ of this library at this time.</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gradient-boosting-survival-analysis">Gradient-boosting survival analysis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gradient-boosting-survival-analysis-and-competing-risks">Gradient-boosting Survival Analysis and Competing Risks</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-the-difference-between-survival-analysis-and-the-competing-risks-setting">What is the difference between Survival Analysis and the Competing risks setting?</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-survivalboost">What is SurvivalBoost?</a></li>
 </ul>
   </nav></div>
 
