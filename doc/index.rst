@@ -18,21 +18,25 @@ Gradient-boosting Survival Analysis and Competing Risks
    * scalable gradient boosting
 
 **hazardous** is a Python library for **survival analysis** -i.e. time-to-event prediction- 
-and **competing risks** modeling. It introduces **SurvivalBoost**, a **scalable**
+and **competing risks** settings. It introduces **SurvivalBoost**, a **scalable**
 gradient-boosting model designed for this task.
 
-With a scikit-learn-compatible API, the library also offers various metrics
-for model evaluation, including the **Integrated Brier Score** and the **C-index**,
-both adapted for the competing risks setting.
+With a **scikit-learn-compatible API**, the library also offers various metrics
+for model evaluation adapted for the competing risks setting: 
+
+- **Integrated Brier Score** 
+- **C-index**
+- **Accuracy in Time**: the ability to predict the observed event at a given time horizon.
 
 What is the difference between Survival Analysis and the Competing risks setting?
 ---------------------------------------------------------------------------------
 In contrast to the Survival Analysis setting, the Competing Risks setting accounts
-for the possibility that multiple types of events of interest may occur,
+for the possibility that multiple event of interest may occur,
 not just a single event.
 
 It focuses on predicting which event will occur first and when, based on data where
 some events have not yet been observed.
+
 .. image:: competing_risk_diagram.svg
 
 What is SurvivalBoost?
