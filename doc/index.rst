@@ -22,9 +22,9 @@ implemented in Python.
 
 .. container:: index-box sd-card
 
-   **Competing risk settings**
+   **Competing risks settings**
 
-   Predicting which event will occur, and when, from data where some
+   Predicting which event will happen first, and when, from data where some
    events have not yet been observed:
 
    .. image:: competing_risk_diagram.svg
