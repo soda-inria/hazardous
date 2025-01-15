@@ -7,6 +7,9 @@ In this notebook, we showcase how the accuracy in time metric behaves, and how
 to interpret it.
 """
 # %%
+# Generating synthetic data
+# -------------------------
+#
 # We begin by generating a linear, synthetic dataset. For each individual, we uniformly
 # sample a shape and scale value, which we use to parameterize a Weibull distribution,
 # from which we sample a duration.
@@ -34,6 +37,9 @@ sns.histplot(
 )
 
 # %%
+# Training and computing the accuracy in time
+# -------------------------------------------
+#
 # We train a Survival Boost model and compute its accuracy in time.
 import numpy as np
 from hazardous import SurvivalBoost
@@ -96,6 +102,9 @@ accuracy, taus = accuracy_in_time(y_test, y_pred_aj, time_grid, quantiles=quanti
 results.append(dict(model_name="Aalan-Johansen", accuracy=accuracy, taus=taus))
 
 # %%
+# Results
+# -------
+#
 # We display the accuracy in time to compare Survival Boost with Aalen-Johansen.
 # Higher is better. Note that the accuracy is high at very beginning (t < 1000), because
 # both models predict that every individual survive.
@@ -130,6 +139,9 @@ sns.scatterplot(
 
 
 # %%
+# Understanding the accuracy in time
+# ----------------------------------
+#
 # We can drill into this metric by counting the observed events cumulatively across
 # time, and compare that to predictions.
 #
