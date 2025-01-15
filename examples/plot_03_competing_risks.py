@@ -3,10 +3,56 @@
 Exploring the accuracy in time
 ==============================
 
-In this notebook, we showcase how the accuracy in time metric behaves, and how
-to interpret it.
+In this notebook, we showcase how the accuracy in time metric is defined, behaves, and
+how to interpret it.
 """
+
 # %%
+# Definition of the Accuracy in Time
+# ==================================
+# Here is a little bit of context about this metric introduced in [Alberge2024]_:
+#
+# - It is a generalization of the accuracy metric in the survival and the competing
+#   risks setting, which is the proportion of correct predictions (e.g. highest
+#   predicted probability) at a fixed time.
+# - It is computed for different time horizons, given by the user, with direct time
+#   stamps or quantiles of the observed durations.
+# - For a given patient at a fixed time, we compare the actual observed event to the
+#   most predicted one. The censored patients are removed from the computation after
+#   their censoring duration. In other word, let's imagine a patient who has
+#   experienced death by cancer at time :math:`t`. Before this time, we want the model
+#   to predict with the highest probability that this patient will survive. After
+#   :math:`t`, we want the model to predict the death by cancer event with the highest
+#   probability.
+# - The mathematical formula is:
+#
+# .. math::
+#     \mathrm{acc}(\zeta) = \frac{1}{n_{nc}} \sum_{i=1}^n ~ I\{\hat{y}_i=y_{i,\zeta}\}
+#        \overline{I\{\delta_i = 0 \cap t_i \leq \zeta \}}
+#
+# where:
+#
+# - :math:`\zeta` is a fixed time horizon.
+# - :math:`n_{nc}` is the number of uncensored individuals at :math:`\zeta`.
+# - :math:`\delta_i` is the event experienced by the individual :math:`i` at
+#   :math:`t_i`.
+# - :math:`\hat{y} = \text{arg}\max\limits_{k \in [0, K]} \hat{F}_k(\zeta|X=x_i)`
+#   where :math:`\hat{F}_0(\zeta|X=x_i) \triangleq \hat{S}(\zeta|X=x_i)`.
+#   :math:`\hat{y}` is the most probable predicted event for individual :math:`i`
+#   at :math:`\zeta`.
+# - :math:`y_{i,\zeta} = \delta_i ~ I\{t_i \leq \zeta \}` is the observed event
+#   for individual :math:`i` at :math:`\zeta`.
+#
+#      **References:**
+#
+#      .. [Alberge2024] J. Alberge, V. Maladiere,  O. Grisel, J. Abécassis,
+#      G. Varoquaux, "Survival Models: Proper Scoring Rule and Stochastic Optimization
+#      with Competing Risks", 2024
+
+# %%
+# Usage
+# =====
+#
 # Generating synthetic data
 # -------------------------
 #
@@ -35,12 +81,15 @@ sns.histplot(
     multiple="stack",
     palette="colorblind",
 )
+plt.show()
 
 # %%
-# Training and computing the accuracy in time
+# Computing the Accuracy in Time
 # -------------------------------------------
 #
-# We train a Survival Boost model and compute its accuracy in time.
+# After training SurvivalBoost, we compute its accuracy in time.
+#
+
 import numpy as np
 from hazardous import SurvivalBoost
 from hazardous.metrics import accuracy_in_time
@@ -105,11 +154,12 @@ results.append(dict(model_name="Aalan-Johansen", accuracy=accuracy, taus=taus))
 # Results
 # -------
 #
-# We display the accuracy in time to compare Survival Boost with Aalen-Johansen.
-# Higher is better. Note that the accuracy is high at very beginning (t < 1000), because
-# both models predict that every individual survive.
-# Then, beyond the time horizon 1000, the discriminative power of the conditional
-# Survival Boost yields a better accuracy than the marginal, unbiased, Aalen-Johansen.
+# We display the accuracy in time to compare SurvivalBoost with the Aalen-Johansen's
+# estimator. Higher is better. Note that the accuracy is high at very beginning
+# (:math:`t < 1000`), because both models predict that every individual survive, which
+# is true in most cases. Then, beyond the time horizon 1000, the discriminative power
+# of the conditional SurvivalBoost yields a better accuracy than the marginal, unbiased,
+# Aalen-Johansen's estimator.
 import pandas as pd
 
 
@@ -136,6 +186,7 @@ sns.scatterplot(
     zorder=100,
     style="model_name",
 )
+plt.show()
 
 
 # %%
@@ -181,10 +232,11 @@ y_test_class = (y_test["duration"].values[:, None] <= time_grid_2d) * y_test[
 ].values[:, None]
 plot_event_in_time(y_test_class)
 # %%
-# Now, we compare this ground truth to the classes predicted by our Survival Boost
-# model. Interestingly, it seems too confident about the censoring event at the
-# beginning (t < 500), but then becomes underconfident in the middle (t > 1500) and
-# very overconfident about the class 3 in the end (t > 3000).
+# Now, we compare this ground truth to the classes predicted by SurvivalBoost.
+# Interestingly, it seems too confident about the censoring event at the
+# beginning (:math:`t < 500`), but then becomes underconfident in the middle
+# (:math:`t > 1500`) and very overconfident about the class 3 in the end
+# (:math:`t > 3000`).
 
 y_pred_class = y_pred.argmax(axis=1)
 plot_event_in_time(y_pred_class)
