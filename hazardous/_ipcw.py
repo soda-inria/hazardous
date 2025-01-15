@@ -1,10 +1,9 @@
 import numpy as np
-from lifelines import KaplanMeierFitter
-from scipy.interpolate import interp1d
 from sklearn.base import clone
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.validation import check_is_fitted
 
+from ._km_sampler import _KaplanMeierSampler
 from .utils import check_y_survival
 
 
@@ -83,31 +82,15 @@ class KaplanMeierIPCW:
         event, duration = check_y_survival(y)
         censoring = event == 0
 
-        km = KaplanMeierFitter()
-        km.fit(
-            durations=duration,
-            event_observed=censoring,
+        self.kaplan_meier_sampler_ = _KaplanMeierSampler().fit(
+            dict(event=censoring, duration=duration)
         )
-
-        df = km.survival_function_
-        self.unique_times_ = df.index
-        self.censoring_survival_probs_ = df.values[:, 0]
-
-        min_censoring_prob = self.censoring_survival_probs_[
-            self.censoring_survival_probs_ > 0
-        ].min()
 
         self.min_censoring_prob_ = max(
-            min_censoring_prob,
+            self.kaplan_meier_sampler_.min_positive_survival_prob_,
             self.epsilon_censoring_prob,
         )
-        self.censoring_survival_func_ = interp1d(
-            self.unique_times_,
-            self.censoring_survival_probs_,
-            kind="previous",
-            bounds_error=False,
-            fill_value="extrapolate",
-        )
+
         return self
 
     def compute_ipcw_at(self, times, X=None, ipcw_training=False):
@@ -160,7 +143,7 @@ class KaplanMeierIPCW:
         ipcw : np.ndarray of shape (n_times,)
             The IPCW for times
         """
-        return self.censoring_survival_func_(times)
+        return self.kaplan_meier_sampler_.survival_func_(times)
 
 
 class AlternatingCensoringEstimator(KaplanMeierIPCW):
