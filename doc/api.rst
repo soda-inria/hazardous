@@ -31,6 +31,25 @@ Metrics
     metrics.integrated_brier_score_survival
     metrics.integrated_brier_score_incidence
 
+
+Pipeline
+--------
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+    :nosignatures:
+
+    pipeline.SurvivalPipeline
+
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+    :nosignatures:
+
+    pipeline.make_survival_pipeline
+
+
 Datasets
 --------
 
