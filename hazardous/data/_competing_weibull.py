@@ -71,20 +71,19 @@ def make_synthetic_competing_weibull(
 
     Then we sample event durations for each event type from the corresponding
     Weibull distribution parametrized by the sampled shape and scale
-    parameters.
+    parameters. The shape and scale parameters are returned as features.
 
-    The shape and scale parameters are returned as features. For each
-    individual, the event type with the shortest duration is kept as the target
-    event (competing risks setting) and its event identifier and duration are
-    returned as the target dataframe.
+    Then, we apply the same procedure to sample the duration for the censoring
+    event (event = 0) if ``censoring_relative_scale`` is not None or 0.
 
-    A fraction of the individuals are censored if ``censoring_relative_scale``
-    is not None or 0.
+    For each individual, the event type with the shortest duration is kept as
+    the target event (competing risks setting) and its event identifier and
+    duration are returned as the target dataframe.
 
     Parameters
     ----------
     n_events: int, default=3
-        Number of events.
+        Number of events of interest.
     n_samples: int, default=3000
         Number of individuals in the population.
     return_X_y: bool, default=False
@@ -92,7 +91,8 @@ def make_synthetic_competing_weibull(
     feature_rounding: int or None, default=2
         Round the feature values. If None, no rounding will be applied.
     target_rounding: int or None, default=1
-        Round the target values. If None, no rounding will be applied.
+        Round the column duration of the target. If None, no rounding will
+        be applied.
     shape_ranges: tuple of shape (n_events, 2)
         The lower and upper boundary of the shape, `n_samples` shape
         values for `n_events` will be drawn from a uniform distribution.
@@ -117,8 +117,10 @@ def make_synthetic_competing_weibull(
     (data, target): tuple if ``return_X_y`` is True
         A tuple of two dataframes. The first containing a 2D array of shape
         (n_samples, n_features) with each row representing one sample
-        and each column representing the events. The second dataframe
-        of shape (n_samples, 2) containing the target samples.
+        and each column representing the features. The second dataframe
+        of shape (n_samples, 2) containing the target samples. The first
+        column contains the event identifier (event = 0 represents the censoring
+        event) and the second column contains the duration of the target event.
 
     """
     rng = check_random_state(random_state)
