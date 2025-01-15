@@ -17,20 +17,8 @@ from .utils import check_y_survival
 
 
 class _TimeSampler:
-    def __init__(self, random_state=None):
-        self.rng = check_random_state(random_state)
-
-    @classmethod
-    def get_for(cls, time_sampler, random_state=None):
-        if time_sampler == "uniform":
-            return _TimeSamplerUniform(random_state)
-        elif time_sampler == "kaplan-meier":
-            return _TimeSamplerKM(random_state)
-        else:
-            raise ValueError(
-                "time_sampler options are 'uniform' and 'kaplan-meier', "
-                f"but got {time_sampler}."
-            )
+    def __init__(self, rng):
+        self.rng = rng
 
 
 class _TimeSamplerUniform(_TimeSampler):
@@ -124,9 +112,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
         self.ipcw_train = self.ipcw_estimator.compute_ipcw_at(self.duration_train)
-        self.time_sampler = _TimeSampler.get_for(time_sampler, random_state).fit(
-            y_train
-        )
+        self._init_time_sampler(y_train, time_sampler)
 
     def draw(self, ipcw_training=False, X=None):
         # Sample time horizons uniformly on the observed time range:
@@ -215,6 +201,18 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
             ipcw_training=False,
             X=X,
         )
+
+    def _init_time_sampler(self, y, time_sampler):
+        if time_sampler == "uniform":
+            self.time_sampler = _TimeSamplerUniform(self.rng)
+        elif time_sampler == "kaplan-meier":
+            self.time_sampler = _TimeSamplerKM(self.rng)
+        else:
+            raise ValueError(
+                "time_sampler options are 'uniform' and 'kaplan-meier', "
+                f"but got {time_sampler}."
+            )
+        self.time_sampler.fit(y)
 
 
 class SurvivalBoost(BaseEstimator, ClassifierMixin):
