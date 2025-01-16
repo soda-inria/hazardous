@@ -95,6 +95,10 @@ class Scorer:
 
         y_pred = model.predict_cumulative_incidence(X_test, times=time_grid)
 
+        str_config = "_".join([f"{k}={v}" for k, v in hp_params.items()])
+        model_id = f"{model_name}__{str_config}"
+
+        self.results["model_id"].append(model_id)
         self.results["model_name"].append(model_name)
         self.results["dataset_name"].append(dataset_name)
         self.results["seed"].append(seed)
@@ -105,10 +109,10 @@ class Scorer:
         self.results["ibs"].append(
             self.compute_multi_ibs(y_train, y_test, y_pred, time_grid)
         )
-        self.results["multi_brier_scores"].append(
+        self.results["brier_scores"].append(
             self.compute_multi_brier_scores(y_train, y_test, y_pred, time_grid)
         )
-        self.results["multi_c_index"].append(
+        self.results["c_index"].append(
             self.compute_multi_c_index(y_train, y_test, y_pred, time_grid)
         )
         self.results["acc_in_time"].append(
@@ -189,7 +193,14 @@ class Scorer:
         return dict(acc_in_time=acc_in_time, taus=taus)
 
     def plot_metrics(self, dataset_name):
-        pass
+        df = pd.DataFrame(self.results)
+        df = df.loc[df["dataset_name"] == dataset_name]
+
+        # agg_results = []
+        for model_id in df["model_id"].unique():
+            # df_model = df.loc[df["model_id"] == model_id]
+            pass
+            # ibs = f"{df_model['ibs'].mean():.5f} ± {df_model['ibs'].std():.5f}"
 
     def plot_brier_scores(self, dataset_name):
         pass
@@ -236,6 +247,8 @@ for dataset_name, dataset_func in datasets.items():
     bunch = dataset_func()
     for model_name, model_cls in models.items():
         hp_params_grid = model_hp_params[model_name]
+
+        # ParameterGrid allows to iterate from a grid.
         for hp_params in ParameterGrid(hp_params_grid):
             for seed in seeds:
                 model = model_cls(random_state=seed, **hp_params)
