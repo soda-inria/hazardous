@@ -20,6 +20,8 @@ class XGBSE(XGBSEDebiasedBCE):
         self.num_boost_round = num_boost_round
         self.early_stopping_rounds = early_stopping_rounds
         self.random_state = random_state
+        if lr_params is None:
+            lr_params = {}
         super().__init__(
             lr_params=lr_params,
             xgb_params=xgb_params,

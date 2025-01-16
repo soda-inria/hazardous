@@ -10,7 +10,8 @@ from skrub import TableVectorizer
 from pycox.datasets import metabric, support
 
 from hazardous.data import load_seer
-from hazardous._xbgse import XGBSE
+
+# from hazardous._xbgse import XGBSE
 from hazardous import SurvivalBoost
 from hazardous import metrics
 
@@ -96,7 +97,14 @@ class Scorer:
         y_pred = model.predict_cumulative_incidence(X_test, times=time_grid)
 
         str_config = "_".join([f"{k}={v}" for k, v in hp_params.items()])
-        model_id = f"{model_name}__{str_config}"
+        model_id = "__".join([model_name, str_config])
+
+        ibs = self.compute_multi_ibs(y_train, y_test, y_pred, time_grid)
+        c_index = self.compute_multi_c_index(y_train, y_test, y_pred, time_grid)
+        brier_scores = self.compute_multi_brier_scores(
+            y_train, y_test, y_pred, time_grid
+        )
+        acc_in_time = self.compute_acc_in_time(y_test, y_pred, time_grid)
 
         self.results["model_id"].append(model_id)
         self.results["model_name"].append(model_name)
@@ -106,20 +114,12 @@ class Scorer:
         self.results["y_pred"].append(y_pred)
         self.results["time_grid"].append(time_grid)
 
-        self.results["ibs"].append(
-            self.compute_multi_ibs(y_train, y_test, y_pred, time_grid)
-        )
-        self.results["brier_scores"].append(
-            self.compute_multi_brier_scores(y_train, y_test, y_pred, time_grid)
-        )
-        self.results["c_index"].append(
-            self.compute_multi_c_index(y_train, y_test, y_pred, time_grid)
-        )
-        self.results["acc_in_time"].append(
-            self.compute_acc_in_time(y_test, y_pred, time_grid)
-        )
+        self.results["ibs"].append(ibs)
+        self.results["c_index"].append(c_index)
+        self.results["brier_scores"].append(brier_scores)
+        self.results["acc_in_time"].append(acc_in_time)
 
-        print(f"ibs: {self.results['ibs'][-1]}")
+        print(f"{ibs=}")
 
     def compute_multi_ibs(self, y_train, y_test, y_pred, time_grid):
         ibs_events = []
@@ -170,7 +170,7 @@ class Scorer:
         c_index = []
         n_events = y_pred.shape[1]
         taus = np.quantile(time_grid, self.c_index_quantiles)
-        for event_idx in range(n_events):
+        for event_idx in range(1, n_events):
             c_index.append(
                 metrics.concordance_index_incidence(
                     y_test=y_test,
@@ -179,7 +179,7 @@ class Scorer:
                     time_grid=time_grid,
                     event_of_interest=event_idx,
                     taus=taus,
-                )
+                ).tolist()
             )
         return c_index
 
@@ -192,15 +192,60 @@ class Scorer:
         )
         return dict(acc_in_time=acc_in_time, taus=taus)
 
-    def plot_metrics(self, dataset_name):
+    def plot_ibs(self, dataset_name):
         df = pd.DataFrame(self.results)
         df = df.loc[df["dataset_name"] == dataset_name]
 
-        # agg_results = []
+        agg_metrics = []
         for model_id in df["model_id"].unique():
-            # df_model = df.loc[df["model_id"] == model_id]
-            pass
-            # ibs = f"{df_model['ibs'].mean():.5f} ± {df_model['ibs'].std():.5f}"
+            df_model = df.loc[df["model_id"] == model_id]
+
+            ibs = f"{df_model['ibs'].mean():.5f} ± {df_model['ibs'].std():.5f}"
+
+            agg_metrics.append(
+                {
+                    "dataset_name": dataset_name,
+                    "model_id": model_id,
+                    "ibs": ibs,
+                }
+            )
+
+        return pd.DataFrame(agg_metrics)
+
+    def plot_c_index(self, dataset_name):
+        df = pd.DataFrame(scorer.results)
+        df = df.loc[df["dataset_name"] == dataset_name]
+
+        agg_metrics = []
+
+        for model_id in df["model_id"].unique():
+            df_model = df.loc[df["model_id"] == model_id]
+            n_events = len(df_model["c_index"].values[0])
+
+            for event_idx in range(n_events):
+                agg_event = []
+                for seed_row in df_model["c_index"].to_list():
+                    seed_event_row = seed_row[event_idx]
+                    agg_event.append(seed_event_row)
+
+                mean_list = np.mean(agg_event, axis=0).round(5).tolist()
+                std_list = np.std(agg_event, axis=0).round(5).tolist()
+                zip_iter = zip(mean_list, std_list, self.c_index_quantiles)
+
+                for mean_q, std_q, q in zip_iter:
+                    agg_metrics.append(
+                        dict(
+                            dataset_name=dataset_name,
+                            model_id=model_id,
+                            event_idx=event_idx + 1,
+                            q=q,
+                            c_index=f"{mean_q} ± {std_q}",
+                        )
+                    )
+        df = pd.DataFrame(agg_metrics).pivot(
+            index="model_id", columns=["q", "event_idx"], values=["c_index"]
+        )
+        return df
 
     def plot_brier_scores(self, dataset_name):
         pass
@@ -228,7 +273,7 @@ class Scorer:
 
 datasets = {
     # "seer": load_seer_,
-    # "support": load_support_,
+    "support": load_support_,
     "metabric": load_metabric_,
 }
 
@@ -237,10 +282,10 @@ model_hp_params["survival_boost"] = {"time_sampler": ["uniform", "kaplan-meier"]
 
 models = {
     "survival_boost": SurvivalBoost,
-    "xgbse": XGBSE,
+    # "xgbse": XGBSE,
 }
 
-seeds = range(1)
+seeds = range(2)
 
 scorer = Scorer()
 for dataset_name, dataset_func in datasets.items():
@@ -258,20 +303,17 @@ for dataset_name, dataset_func in datasets.items():
                     model=model,
                     X=bunch.X,
                     y=bunch.y,
-                    hp_params_set=hp_params,
+                    hp_params=hp_params,
                     seed=seed,
                 )
 
 print(scorer)
-# %%
-scorer.plot_target_distribution("metabric")
 
 # %%
 
-scorer.plot_km_calibration("metabric")
+scorer.plot_ibs("metabric")
 
 # %%
-scorer.plot_metrics("metabric")
-
+scorer.plot_c_index("metabric")
 
 # %%
