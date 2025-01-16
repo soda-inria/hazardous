@@ -4,10 +4,12 @@ from ._brier_score import (
     integrated_brier_score_incidence,
     integrated_brier_score_survival,
 )
+from ._concordance_index import concordance_index_incidence
 
 __all__ = [
     "brier_score_survival",
     "brier_score_incidence",
     "integrated_brier_score_survival",
     "integrated_brier_score_incidence",
+    "concordance_index_incidence",
 ]

@@ -50,13 +50,12 @@ sphinx_gallery_conf = {
         # Intersphinx links
         # The module you locally document uses None
         'hazardous': None,
-        }
-
+    }
 }
 
-# intersphinx configuration
+# Configuration for intersphinx
 intersphinx_mapping = {
-    "sklearn": ("https://scikit-learn.org/stable/", None),
+    "sklearn": ("https://scikit-learn.org/stable", None),
 }
 
 numpydoc_show_class_members = False 
@@ -67,7 +66,7 @@ html_theme_options = {
     "announcement": (
         "https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"
     ),
-        "icon_links": [
+    "icon_links": [
         {
             "name": "GitHub",
             "url": "https://github.com/soda-inria/hazardous/",
