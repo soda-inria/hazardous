@@ -169,7 +169,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
 
 
 class SurvivalBoost(BaseEstimator, ClassifierMixin):
-    r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT [1]_.
+    r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT [Alberge2024]_.
 
     This model estimates the cause-specific Cumulative Incidence Function (CIF) for
     each event of interest, as well as the survival function for any event, using a
@@ -297,10 +297,9 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
     References
     ----------
-    .. [1]  J. Alberge, V. Maladière, O. Grisel, J. Abécassis, G. Varoquaux,
-            "Teaching Models To Survive: Proper Scoring Rule and Stochastic Optimization
-            with Competing Risks", 2024.
-            https://arxiv.org/pdf/2406.14085
+    .. [Alberge2024] J. Alberge, V. Maladiere,  O. Grisel, J. Abécassis, G. Varoquaux,
+       "Survival Models: Proper Scoring Rule and Stochastic Optimization
+       with Competing Risks", 2024
 
     Examples
     --------
