@@ -1,19 +1,57 @@
 from numbers import Real
 
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.base import BaseEstimator, ClassifierMixin, check_is_fitted
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.utils.validation import check_random_state
 from tqdm import tqdm
 
 from ._ipcw import AlternatingCensoringEstimator, KaplanMeierIPCW
+from ._km_sampler import _KaplanMeierSampler
 from .metrics._brier_score import (
     IncidenceScoreComputer,
     integrated_brier_score_incidence,
     integrated_brier_score_survival,
 )
 from .utils import check_array, check_y_survival
+
+
+class _TimeSampler:
+    def __init__(self, rng):
+        self.rng = rng
+
+
+class _TimeSamplerUniform(_TimeSampler):
+    # Sample from t_min=0 event if never observed in the training set
+    # because we want to make sure that the model learns to predict a 0
+    # incidence at t=0.
+    t_min = 0.0
+
+    def fit(self, y):
+        _, duration = check_y_survival(y)
+        self.t_max_ = duration.max()
+        return self
+
+    def sample(self, size):
+        check_is_fitted(self, "t_max_")
+        return self.rng.uniform(self.t_min, self.t_max_, size)
+
+
+class _TimeSamplerKM(_TimeSampler):
+    q_max = 1.0
+
+    def fit(self, y):
+        self.km_sampler_ = _KaplanMeierSampler().fit(y)
+        # When there are residuals in the estimated survival probabilities,
+        # we set the minimum quantile to sample as the minimum estimated probability.
+        self.q_min_ = self.km_sampler_.min_survival_prob_
+        return self
+
+    def sample(self, size):
+        check_is_fitted(self, ["q_min_", "km_sampler_"])
+        quantiles = self.rng.uniform(self.q_min_, self.q_max, size)
+        return self.km_sampler_.inverse_surv_func_(quantiles)
 
 
 class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
@@ -58,8 +96,9 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
     def __init__(
         self,
         y_train,
-        hard_zero_fraction=0.01,
+        time_sampler="kaplan-meier",
         ipcw_estimator=None,
+        hard_zero_fraction=0.1,
         n_iter_before_feedback=20,
         random_state=None,
     ):
@@ -74,6 +113,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
         self.update_ipcw(y=y_train)
+        self._init_time_sampler(y_train, time_sampler)
 
     def draw(self, y, X=None, ipcw_training=False):
         events, durations = check_y_survival(y)
@@ -82,12 +122,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         # Sample time horizons uniformly on the observed time range:
         n_samples = durations.shape[0]
 
-        # Sample from t_min=0 event if never observed in the training set
-        # because we want to make sure that the model learns to predict a 0
-        # incidence at t=0.
-        t_min = 0.0
-        t_max = durations.max()
-        sampled_time_horizons = self.rng.uniform(t_min, t_max, n_samples)
+        sampled_time_horizons = self.time_sampler.sample(n_samples)
 
         # Add some hard zeros to make sure that the model learns to
         # predict 0 incidence at t=0.
@@ -176,6 +211,18 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
             ipcw_training=True,
             X=X,
         )
+
+    def _init_time_sampler(self, y, time_sampler):
+        if time_sampler == "uniform":
+            self.time_sampler = _TimeSamplerUniform(self.rng)
+        elif time_sampler == "kaplan-meier":
+            self.time_sampler = _TimeSamplerKM(self.rng)
+        else:
+            raise ValueError(
+                "time_sampler options are 'uniform' and 'kaplan-meier', "
+                f"but got {time_sampler}."
+            )
+        self.time_sampler.fit(y)
 
 
 class SurvivalBoost(BaseEstimator, ClassifierMixin):
@@ -343,6 +390,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         random_state=None,
         n_horizons_per_observation=3,
         split_censor_incidence=False,
+        time_sampler="kaplan-meier",
     ):
         self.hard_zero_fraction = hard_zero_fraction
         self.n_iter = n_iter
@@ -358,6 +406,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         self.random_state = random_state
         self.n_horizons_per_observation = n_horizons_per_observation
         self.split_censor_incidence = split_censor_incidence
+        self.time_sampler = time_sampler
 
     def fit(self, X, y, times=None):
         """Fit the model.
@@ -442,6 +491,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             random_state=self.random_state,
             ipcw_estimator=ipcw_estimator,
             n_iter_before_feedback=self.n_iter_before_feedback,
+            time_sampler=self.time_sampler,
         )
 
         iterator = range(self.n_iter)
@@ -608,6 +658,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             max_leaf_nodes=self.max_leaf_nodes,
             max_depth=self.max_depth,
             min_samples_leaf=self.min_samples_leaf,
+            random_state=self.random_state,
         )
 
     def score(self, X, y):

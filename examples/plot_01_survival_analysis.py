@@ -75,8 +75,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 # "duration". This allows SurvivalBoost to estimate the survival function :math:`S`.
 from hazardous import SurvivalBoost
 
-
-survival_boost = SurvivalBoost(show_progressbar=False).fit(X_train, y_train)
+survival_boost = SurvivalBoost(show_progressbar=False, time_sampler="uniform").fit(
+    X_train, y_train
+)
 survival_boost
 
 # %%
