@@ -1,6 +1,7 @@
 # %%
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from collections import defaultdict
 from sklearn.utils import Bunch
 from sklearn.model_selection import ParameterGrid, train_test_split
@@ -99,11 +100,9 @@ class Scorer:
         str_config = "_".join([f"{k}={v}" for k, v in hp_params.items()])
         model_id = "__".join([model_name, str_config])
 
-        ibs = self.compute_multi_ibs(y_train, y_test, y_pred, time_grid)
-        c_index = self.compute_multi_c_index(y_train, y_test, y_pred, time_grid)
-        brier_scores = self.compute_multi_brier_scores(
-            y_train, y_test, y_pred, time_grid
-        )
+        ibs = self.compute_ibs(y_train, y_test, y_pred, time_grid)
+        c_index = self.compute_c_index(y_train, y_test, y_pred, time_grid)
+        brier_scores = self.compute_brier_scores(y_train, y_test, y_pred, time_grid)
         acc_in_time = self.compute_acc_in_time(y_test, y_pred, time_grid)
 
         self.results["model_id"].append(model_id)
@@ -121,7 +120,13 @@ class Scorer:
 
         print(f"{ibs=}")
 
-    def compute_multi_ibs(self, y_train, y_test, y_pred, time_grid):
+    def remove(self, index):
+        if index >= len(self):
+            raise ValueError(f"{index=} is larger than the number of runs {len(self)}")
+        for key in self.results.keys():
+            self.results[key].pop(index)
+
+    def compute_ibs(self, y_train, y_test, y_pred, time_grid):
         ibs_events = []
         n_events = y_pred.shape[1]
         for event_idx in range(n_events):
@@ -144,7 +149,7 @@ class Scorer:
             ibs_events.append(ibs_event)
         return round(np.mean(ibs_events), 5)
 
-    def compute_multi_brier_scores(self, y_train, y_test, y_pred, time_grid):
+    def compute_brier_scores(self, y_train, y_test, y_pred, time_grid):
         brier_scores = []
         n_events = y_pred.shape[1]
         for event_idx in range(n_events):
@@ -166,7 +171,7 @@ class Scorer:
             brier_scores.append(brier_scores_event)
         return brier_scores
 
-    def compute_multi_c_index(self, y_train, y_test, y_pred, time_grid):
+    def compute_c_index(self, y_train, y_test, y_pred, time_grid):
         c_index = []
         n_events = y_pred.shape[1]
         taus = np.quantile(time_grid, self.c_index_quantiles)
@@ -213,11 +218,10 @@ class Scorer:
         return pd.DataFrame(agg_metrics)
 
     def plot_c_index(self, dataset_name):
-        df = pd.DataFrame(scorer.results)
+        df = pd.DataFrame(self.results)
         df = df.loc[df["dataset_name"] == dataset_name]
 
         agg_metrics = []
-
         for model_id in df["model_id"].unique():
             df_model = df.loc[df["model_id"] == model_id]
             n_events = len(df_model["c_index"].values[0])
@@ -248,7 +252,38 @@ class Scorer:
         return df
 
     def plot_brier_scores(self, dataset_name):
-        pass
+        df = pd.DataFrame(scorer.results)
+        df = df.loc[df["dataset_name"] == dataset_name]
+
+        if df.empty:
+            return
+
+        n_events = len(df["brier_scores"].values[0])
+
+        fig, axes = plt.subplots(ncols=n_events)
+        for model_id in df["model_id"].unique():
+            df_model = df.loc[df["model_id"] == model_id]
+            time_grid = df_model["time_grid"].values[0]
+
+            for event_idx in range(n_events):
+                agg_event = []
+                for seed_row in df_model["brier_scores"].to_list():
+                    seed_event_row = seed_row[event_idx]
+                    agg_event.append(seed_event_row)
+
+                mean_arr = np.mean(agg_event, axis=0).round(5)
+                std_arr = np.std(agg_event, axis=0).round(5)
+
+                axes[event_idx].plot(time_grid, mean_arr, label=model_id)
+                axes[event_idx].fill_between(
+                    time_grid,
+                    y1=mean_arr - std_arr,
+                    y2=mean_arr + std_arr,
+                )
+
+        #
+        axes[-1].legend()
+        plt.show()
 
     def plot_acc_in_time(self, dataset_name):
         pass
@@ -270,42 +305,41 @@ class Scorer:
             )
         ).to_markdown()
 
+    def __len__(self):
+        return len(self.results["model_id"])
 
-datasets = {
-    # "seer": load_seer_,
-    "support": load_support_,
-    "metabric": load_metabric_,
-}
 
-model_hp_params = defaultdict(dict)
-model_hp_params["survival_boost"] = {"time_sampler": ["uniform", "kaplan-meier"]}
+# %%
 
-models = {
-    "survival_boost": SurvivalBoost,
-    # "xgbse": XGBSE,
-}
-
-seeds = range(2)
+bunch = load_metabric_()
+hp_params = {"time_sampler": "uniform"}
 
 scorer = Scorer()
-for dataset_name, dataset_func in datasets.items():
-    bunch = dataset_func()
-    for model_name, model_cls in models.items():
-        hp_params_grid = model_hp_params[model_name]
+scorer.compute_scores(
+    model_name="survival_boost",
+    dataset_name="metabric",
+    model=SurvivalBoost(**hp_params),
+    hp_params=hp_params,
+    X=bunch.X,
+    y=bunch.y,
+    seed=0,
+)
 
-        # ParameterGrid allows to iterate from a grid.
-        for hp_params in ParameterGrid(hp_params_grid):
-            for seed in seeds:
-                model = model_cls(random_state=seed, **hp_params)
-                scorer.compute_scores(
-                    model_name=model_name,
-                    dataset_name=dataset_name,
-                    model=model,
-                    X=bunch.X,
-                    y=bunch.y,
-                    hp_params=hp_params,
-                    seed=seed,
-                )
+print(scorer)
+
+# %%
+
+hp_params = {"time_sampler": "kaplan-meier"}
+
+scorer.compute_scores(
+    model_name="survival_boost",
+    dataset_name="metabric",
+    model=SurvivalBoost(**hp_params),
+    hp_params=hp_params,
+    X=bunch.X,
+    y=bunch.y,
+    seed=0,
+)
 
 print(scorer)
 
@@ -314,6 +348,37 @@ print(scorer)
 scorer.plot_ibs("metabric")
 
 # %%
+
 scorer.plot_c_index("metabric")
 
+# %%
+
+scorer = Scorer()
+
+seeds = range(3)
+hp_params_grid = {"time_sampler": ["uniform", "kaplan-meier"]}
+
+# ParameterGrid allows to iterate from a grid.
+for hp_params in ParameterGrid(hp_params_grid):
+    for seed in seeds:
+        model = SurvivalBoost(random_state=seed, **hp_params)
+        scorer.compute_scores(
+            model_name="survival_boost",
+            dataset_name="metabric",
+            model=model,
+            X=bunch.X,
+            y=bunch.y,
+            hp_params=hp_params,
+            seed=seed,
+        )
+
+print(scorer)
+
+# %%
+
+scorer.plot_c_index("metabric")
+
+# %%
+
+scorer.plot_ibs("metabric")
 # %%
