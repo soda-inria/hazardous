@@ -12,9 +12,9 @@ from skrub import TableVectorizer
 from pycox.datasets import metabric, support
 
 from hazardous.data import load_seer
-from hazardous.utils import check_y_survival
+from hazardous.utils import check_y_survival, make_time_grid
 
-# from hazardous._xbgse import XGBSE
+from hazardous._xbgse import XGBSE
 from hazardous import SurvivalBoost
 from hazardous import metrics
 from hazardous._km_sampler import _KaplanMeierSampler, _AalenJohansenSampler
@@ -101,8 +101,11 @@ class Scorer:
 
         y_pred = model.predict_cumulative_incidence(X_test, times=time_grid)
 
-        str_config = "_".join([f"{k}={v}" for k, v in hp_params.items()])
-        model_id = "__".join([model_name, str_config])
+        if hp_params:
+            str_config = "_".join([f"{k}={v}" for k, v in hp_params.items()])
+            model_id = "__".join([model_name, str_config])
+        else:
+            model_id = model_name
 
         ibs = self._compute_ibs(y_train, y_test, y_pred, time_grid)
         c_index = self._compute_c_index(y_train, y_test, y_pred, time_grid)
@@ -256,7 +259,7 @@ class Scorer:
 
         sns.lineplot(
             df,
-            x="q",
+            x="tau",
             y="mean_acc",
             hue="model_id",
             palette="colorblind",
@@ -265,7 +268,7 @@ class Scorer:
         )
         sns.scatterplot(
             df,
-            x="q",
+            x="tau",
             y="mean_acc",
             hue="model_id",
             s=50,
@@ -275,12 +278,6 @@ class Scorer:
             ax=ax,
         )
 
-        quantiles = self.acc_in_time_quantiles
-        ax.set_xticks(
-            quantiles,
-            labels=[f"{q:.3f}" for q in quantiles],
-            fontsize=10,
-        )
         ax.legend()
         ax.grid()
         ax.set_xlabel("Time quantiles", fontsize=10)
@@ -476,6 +473,8 @@ class Scorer:
 bunch = load_metabric_()
 hp_params = {"time_sampler": "uniform"}
 
+time_grid = make_time_grid(bunch.y["duration"], n_steps=20)
+
 scorer = Scorer()
 scorer.compute_scores(
     model_name="survival_boost",
@@ -485,6 +484,7 @@ scorer.compute_scores(
     X=bunch.X,
     y=bunch.y,
     seed=0,
+    time_grid=time_grid,
 )
 
 print(scorer)
@@ -501,6 +501,22 @@ scorer.compute_scores(
     X=bunch.X,
     y=bunch.y,
     seed=0,
+    time_grid=time_grid,
+)
+
+print(scorer)
+
+# %%
+
+scorer.compute_scores(
+    model_name="XGBSE",
+    dataset_name="metabric",
+    model=XGBSE(),
+    hp_params={},
+    X=bunch.X,
+    y=bunch.y,
+    seed=0,
+    time_grid=time_grid,
 )
 
 print(scorer)
@@ -518,6 +534,9 @@ scorer.plot_acc_in_time("metabric")
 # %%
 
 scorer.plot_c_index("metabric")
+
+# %%
+scorer.plot_brier_scores("metabric")
 
 # %%
 

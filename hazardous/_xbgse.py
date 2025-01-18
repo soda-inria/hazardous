@@ -65,7 +65,7 @@ class XGBSE(XGBSEDebiasedBCE):
             y_surv_proba = np.concatenate(interpolated, axis=0)
 
         y_proba = np.concatenate(
-            [y_surv_proba[None, :, :], (1 - y_surv_proba)[None, :, :]], axis=0
+            [y_surv_proba[:, None, :], (1 - y_surv_proba)[:, None, :]], axis=1
         )
         return y_proba
 
@@ -75,7 +75,7 @@ class XGBSE(XGBSEDebiasedBCE):
         ibs = integrated_brier_score_incidence(
             y_train=y,
             y_test=y,
-            y_pred=y_proba[1, :, :],
+            y_pred=y_proba[:, 1, :],
             times=self.time_grid_,
             event_of_interest=1,
         )
