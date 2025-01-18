@@ -1,4 +1,5 @@
-from lifelines import KaplanMeierFitter
+import numpy as np
+from lifelines import AalenJohansenFitter, KaplanMeierFitter
 from scipy.interpolate import interp1d
 
 from .utils import check_y_survival
@@ -103,5 +104,37 @@ class _KaplanMeierSampler:
         self.min_positive_survival_prob_ = self.survival_probs_[
             self.survival_probs_ > 0
         ].min()
+
+        return self
+
+
+class _AalenJohansenSampler:
+    def fit(self, y):
+        event, duration = check_y_survival(y)
+        self.event_ids_ = np.array(sorted(list(set([0]) | set(event))))
+
+        self.incidence_func_ = {}
+        for event_id in self.event_ids_[1:]:
+            aj = AalenJohansenFitter(calculate_variance=False)
+            aj.fit(
+                durations=duration,
+                event_observed=event,
+                event_of_interest=event_id,
+            )
+
+            df = aj.cumulative_density_
+            times_event = df.index
+            y_pred = df.values[:, 0]
+
+            times_event = np.hstack([[0], times_event, [np.inf]])
+            y_pred = np.hstack([[0], y_pred, [y_pred[-1]]])
+
+            self.incidence_func_[event_id] = interp1d(
+                x=times_event,
+                y=y_pred,
+                kind="previous",
+                bounds_error=False,
+                fill_value="extrapolate",
+            )
 
         return self
