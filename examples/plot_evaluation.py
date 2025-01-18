@@ -506,6 +506,10 @@ scorer.compute_scores(
 print(scorer)
 
 # %%
+
+scorer.plot_target_distribution(bunch.y)
+
+# %%
 scorer.plot_km_calibration("metabric")
 
 # %%
@@ -542,6 +546,10 @@ print(scorer)
 
 # %%
 
+scorer.plot_target_distribution(y=bunch.target.head(10_000))
+
+# %%
+
 scorer.plot_ibs("seer")
 
 # %%
@@ -559,4 +567,5 @@ scorer.plot_brier_scores("seer")
 # %%
 
 scorer.plot_ibs("seer")
+
 # %%
