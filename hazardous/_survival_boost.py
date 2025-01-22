@@ -1,18 +1,15 @@
 from numbers import Real
 
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.base import BaseEstimator
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.validation import check_array, check_random_state
 from tqdm import tqdm
 
 from ._ipcw import AlternatingCensoringEstimator, KaplanMeierIPCW
-from .metrics._brier_score import (
-    IncidenceScoreComputer,
-    integrated_brier_score_incidence,
-    integrated_brier_score_survival,
-)
-from .utils import check_y_survival
+from .base import SurvivalMixin
+from .metrics._brier_score import IncidenceScoreComputer
+from .utils import check_y_survival, get_unique_events, make_time_grid
 
 
 class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
@@ -168,7 +165,7 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         )
 
 
-class SurvivalBoost(BaseEstimator, ClassifierMixin):
+class SurvivalBoost(BaseEstimator, SurvivalMixin):
     r"""Cause-specific Cumulative Incidence Function (CIF) with GBDT [1]_.
 
     This model estimates the cause-specific Cumulative Incidence Function (CIF) for
@@ -381,45 +378,18 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         event, duration = check_y_survival(y)
 
         # Add 0 as a special event id for the survival function.
-        self.event_ids_ = np.array(sorted(list(set([0]) | set(event))))
-
-        self.estimator_ = self._build_base_estimator()
+        self.event_ids_ = get_unique_events(event)
 
         # Compute the default time grid used at prediction time.
-        any_event_mask = event > 0
-        observed_times = duration[any_event_mask]
-
         if times is None:
-            if observed_times.shape[0] > self.n_time_grid_steps:
-                self.time_grid_ = np.quantile(
-                    observed_times, np.linspace(0, 1, num=self.n_time_grid_steps)
-                )
-            else:
-                self.time_grid_ = observed_times.copy()
-                self.time_grid_.sort()
+            self.time_grid_ = make_time_grid(event, duration, self.n_time_grid_steps)
         else:
             self.time_grid_ = times.copy()
             self.time_grid_.sort()
 
-        if self.ipcw_strategy == "alternating":
-            ipcw_estimator = AlternatingCensoringEstimator(
-                incidence_estimator=self.estimator_
-            )
-        elif self.ipcw_strategy == "kaplan-meier":
-            ipcw_estimator = KaplanMeierIPCW()
-        else:
-            raise ValueError(
-                f"Invalid parameter value: ipcw_strategy={self.ipcw_strategy!r}. "
-                "Valid values are 'alternating' and 'kaplan-meier'."
-            )
+        self.estimator_ = self._build_base_estimator()
 
-        self.weighted_targets_ = WeightedMultiClassTargetSampler(
-            y,
-            hard_zero_fraction=self.hard_zero_fraction,
-            random_state=self.random_state,
-            ipcw_estimator=ipcw_estimator,
-            n_iter_before_feedback=self.n_iter_before_feedback,
-        )
+        self.weighted_targets_ = self._check_target_sampling(y)
 
         iterator = range(self.n_iter)
         if self.show_progressbar:
@@ -453,7 +423,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                 )
 
             if (idx_iter % self.n_iter_before_feedback == 0) and isinstance(
-                ipcw_estimator, AlternatingCensoringEstimator
+                self.weighted_targets_.ipcw_estimator, AlternatingCensoringEstimator
             ):
                 self.weighted_targets_.fit(X)
 
@@ -584,52 +554,26 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             min_samples_leaf=self.min_samples_leaf,
         )
 
-    def score(self, X, y):
-        """Return the mean of IBS for each event of interest and survival.
+    def _check_target_sampling(self, y):
+        if self.ipcw_strategy == "alternating":
+            ipcw_estimator = AlternatingCensoringEstimator(
+                incidence_estimator=self.estimator_
+            )
+        elif self.ipcw_strategy == "kaplan-meier":
+            ipcw_estimator = KaplanMeierIPCW()
+        else:
+            raise ValueError(
+                f"Invalid parameter value: ipcw_strategy={self.ipcw_strategy!r}. "
+                "Valid values are 'alternating' and 'kaplan-meier'."
+            )
 
-        This returns the negative of the mean of the Integrated Brier Score
-        (IBS, a proper scoring rule) of each competing event as well as the IBS
-        of the survival to any event. So, the higher the value, the better the
-        model to be consistent with the scoring convention of scikit-learn to
-        make it possible to use this class with scikit-learn model selection
-        utilities such as ``GridSearchCV`` and ``RandomizedSearchCV``.
+        weighted_targets = WeightedMultiClassTargetSampler(
+            y,
+            hard_zero_fraction=self.hard_zero_fraction,
+            random_state=self.random_state,
+            ipcw_estimator=ipcw_estimator,
+            n_iter_before_feedback=self.n_iter_before_feedback,
+        )
+        self.y_train_ = y
 
-        Parameters
-        ----------
-        X : array-like of shape (n_samples, n_features)
-            The input samples.
-        y : dict with keys "event" and "duration"
-            The target values. "event" is a boolean array of shape (n_samples,)
-            indicating whether the event was observed or not. "duration" is a
-            float array of shape (n_samples,) indicating the time of the event
-            or the time of censoring.
-
-        Returns
-        -------
-        score : float
-            The negative of time-integrated Brier score (IBS).
-
-        TODO: implement time integrated NLL and use as the default for the
-        .score method to match the objective function used at fit time.
-        """
-        predicted_curves = self.predict_cumulative_incidence(X)
-        ibs_events = []
-        for event_idx in self.event_ids_:
-            predicted_curves_for_event = predicted_curves[:, event_idx]
-            if event_idx == 0:
-                ibs_event = integrated_brier_score_survival(
-                    y_train=self.weighted_targets_.y_train,
-                    y_test=y,
-                    y_pred=predicted_curves_for_event,
-                    times=self.time_grid_,
-                )
-            else:
-                ibs_event = integrated_brier_score_incidence(
-                    y_train=self.weighted_targets_.y_train,
-                    y_test=y,
-                    y_pred=predicted_curves_for_event,
-                    times=self.time_grid_,
-                    event_of_interest=event_idx,
-                )
-            ibs_events.append(ibs_event)
-        return -np.mean(ibs_events)
+        return weighted_targets
