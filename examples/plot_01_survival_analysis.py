@@ -45,8 +45,6 @@ y
 #   random variable :math:`T`, and the censoring date, represented by :math:`C`.
 #
 # In this dataset, approximately 42% of the data is censored..
-
-# %%
 y["event"].value_counts(normalize=True)
 
 # %%
@@ -75,9 +73,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
 # "duration". This allows SurvivalBoost to estimate the survival function :math:`S`.
 from hazardous import SurvivalBoost
 
-survival_boost = SurvivalBoost(show_progressbar=False, time_sampler="uniform").fit(
-    X_train, y_train
-)
+survival_boost = SurvivalBoost(show_progressbar=False).fit(X_train, y_train)
 survival_boost
 
 # %%
@@ -101,34 +97,69 @@ incidence_curves = predicted_curves[:, 1]  # cumulative incidence of the event (
 import matplotlib.pyplot as plt
 
 
-fig, ax = plt.subplots()
+def plot_survival_curves(patient_ids_to_plot, time_grid, survival_curves):
+    fig, ax = plt.subplots()
+
+    for idx in patient_ids_to_plot:
+        ax.plot(time_grid, survival_curves[idx], label=f"Patient {idx}")
+
+        # plot symbols for death or censoring
+        event = y_test.iloc[idx]["event"]
+        duration = y_test.iloc[idx]["duration"]
+
+        # find the index of time closest to duration
+        jdx = np.searchsorted(time_grid, duration)
+        smiley = "☠️" if event == 1 else "✖"
+        ax.text(
+            duration,
+            survival_curves[idx, jdx],
+            smiley,
+            fontsize=20,
+            color=ax.lines[idx].get_color(),
+        )
+
+    ax.legend()
+    ax.set_title("")
+    ax.set_xlabel("Months")
+    ax.set_ylabel("Predicted Survival Probability")
+
+    plt.show()
+
 
 patient_ids_to_plot = [0, 1, 2, 3]
+plot_survival_curves(
+    patient_ids_to_plot,
+    survival_boost.time_grid_,
+    survival_curves,
+)
 
-for idx in patient_ids_to_plot:
-    ax.plot(survival_boost.time_grid_, survival_curves[idx], label=f"Patient {idx}")
+# %%
+# Bagging for curves smoothing
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#
+# Bagging can help us smooth our survival and incidence curves, at the cost of
+# fitting ``SurvivalBoost`` multiple times.
 
-    # plot symbols for death or censoring
-    event = y_test.iloc[idx]["event"]
-    duration = y_test.iloc[idx]["duration"]
+from hazardous import BaggingSurvival
 
-    # find the index of time closest to duration
-    jdx = np.searchsorted(survival_boost.time_grid_, duration)
-    smiley = "☠️" if event == 1 else "✖"
-    ax.text(
-        duration,
-        survival_curves[idx, jdx],
-        smiley,
-        fontsize=20,
-        color=ax.lines[idx].get_color(),
-    )
 
-ax.legend()
-ax.set_title("")
-ax.set_xlabel("Months")
-ax.set_ylabel("Predicted Survival Probability")
+bagging_est = BaggingSurvival(
+    survival_boost,
+    n_estimators=5,
+    bootstrap=False,
+).fit(X, y)
 
-plt.show()
+smooth_curves = bagging_est.predict_cumulative_incidence(
+    X_test,
+    times=None,
+)
+smooth_survival_curves = smooth_curves[:, 0]  # survival function S(t)
+
+plot_survival_curves(
+    patient_ids_to_plot,
+    bagging_est.time_grid_,
+    smooth_survival_curves,
+)
 
 # %%
 #
@@ -313,7 +344,6 @@ print(f"IBS for Kaplan-Meier at: {ibs_km:.4f}")
 #
 # Let's also compute the concordance index for both the Kaplan-Meier and SurvivalBoost.
 
-# %%
 from hazardous.metrics import concordance_index_incidence
 
 
@@ -347,7 +377,5 @@ print(
     f"Concordance index at quantiles {quantiles} "
     f"for SurvivalBoost: {concordance_index_survboost.round(3)}"
 )
-
-# %%
 
 # %%

@@ -19,6 +19,7 @@ def _dict_to_recarray(y, cast_event_to_bool=False):
     )
     y_out["event"] = y["event"]
     y_out["duration"] = y["duration"]
+
     return y_out
 
 
@@ -74,11 +75,6 @@ def check_array(X, **params):
         return check_array_sk(X, ensure_all_finite=x_all_finite, **params)
 
 
-def make_time_grid(duration, n_steps=20):
-    t_min, t_max = duration.min(), duration.max()
-    return np.linspace(t_min, t_max, n_steps)
-
-
 def make_recarray(y):
     event = y["event"].values
     duration = y["duration"].values
@@ -86,3 +82,49 @@ def make_recarray(y):
         [(event[i], duration[i]) for i in range(y.shape[0])],
         dtype=[("e", bool), ("t", float)],
     )
+
+
+def get_unique_events(event):
+    """Get the unique events, including censoring 0.
+
+    Parameters
+    ----------
+    event : array of shape (n_samples,)
+
+    Returns
+    -------
+    unique_event : array of shape (n_unique_event,)
+    """
+    return np.array(sorted(list(set([0]) | set(event))))
+
+
+def make_time_grid(event, duration, n_time_grid_steps):
+    """Compute a time grid on observed events.
+
+    The time grid size is the minimum between ``n_time_grid_steps`` and
+    the number of unique observed durations.
+
+    Parameters
+    ----------
+    event : array of shape (n_samples,)
+    duration : array of shape (n_samples,)
+    n_time_grid_steps : int
+
+    Returns
+    -------
+    time_grid : array of shape (n_time_steps,)
+        Note that n_time_steps <= n_time_grid_steps
+    """
+
+    any_event_mask = event > 0
+    observed_times = duration[any_event_mask]
+
+    if observed_times.shape[0] > n_time_grid_steps:
+        time_grid = np.quantile(
+            observed_times, np.linspace(0, 1, num=n_time_grid_steps)
+        )
+    else:
+        time_grid = observed_times.copy()
+        time_grid.sort()
+
+    return time_grid
