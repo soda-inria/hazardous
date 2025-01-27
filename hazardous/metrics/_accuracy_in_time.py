@@ -13,6 +13,7 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
 
     where:
 
+    - :math:`I` is the indicator function.
     - :math:`\zeta` is a fixed time horizon.
     - :math:`n_{nc}` is the number of uncensored individuals at :math:`\zeta`.
     - :math:`\delta_i` is the event experienced by the individual :math:`i` at
@@ -40,11 +41,13 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
     metric's discriminative power will be for advanced times when the model has to
     select which event will happen for a given patient.
 
-    While the C-index can help clinicians to priorize treatment allocation by ranking
-    individuals by risk of a given event of interest, the accuracy in time answers
-    a different question: "`what is the most likely event that this individual will
-    experience at some fixed time horizon?`". Conceptually, it helps clinicians choose
-    the right treatment by priorizing the risk for a given individual.
+    The C-index depends on other individual in the cohort, while the accuracy-in-time
+    for an individual does not. Conceptually, the C-index can help clinicians to
+    priorize treatment allocation by ranking individuals by risk of a given event of
+    interest. The accuracy in time, however, answers a different question: "`what is
+    the most likely event that this individual will experience at some fixed time
+    horizon?`". Therefore, the accuracy in time helps clinicians choose the right
+    treatment by priorizing the risk for a given individual.
 
     Parameters
     ----------

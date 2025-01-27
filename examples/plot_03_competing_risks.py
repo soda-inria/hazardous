@@ -10,20 +10,21 @@ how to interpret it.
 # %%
 # Definition of the Accuracy in Time
 # ==================================
-# Here is a little bit of context about this metric introduced in [Alberge2024]_:
+# Here is a little bit of context about this metric introduced in
+# `Alberge et al. (2024) <https://hal.science/hal-04617672v4>`_:
 #
-# - It is a generalization of the accuracy metric in the survival and the competing
-#   risks setting, which is the proportion of correct predictions (e.g. highest
-#   predicted probability) at a fixed time.
-# - It is computed for different time horizons, given by the user, with direct time
-#   stamps or quantiles of the observed durations.
-# - For a given patient at a fixed time, we compare the actual observed event to the
-#   most predicted one. The censored patients are removed from the computation after
-#   their censoring duration. In other word, let's imagine a patient who has
-#   experienced death by cancer at time :math:`t`. Before this time, we want the model
-#   to predict with the highest probability that this patient will survive. After
-#   :math:`t`, we want the model to predict the death by cancer event with the highest
-#   probability.
+# - The accuracy in time is a generalization of the accuracy metric in the survival
+#   and the competing risks setting, representing the proportion of correctly
+#   predicted labels at a fixed time.
+# - This metric is computed for different user-provided time horizons, specified
+#   either as direct timestamps or quantiles of the observed durations.
+# - For a given patient at a fixed time, we compare the actual observed event to
+#   the most likely predicted one. For example, imagine a patient who experiences
+#   death due to cancer at time :math:`t`. Before this time, the model should predict
+#   with the highest probability that the patient will survive. After :math:`t`,
+#   the model should predict the cancer-related death event with the highest
+#   probability. Censored patients are excluded from the computation after their
+#   censoring time.
 # - The mathematical formula is:
 #
 # .. math::
@@ -32,6 +33,7 @@ how to interpret it.
 #
 # where:
 #
+# - :math:`I` is the indicator function.
 # - :math:`\zeta` is a fixed time horizon.
 # - :math:`n_{nc}` is the number of uncensored individuals at :math:`\zeta`.
 # - :math:`\delta_i` is the event experienced by the individual :math:`i` at
@@ -42,12 +44,6 @@ how to interpret it.
 #   at :math:`\zeta`.
 # - :math:`y_{i,\zeta} = \delta_i ~ I\{t_i \leq \zeta \}` is the observed event
 #   for individual :math:`i` at :math:`\zeta`.
-#
-#      **References:**
-#
-#      .. [Alberge2024] J. Alberge, V. Maladiere,  O. Grisel, J. Abécassis,
-#      G. Varoquaux, "Survival Models: Proper Scoring Rule and Stochastic Optimization
-#      with Competing Risks", 2024
 
 # %%
 # Usage
@@ -87,8 +83,9 @@ plt.show()
 # Computing the Accuracy in Time
 # -------------------------------------------
 #
-# After training SurvivalBoost, we compute its accuracy in time.
-#
+# After training ``SurvivalBoost``, we compute its accuracy in time for 16 quantiles
+# of the time grid, i.e. at 16 evenly-spaced times of observation –:math:`\zeta` in our
+# formula above.
 
 import numpy as np
 from hazardous import SurvivalBoost
@@ -155,11 +152,7 @@ results.append(dict(model_name="Aalan-Johansen", accuracy=accuracy, taus=taus))
 # -------
 #
 # We display the accuracy in time to compare SurvivalBoost with the Aalen-Johansen's
-# estimator. Higher is better. Note that the accuracy is high at very beginning
-# (:math:`t < 1000`), because both models predict that every individual survive, which
-# is true in most cases. Then, beyond the time horizon 1000, the discriminative power
-# of the conditional SurvivalBoost yields a better accuracy than the marginal, unbiased,
-# Aalen-Johansen's estimator.
+# estimator. Higher is better.
 import pandas as pd
 
 
@@ -186,10 +179,17 @@ sns.scatterplot(
     zorder=100,
     style="model_name",
 )
+plt.tight_layout()
 plt.show()
 
 
 # %%
+# Note that the accuracy is high at very beginning
+# (:math:`t < 1000`), because both models predict that every individual survive, which
+# is true in most cases. Then, beyond the time horizon 1000, the discriminative power
+# of the conditional ``SurvivalBoost`` yields a better accuracy than the marginal,
+# unbiased, Aalen-Johansen's estimator.
+#
 # Understanding the accuracy in time
 # ----------------------------------
 #
@@ -197,12 +197,12 @@ plt.show()
 # time, and compare that to predictions.
 #
 # We display below the distribution of ground truth labels. Each color bar group
-# represents the event distribution at some given horizon.
-# Almost no individual have experienced an event at the very beginning.
+# represents the event distribution at some given time horizons.
+# Almost no individual have experienced an event at the very beginning (the very high
+# blue bars, corresponding to censoring).
 # Then, as time passes by, events occur and the number of censored individual at each
-# time horizon shrinks. Therefore, the very last distribution represents the overall
-# event distribution of the dataset.
-def plot_event_in_time(y_in_time):
+# time horizon shrinks.
+def plot_event_in_time(y_in_time, title):
     event_in_times = []
     for event_id in range(4):
         event_in_times.append(
@@ -222,29 +222,45 @@ def plot_event_in_time(y_in_time):
         hue="event",
         palette="colorblind",
     )
-
     ax.set_xticks(ax.get_xticks()[::10])
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Total events at $t$")
+    ax.set_title(title)
 
 
 time_grid_2d = np.tile(time_grid, (y_test.shape[0], 1))
-y_test_class = (y_test["duration"].values[:, None] <= time_grid_2d) * y_test[
-    "event"
-].values[:, None]
-plot_event_in_time(y_test_class)
+mask_event_happened = y_test["duration"].values[:, None] <= time_grid_2d
+y_test_class = mask_event_happened * y_test["event"].values[:, None]
+
+# In the same fashion as the accuracy-in-time, we don't count individual that were
+# censored in the past.
+mask_past_censoring = mask_event_happened * (y_test["event"] == 0).values[:, None]
+y_test_class[mask_past_censoring] = -1
+
+plot_event_in_time(y_test_class, title="Ground truth")
+
 # %%
-# Now, we compare this ground truth to the classes predicted by SurvivalBoost.
+# Now, we compare this ground truth to the classes predicted by ``SurvivalBoost``.
 # Interestingly, it seems too confident about the censoring event at the
 # beginning (:math:`t < 500`), but then becomes underconfident in the middle
 # (:math:`t > 1500`) and very overconfident about the class 3 in the end
 # (:math:`t > 3000`).
+# Overall, we can see that the predicted labels gets closer to the ground truth as the
+# time progress, which correspond to the improvement of the accuracy in time
+# we saw for the large time horizons.
 
 y_pred_class = y_pred.argmax(axis=1)
-plot_event_in_time(y_pred_class)
+y_pred_class[mask_past_censoring] = -1
+plot_event_in_time(y_pred_class, title="Survival Boost")
 
 # %%
-# Finally, we compare this to the classes predicted by the Aalen-Johansen model.
-# They are constant in individuals because this model is marginal and we simply
-# duplicated the global cumulative incidences for each individual.
+# Finally, we show the predicted classes from the Aalen-Johansen model.
+# These predictions remain constant across all individuals, as the model is marginal,
+# and the global cumulative incidences are simply duplicated for each individual.
+# Once again, the changes in predicted labels align with the "bumps" observed in
+# the accuracy-over-time figure for the Aalen-Johansen model.
+
 y_pred_class_aj = y_pred_aj.argmax(axis=1)
-plot_event_in_time(y_pred_class_aj)
+y_pred_class_aj[mask_past_censoring] = -1
+plot_event_in_time(y_pred_class_aj, title="Aalen-Johansen")
 # %%
