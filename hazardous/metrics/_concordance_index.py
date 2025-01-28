@@ -34,7 +34,7 @@ def concordance_index_incidence(
     .. math::
 
         \begin{align}
-        \tilde{N}^1_i(t) &= I\{\tilde{T} \leq t, \tilde{D}_i = 1\} \\
+        \tilde{N}^1_i(t) &= I\{\tilde{T}_i \leq t, \tilde{D}_i = 1\} \\
         \tilde{A}_{ij} &= I\{\tilde{T}_i < \tilde{T}_j \cup (\tilde{T}_i =
         \tilde{T}_j \cap D_j = 0)\} \\
         \tilde{B}_{ij} &= I\{\tilde{T}_i \geq \tilde{T}_j, D_j = 2\} \\
@@ -43,10 +43,12 @@ def concordance_index_incidence(
         Q_{ij}(t) &= I\{M(t, X_i) > M(t, X_j)\}
         \end{align}
 
-    where :math:`D_j = 1` and :math:`D_j = 2` respectively indicate individuals
-    having experienced the event of interest and a competing event, :math:`\hat{G}`
-    is a IPCW estimator, and :math:`Q_{ij}(t)` is an indicator for the order of
-    predicted risk at :math:`t`.
+    where :math:`D_j = 0`, :math:`D_j = 1` and :math:`D_j = 2` respectively indicate
+    individuals having been censored, individuals having experienced the event of
+    interest, and individual having experienced a competing event. :math:`\hat{G}`
+    is a IPCW estimator, :math:`Q_{ij}(t)` is an indicator for the order of
+    predicted risk at :math:`t`, and :math:`M` is the predicted cumulative incidence
+    function for the event of interest.
 
     The concordance index (C-index) is a common metric in survival analysis that
     evaluates whether the model predictions correctly order pairs of individuals with
@@ -88,7 +90,7 @@ def concordance_index_incidence(
     y_test : array, dictionnary or dataframe of shape (n_samples, 2)
         The test target, consisting in the 'event' and 'duration' columns.
 
-    y_pred: array of shape (n_samples_test, n_time_grid)
+    y_pred: array of shape (n_samples, n_time_grid)
         Cumulative incidence for the event of interest, at the time points
         from the input time_grid.
 
@@ -179,8 +181,9 @@ def _concordance_index_incidence_report(
     n_concordant_pairs_a: list of int
         Number of concordant pairs among A pairs without ties.
 
-    n_ties_times_a: list of int
-        Number of tied pairs of type A with (D_i = D_j = 1) & (T_i = T_j).
+    n_ties_times: list of int
+        Number of pairs which experienced the event of interest at the same time
+        (D_i = D_j = 1) & (T_i = T_j).
 
     n_ties_pred_a: list of int
         Number of pairs of type A with np.abs(y_pred_i - y_pred_j) <= tied_tol
