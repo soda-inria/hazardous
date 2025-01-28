@@ -108,9 +108,8 @@ def concordance_index_incidence(
     time_grid: array of shape (n_time_grid,), default=None
         Time points used to predict the cumulative incidence.
 
-    taus: array of shape (n_taus,), default=None
-        float or vector, timepoints at which the concordance index is
-        evaluated.
+    taus: float or array of shape (n_taus,), default=None
+        Timepoint(s) at which the concordance index is evaluated.
 
     event_of_interest: int, default=1
         For competing risks, the event of interest.
