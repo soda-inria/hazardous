@@ -6,7 +6,8 @@ from numpy.testing import assert_array_equal
 from hazardous.metrics import accuracy_in_time
 
 
-def test_accuracy_in_time_basic():
+@pytest.mark.parametrize("quantiles", [None, np.array([0.1, 0.4, 0.6, 0.8])])
+def test_accuracy_in_time_basic(quantiles):
     """Test basic functionality."""
     y_test = pd.DataFrame({"event": [1, 0, 1], "duration": [5, 10, 15]})
     y_pred = np.array(
@@ -23,7 +24,8 @@ def test_accuracy_in_time_basic():
     time_grid = np.array([5, 10])
     expected_taus = time_grid
 
-    acc_in_time, taus = accuracy_in_time(y_test, y_pred, time_grid)
+    # For small time grid and large quantiles, the acc in time is invariant to quantiles
+    acc_in_time, taus = accuracy_in_time(y_test, y_pred, time_grid, quantiles=quantiles)
     assert_array_equal(expected_acc_in_time, acc_in_time)
     assert_array_equal(expected_taus, taus)
 
@@ -54,35 +56,38 @@ def test_invalid_time_grid_length():
         accuracy_in_time(y_test, y_pred, time_grid)
 
 
-def test_quantiles_and_taus_set():
-    """Test setting both quantiles and taus."""
+def test_same_number_of_samples():
+    """Test y_test and y_pred first dimension mismatch"""
     y_test = pd.DataFrame({"event": [1, 0, 2], "duration": [5, 10, 15]})
     y_pred = np.array(
         [
             [[0.2, 0.5], [0.8, 0.5]],
             [[0.7, 0.6], [0.3, 0.4]],
-            [[0.1, 0.4], [0.9, 0.6]],
+            # n_samples mismatch
         ]
     )
     time_grid = np.array([5, 10])
 
-    with pytest.raises(ValueError, match="'quantiles' and 'taus' can't be set"):
-        accuracy_in_time(y_test, y_pred, time_grid, quantiles=[0.5], taus=[5])
+    with pytest.raises(ValueError, match="must have the same number of samples"):
+        accuracy_in_time(y_test, y_pred, time_grid)
 
 
-def test_default_quantiles():
-    """Test default quantile behavior."""
-    y_test = pd.DataFrame({"event": [1, 0, 2], "duration": [5, 10, 15]})
-    y_pred = np.array(
-        [
-            [[0.2, 0.5, 0.8], [0.8, 0.5, 0.2]],
-            [[0.7, 0.6, 0.4], [0.3, 0.4, 0.6]],
-            [[0.1, 0.4, 0.9], [0.9, 0.6, 0.1]],
-        ]
-    )
-    time_grid = np.array([5, 10, 15])
+def test_non_increasing_time_grid():
+    time_grid_0 = np.array([1, 3, 2])
+    y_pred_0 = np.array([[[0.9, 0.4, 0.8], [0.1, 0.6, 0.2]]])
 
-    acc_in_time, taus = accuracy_in_time(y_test, y_pred, time_grid)
+    time_grid = time_grid_0.copy()
+    y_pred = y_pred_0.copy()
 
-    assert len(taus) == 3  # Default quantiles should match the time grid length
-    assert len(acc_in_time) == 3
+    y_test = pd.DataFrame(dict(event=[1], duration=[2]))
+    with pytest.warns(UserWarning, match="time_grid is not sorted"):
+        acc_in_time_1, taus_1 = accuracy_in_time(y_test, y_pred, time_grid)
+
+    assert_array_equal(time_grid, time_grid_0)
+    assert_array_equal(y_pred, y_pred_0)
+
+    time_grid = np.array([1, 2, 3])
+    y_pred = np.array([[[0.9, 0.8, 0.4], [0.1, 0.2, 0.6]]])
+    acc_in_time_2, taus_2 = accuracy_in_time(y_test, y_pred, time_grid)
+    assert_array_equal(acc_in_time_1, acc_in_time_2)
+    assert_array_equal(taus_1, taus_2)

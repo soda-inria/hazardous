@@ -298,8 +298,8 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
     References
     ----------
     .. [Alberge2024] J. Alberge, V. Maladiere,  O. Grisel, J. Abécassis, G. Varoquaux,
-       "Survival Models: Proper Scoring Rule and Stochastic Optimization
-       with Competing Risks", 2024
+        `"Survival Models: Proper Scoring Rule and Stochastic Optimization with
+        Competing Risks", 2024 <https://hal.science/hal-04617672>`_
 
     Examples
     --------

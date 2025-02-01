@@ -1,9 +1,11 @@
+import warnings
+
 import numpy as np
 
 from ..utils import check_y_survival
 
 
-def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
+def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None):
     r"""Accuracy in time for prognostic models using competing risks.
 
     .. math::
@@ -36,10 +38,10 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
     accuracy in time essentially represents the accuracy of the estimator on
     observed events up to :math:`\zeta`.
 
-    In the beginning, every model's accuracy in time will be high because it will
-    predict that the patients have survived, which will be true in most cases. This
-    metric's discriminative power will be for advanced times when the model has to
-    select which event will happen for a given patient.
+    At the start, every model's accuracy will be high because it will predict
+    that patients have survived, which will be true in most cases. However, the
+    true measure of the model's discriminative power emerges at later time points,
+    when it must determine which specific event will occur for a given patient.
 
     The C-index depends on other individual in the cohort, while the accuracy-in-time
     for an individual does not. Conceptually, the C-index can help clinicians to
@@ -51,85 +53,84 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
 
     Parameters
     ----------
-    y_test : array, dictionnary or dataframe of shape (n_samples, 2)
+    y_test : array, dict or dataframe of shape (n_samples, 2)
         The test target, consisting in the 'event' and 'duration' columns
 
-    y_pred : array of shape (n_samples_test, n_events, n_time_grid)
+    y_pred : array of shape (n_samples, n_events, n_time_grid)
         Cumulative incidence for all competing events, at the time points
         from the input time_grid.
 
     time_grid : array of shape (n_time_grid,)
         Time points used to predict the cumulative incidence.
 
-    quantiles : array or list of shape (n_quantiles,), default=None
-        The quantiles of ``time_grid`` used to define the fixed horizons at which
-        to compute the accuracy in time. The values of the quantiles of ``time_grid``
-        are equivalent to ``taus``, therefore ``quantiles`` can't be set if ``taus``
-        is set. If neither ``taus`` nor ``quantiles`` are set, we set quantiles
-        as a uniform grid of 8 quantiles, from 0 to 1.
-
-    taus : array or list of shape (n_taus), default=None
-        The fixed time horizons to compute the accuracy in time. Can't be set if
-        ``quantiles`` is set.
+    quantiles : array_like of shape (n_taus,), default=None
+        The fixed time horizons to compute the accuracy in time, defined as quantiles
+        of ``time_grid``. Taus values are deduplicated. When no quantiles are
+        passed, taus is the time_grid.
 
     Returns
     -------
-    acc_in_time : array of shape (n_quantiles or n_taus)
+    acc_in_time : array of shape (n_taus)
         The accuracy in time computed at the fixed horizons ``taus``.
 
-    taus : array of shape (n_quantiles or n_taus)
+    taus : array of shape (n_taus)
         The fixed time horizons effectively used to compute the accuracy in time.
 
     References
     ----------
     .. [Alberge2024] J. Alberge, V. Maladiere,  O. Grisel, J. Abécassis, G. Varoquaux,
-        "Survival Models: Proper Scoring Rule and Stochastic Optimization
-        with Competing Risks", 2024
+        `"Survival Models: Proper Scoring Rule and Stochastic Optimization with
+        Competing Risks", 2024 <https://hal.science/hal-04617672>`_
     """
     event_true, _ = check_y_survival(y_test)
 
     if y_pred.ndim != 3:
         raise ValueError(
-            "'y_pred' must be a 3D array with shape (n_samples, n_events, n_times), got"
-            f" shape {y_pred.shape}."
+            "'y_pred' must be a 3D array with shape (n_samples, n_events, n_times)"
+            f", got shape {y_pred.shape}."
         )
+
     if y_pred.shape[0] != event_true.shape[0]:
         raise ValueError(
             "'y_true' and 'y_pred' must have the same number of samples, "
             f"got {event_true.shape[0]} and {y_pred.shape[0]} respectively."
         )
+
+    # Create the message before transformation to display the original value.
+    msg = f"'time_grid' must be 1D, but got {time_grid}."
     time_grid = np.atleast_1d(time_grid)
+    if time_grid.ndim != 1:
+        raise ValueError(msg)
+
     if y_pred.shape[2] != time_grid.shape[0]:
         raise ValueError(
             f"'time_grid' length ({time_grid.shape[0]}) "
             f"must be equal to y_pred.shape[2] ({y_pred.shape[2]})."
         )
 
-    if quantiles is not None:
-        if taus is not None:
-            raise ValueError("'quantiles' and 'taus' can't be set at the same time.")
+    if (time_grid[:-1] > time_grid[1:]).any():
+        # Time grid is not sorted
+        warnings.warn(
+            "time_grid is not sorted by increasing order, a copy of y_pred will "
+            "be rearranged to compute the accuracy in time."
+        )
+        indices = np.argsort(time_grid)
+        time_grid = time_grid[indices]
+        y_pred = y_pred[:, :, indices]
 
-        quantiles = np.atleast_1d(quantiles)
-        if any(quantiles < 0) or any(quantiles > 1):
-            raise ValueError(f"quantiles must be in [0, 1], got {quantiles}.")
-        taus = np.quantile(time_grid, quantiles)
-
-    elif quantiles is None and taus is None:
-        n_quantiles = min(time_grid.shape[0], 8)
-        quantiles = np.linspace(0, 1, n_quantiles)
-        taus = np.quantile(time_grid, quantiles)
+    if quantiles is None:
+        taus = time_grid
+    else:
+        taus = np.quantile(time_grid, quantiles, method="inverted_cdf")
+    taus = np.unique(taus)
 
     acc_in_time = []
 
     for tau in taus:
         mask_past_censored = (y_test["event"] == 0) & (y_test["duration"] <= tau)
 
-        tau_idx = np.searchsorted(time_grid, tau)
-
-        # If tau is beyond the time_grid, we extrapolate its accuracy as
-        # the accuracy at max(time_grid).
-        if tau_idx == time_grid.shape[0]:
-            tau_idx = -1
+        # tau is guaranteed to be in time_grid
+        tau_idx = np.argwhere(time_grid == tau).squeeze()
 
         y_pred_at_t = y_pred[:, :, tau_idx]
         y_pred_class = y_pred_at_t[~mask_past_censored, :].argmax(axis=1)
@@ -139,4 +140,4 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None, taus=None):
 
         acc_in_time.append((y_test_class == y_pred_class).mean())
 
-    return np.array(acc_in_time), np.asarray(taus)
+    return np.array(acc_in_time), taus
