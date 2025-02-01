@@ -16,8 +16,8 @@ from sklearn.model_selection import train_test_split
 from hazardous.metrics._concordance_index import (
     _concordance_index_incidence_report,
     _concordance_index_tau,
-    _concordance_summary_statistics,
-    _get_idx_acceptable,
+    _StatsComputerTypeA,
+    _StatsComputerTypeB,
     concordance_index_incidence,
     interpolate_preds,
 )
@@ -119,8 +119,8 @@ from hazardous.metrics._concordance_index import (
     ],
 )
 def test_summary_statistics_a(bunch, expected):
-    stats_a = _concordance_summary_statistics(
-        pair_type="a",
+    stats_a = _StatsComputerTypeA().compute(
+        event_of_interest=1,
         **bunch,
     )
     assert stats_a == expected
@@ -163,7 +163,7 @@ def test_summary_statistics_a(bunch, expected):
         # 0 comparable pairs, because we only accept pairs where T_i >= T_j
         (
             dict(
-                event=np.array([1, 1, 0, 0]),
+                event=np.array([1, 1, 2, 2]),
                 duration=np.array([10, 20, 30, 40]),
                 y_pred=np.array([0.9, 0.8, 0.7, 0.6]),
                 ipcw=np.array([1, 1, 1, 1]),
@@ -183,7 +183,7 @@ def test_summary_statistics_a(bunch, expected):
         # 4 concordant pairs out of 4 comparable pairs
         (
             dict(
-                event=np.array([1, 1, 0, 0]),
+                event=np.array([1, 1, 2, 2]),
                 duration=np.array([30, 40, 10, 20]),
                 y_pred=np.array([0.9, 0.8, 0.7, 0.6]),
                 ipcw=np.array([1, 1, 1, 1]),
@@ -203,7 +203,7 @@ def test_summary_statistics_a(bunch, expected):
         # 1 concordant pairs out of 2 comparable pairs
         (
             dict(
-                event=np.array([1, 1, 0, 0]),
+                event=np.array([1, 1, 2, 2]),
                 duration=np.array([30, 5, 10, 20]),
                 y_pred=np.array([0.9, 0.8, 1, 0.6]),
                 ipcw=np.array([1, 1, 1, 1]),
@@ -223,7 +223,7 @@ def test_summary_statistics_a(bunch, expected):
         # 2 concordant pairs out of 2 with weight != 1
         (
             dict(
-                event=np.array([1, 1, 0, 0]),
+                event=np.array([1, 1, 2, 2]),
                 duration=np.array([30, 5, 10, 20]),
                 y_pred=np.array([0.9, 0.8, 0.4, 0.6]),
                 ipcw=np.array([1 / 0.1, 1, 1, 1 / 0.5]),
@@ -243,7 +243,7 @@ def test_summary_statistics_a(bunch, expected):
         # 4 concordant pairs out of 4 with weight != 1 and ties on duration
         (
             dict(
-                event=np.array([1, 1, 0, 0]),
+                event=np.array([1, 1, 2, 2]),
                 duration=np.array([30, 30, 10, 20]),
                 y_pred=np.array([0.9, 0.8, 0.4, 0.6]),
                 ipcw=np.array([1 / 0.1, 1, 1, 1 / 0.5]),
@@ -263,7 +263,7 @@ def test_summary_statistics_a(bunch, expected):
         # 2 concordant pairs out of 4 comparable pairs, 2 prediction ties
         (
             dict(
-                event=np.array([1, 1, 0, 0]),
+                event=np.array([1, 1, 2, 2]),
                 duration=np.array([40, 30, 10, 20]),
                 y_pred=np.array([0.9, 0.9, 0.9, 0.6]),
                 ipcw=np.array([1 / 0.1, 1, 1, 1 / 0.5]),
@@ -283,8 +283,8 @@ def test_summary_statistics_a(bunch, expected):
     ],
 )
 def test_summary_statistics_b(bunch, expected):
-    stats_b = _concordance_summary_statistics(
-        pair_type="b",
+    stats_b = _StatsComputerTypeB().compute(
+        event_of_interest=1,
         **bunch,
     )
     assert stats_b == expected
@@ -310,7 +310,7 @@ def test_summary_statistics_b(bunch, expected):
                 n_pairs_a=5,
                 n_concordant_pairs_a=5,
                 n_ties_pred_a=0,
-                n_ties_times_a=0,
+                n_ties_times=0,
                 n_pairs_b=0,
                 n_concordant_pairs_b=0,
                 n_ties_pred_b=0,
@@ -333,7 +333,7 @@ def test_summary_statistics_b(bunch, expected):
                 n_pairs_a=2,
                 n_concordant_pairs_a=2,
                 n_ties_pred_a=0,
-                n_ties_times_a=0,
+                n_ties_times=0,
                 n_pairs_b=1,
                 n_concordant_pairs_b=1,
                 n_ties_pred_b=0,
@@ -356,7 +356,7 @@ def test_summary_statistics_b(bunch, expected):
                 n_pairs_a=4,
                 n_concordant_pairs_a=4,
                 n_ties_pred_a=0,
-                n_ties_times_a=2,
+                n_ties_times=2,
                 n_pairs_b=0,
                 n_concordant_pairs_b=0,
                 n_ties_pred_b=0,
@@ -415,7 +415,7 @@ def test_concordance_index_incidence_report():
     time_grid = [10, 20, 30]
     taus = [15, 25]
 
-    msg = "There is not any event for event_of_interest=1"
+    msg = "not any event"
     with pytest.warns(UserWarning, match=msg):
         stats = _concordance_index_incidence_report(
             y_test,
@@ -431,7 +431,7 @@ def test_concordance_index_incidence_report():
         n_pairs_a=[0, 2],
         n_concordant_pairs_a=[0, 2],
         n_ties_pred_a=[0, 0],
-        n_ties_times_a=[0, 0],
+        n_ties_times=[0, 0],
         n_pairs_b=[0, 0],
         n_concordant_pairs_b=[0, 0],
         n_ties_pred_b=[0, 0],
@@ -472,7 +472,7 @@ def test_concordance_index_incidence_report_competitive():
         "n_pairs_b": [0],
         "n_ties_pred_a": [0],
         "n_ties_pred_b": [0],
-        "n_ties_times_a": [0],
+        "n_ties_times": [0],
         "taus": np.array([40]),
     }
 
@@ -493,7 +493,7 @@ def test_concordance_index_incidence_report_competitive():
         "n_pairs_b": [1],
         "n_ties_pred_a": [0],
         "n_ties_pred_b": [0],
-        "n_ties_times_a": [0],
+        "n_ties_times": [0],
         "taus": np.array([40]),
     }
 
@@ -539,7 +539,7 @@ def test_concordance_index_incidence_report_incorrect_input():
         _concordance_index_incidence_report(
             y_test,
             y_pred,
-            ipcw_estimator=None,
+            ipcw_estimator="km",
             y_train=y_train,
             taus=[20],
         )
@@ -561,15 +561,16 @@ def test_concordance_index_incidence():
     )
     time_grid = [10, 20, 30]
     taus = [15, 25]
-    cindex = concordance_index_incidence(
-        y_test,
-        y_pred,
-        y_train=y_test.copy(),
-        time_grid=time_grid,
-        taus=taus,
-        event_of_interest=1,
-        ipcw_estimator="km",
-    )
+    with pytest.warns(UserWarning, match="not any event"):
+        cindex = concordance_index_incidence(
+            y_test,
+            y_pred,
+            y_train=y_test.copy(),
+            time_grid=time_grid,
+            taus=taus,
+            event_of_interest=1,
+            ipcw_estimator="km",
+        )
     expected = [np.nan, 1]
     assert_array_equal(cindex, expected)
 
@@ -685,7 +686,7 @@ def test_sksurv_consistency_synthetic():
         "n_concordant_pairs_a",
         "n_pairs_a",
         "n_ties_pred_a",
-        "n_ties_times_a",
+        "n_ties_times",
     ]
     sksurv_result = dict(zip(metric_names, sksurv_result))
     sksurv_result["n_pairs_a"] += sksurv_result["n_concordant_pairs_a"]
@@ -770,9 +771,41 @@ def test_get_idx_acceptable(pair_type, expected_idx_acceptable):
     duration = np.array([0, 1, 1, 2, 2, 4, 5])
     duration_i = 1
 
-    idx_acceptable, time_ties = _get_idx_acceptable(
-        event, duration, duration_i, pair_type
-    )
+    if pair_type == "a":
+        idx_acceptable, time_ties = _StatsComputerTypeA()._get_idx_acceptable(
+            event, duration, duration_i
+        )
+    else:
+        idx_acceptable, time_ties = _StatsComputerTypeB()._get_idx_acceptable(
+            event, duration, duration_i
+        )
 
     assert time_ties == 0
     assert idx_acceptable == expected_idx_acceptable
+
+
+def test_cindex_stats_a_ties():
+    """Test that times ties with censored individual are handled differently \
+    than ties with individual having experienced competing events.
+    """
+    time_grid = np.array([10])
+    y_pred = np.array(
+        [
+            [0.9],
+            [0.1],
+            [0.2],
+            [0.3],
+        ]
+    )
+
+    y_test = pd.DataFrame({"event": [0, 2, 1, 0], "duration": [10, 10, 10, 10]})
+    stats_competing = _concordance_index_incidence_report(
+        y_test, y_pred, y_test, time_grid=time_grid
+    )
+
+    y_test = pd.DataFrame({"event": [0, 0, 1, 0], "duration": [10, 10, 10, 10]})
+    stats_censoring = _concordance_index_incidence_report(
+        y_test, y_pred, y_test, time_grid=time_grid
+    )
+
+    assert stats_competing["n_pairs_a"] != stats_censoring["n_pairs_a"]

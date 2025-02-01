@@ -266,36 +266,29 @@ def _concordance_index_incidence_report(
 def _concordance_index_tau(y_test, y_pred, ipcw, event_of_interest, tied_tol=1e-8):
     """Compute the C-index and the associated statistics for a given tau."""
     event, duration = check_y_survival(y_test)
-    binary_event = (event == event_of_interest).astype("int32")
-    if not binary_event.any():
+    if not (event == event_of_interest).any():
         warnings.warn(
             f"There is not any event for {event_of_interest=!r}. "
             "The C-index is undefined."
         )
 
-    stats_a = _concordance_summary_statistics(
-        event=binary_event,
+    stats_a = _StatsComputerTypeA().compute(
+        event=event,
         duration=duration,
         y_pred=y_pred,
         ipcw=ipcw,
-        pair_type="a",
+        event_of_interest=event_of_interest,
         tied_tol=tied_tol,
     )
 
     is_competing_event = (~np.isin(event, [0, event_of_interest])).any()
     if is_competing_event:
-        mask_uncensored = event != 0
-        binary_event = binary_event[mask_uncensored]
-        duration = duration[mask_uncensored]
-        y_pred = y_pred[mask_uncensored]
-        ipcw = ipcw[mask_uncensored]
-
-        stats_b = _concordance_summary_statistics(
-            event=binary_event,
+        stats_b = _StatsComputerTypeB().compute(
+            event=event,
             duration=duration,
             y_pred=y_pred,
             ipcw=ipcw,
-            pair_type="b",
+            event_of_interest=event_of_interest,
             tied_tol=tied_tol,
         )
     else:
@@ -310,117 +303,154 @@ def _concordance_index_tau(y_test, y_pred, ipcw, event_of_interest, tied_tol=1e-
         stats["weighted_concordant_pairs"] + 0.5 * stats["weighted_ties_pred"]
     ) / stats["weighted_pairs"]
 
-    keys_b = ["n_pairs", "n_concordant_pairs", "n_ties_pred"]
-    keys_a = keys_b + ["n_ties_times"]
+    keys = ["n_pairs", "n_concordant_pairs", "n_ties_pred"]
 
     return {
         "cindex": cindex,
-        **{f"{k}_a": stats_a[k] for k in keys_a},
-        **{f"{k}_b": stats_b[k] for k in keys_b},
+        "n_ties_times": stats_a["n_ties_times"],
+        **{f"{k}_a": stats_a[k] for k in keys},
+        **{f"{k}_b": stats_b[k] for k in keys},
     }
 
 
-def _concordance_summary_statistics(
-    event, duration, y_pred, ipcw, pair_type, tied_tol=1e-8
-):
-    """Compute the C-index with a quadratic time complexity."""
-    event, duration, y_pred, ipcw = _sort_by_duration(
-        event, duration, y_pred, ipcw, pair_type=pair_type
-    )
-    mask_event = event == 1
-    y_pred_event, duration_event, ipcw_event = (
-        y_pred[mask_event],
-        duration[mask_event],
-        ipcw[mask_event],
-    )
-    if pair_type == "b":
-        # For b type statistics, we only compare individuals who experienced the event
-        # of interest with individuals who experienced a competing event.
-        y_pred, duration, ipcw = (
-            y_pred[~mask_event],
-            duration[~mask_event],
-            ipcw[~mask_event],
+class _StatsComputer:
+    def compute(
+        self,
+        event,
+        duration,
+        y_pred,
+        ipcw,
+        event_of_interest,
+        tied_tol=1e-8,
+    ):
+        """Compute the C-index with a quadratic time complexity."""
+        event = self._preprocess_event(event, event_of_interest)
+        event, duration, y_pred, ipcw = self._sort_by_duration(
+            event, duration, y_pred, ipcw
+        )
+        mask_event = event == 1
+        y_pred_event, duration_event, ipcw_event = (
+            y_pred[mask_event],
+            duration[mask_event],
+            ipcw[mask_event],
         )
 
-    stats = Counter()
-    for y_pred_i, duration_i, ipcw_i in zip(y_pred_event, duration_event, ipcw_event):
-        idx_acceptable, n_ties_times = _get_idx_acceptable(
-            event, duration, duration_i, pair_type
-        )
-        stats["n_ties_times"] += n_ties_times
+        if self.remove_censoring:
+            # For b type statistics, we only compare individuals who experienced
+            # the event of interest with individuals who experienced a competing event.
+            mask_competing = event == 2
+            y_pred, duration, ipcw = (
+                y_pred[mask_competing],
+                duration[mask_competing],
+                ipcw[mask_competing],
+            )
 
-        stats["n_pairs"] += duration.shape[0] - idx_acceptable
-        stats["weighted_pairs"] += _compute_weights(
-            ipcw_i, ipcw[idx_acceptable:], pair_type
-        )
+        stats = Counter()
+        for y_pred_i, duration_i, ipcw_i in zip(
+            y_pred_event, duration_event, ipcw_event
+        ):
+            idx_acceptable, n_ties_times = self._get_idx_acceptable(
+                event, duration, duration_i
+            )
+            stats["n_ties_times"] += n_ties_times
 
-        mask_ties_pred = np.abs(y_pred_i - y_pred[idx_acceptable:]) <= tied_tol
-        stats["n_ties_pred"] += mask_ties_pred.sum()
-        stats["weighted_ties_pred"] += _compute_weights(
-            ipcw_i, ipcw[idx_acceptable:][mask_ties_pred], pair_type
-        )
+            stats["n_pairs"] += duration.shape[0] - idx_acceptable
+            stats["weighted_pairs"] += self._compute_weights(
+                ipcw_i, ipcw[idx_acceptable:]
+            )
 
-        mask_concordant = y_pred_i > y_pred[idx_acceptable:]
-        stats["n_concordant_pairs"] += (mask_concordant & ~mask_ties_pred).sum()
-        stats["weighted_concordant_pairs"] += _compute_weights(
-            ipcw_i, ipcw[idx_acceptable:][mask_concordant & ~mask_ties_pred], pair_type
-        )
+            mask_ties_pred = np.abs(y_pred_i - y_pred[idx_acceptable:]) <= tied_tol
+            stats["n_ties_pred"] += mask_ties_pred.sum()
+            stats["weighted_ties_pred"] += self._compute_weights(
+                ipcw_i, ipcw[idx_acceptable:][mask_ties_pred]
+            )
 
-    return stats
+            mask_concordant = y_pred_i > y_pred[idx_acceptable:]
+            stats["n_concordant_pairs"] += (mask_concordant & ~mask_ties_pred).sum()
+            stats["weighted_concordant_pairs"] += self._compute_weights(
+                ipcw_i, ipcw[idx_acceptable:][mask_concordant & ~mask_ties_pred]
+            )
+
+        return stats
+
+    def _preprocess_event(self, event, event_of_interest):
+        """Map an event vector values to 0 (censoring), 1 (event of interest), \
+            2 (competing risk)
+        """
+        event_out = np.full_like(event, 2)
+        event_out[event == event_of_interest] = 1
+        event_out[event == 0] = 0
+        return event_out
+
+    def _sort_by_duration(self, event, duration, y_pred, ipcw):
+        """Sort the predictions and duration by the event duration.
+
+        The pair type selects whether we sort duration by ascending or descending order.
+        Indeed, to be comparable:
+        - A pair of type A requires (T_i < T_j) | ((T_i = T_j) & (D_j = 0))
+        - A pair of type B requires T_i >= T_j
+        """
+        duration = duration * self.duration_sign
+        # Sort by ascending duration first, then by descending event.
+        # After reordering, we would have:
+        # duration = [10, 10, 10, 11]
+        # event = [2, 1, 0, 1]
+        indices = np.lexsort((-event, duration))
+        event = event[indices]
+        duration = duration[indices]
+        y_pred = y_pred[indices]
+        ipcw = ipcw[indices]
+
+        return event, duration, y_pred, ipcw
 
 
-def _sort_by_duration(event, duration, y_pred, ipcw, pair_type):
-    """Sort the predictions and duration by the event duration.
+class _StatsComputerTypeA(_StatsComputer):
+    duration_sign = 1
+    remove_censoring = False
 
-    The pair type selects whether we sort duration by ascending or descending order.
-    Indeed, to be comparable:
-    - A pair of type A requires (T_i < T_j) | ((T_i = T_j) & (D_j = 0))
-    - A pair of type B requires T_i >= T_j
-    """
-    if pair_type == "b":
-        duration *= -1
-    # Sort by ascending duration first, then by descending event.
-    # After reordering, we would have:
-    # duration = [10, 10, 10, 11]
-    # event = [2, 1, 0, 1]
-    indices = np.lexsort((-event, duration))
-    event = event[indices]
-    duration = duration[indices]
-    y_pred = y_pred[indices]
-    ipcw = ipcw[indices]
+    def _get_idx_acceptable(self, event, duration, duration_i):
+        """Returns idx_acceptable and n_times_ties
 
-    return event, duration, y_pred, ipcw
-
-
-def _get_idx_acceptable(event, duration, duration_i, pair_type):
-    """Returns idx_acceptable and n_times_ties"""
-    if pair_type == "a":
-        # We select all acceptable pairs by only keeping elements strictly higher than
-        # `duration`, which corresponds to A_{ij} = I(T_i < T_j).
-        # We also select censored pairs where T_i = T_j and D_j = 0.
+        We select all acceptable pairs by only keeping elements strictly higher than
+        `duration`, which corresponds to A_{ij} = I(T_i < T_j).
+        We also select censored pairs where T_i = T_j and D_j = 0.
+        """
         # Using searchsorted with `side=right` returns the index of the smallest
         # element in `duration` strictly higher than `duration_i`.
         idx_acceptable = np.searchsorted(duration, duration_i, side="right")
         idx_with_ties = np.searchsorted(duration, duration_i, side="left")
         n_censored_ties = (event[idx_with_ties:idx_acceptable] == 0).sum()
+        n_competing_ties = (event[idx_with_ties:idx_acceptable] == 2).sum()
+
         # +1 to remove the individual `i` from the ties count.
-        n_times_ties = (event[idx_with_ties + 1 : idx_acceptable] == 1).sum()
+        start_idx = idx_with_ties + n_competing_ties + 1
+        n_times_ties = (event[start_idx:idx_acceptable] == 1).sum()
+
         return idx_acceptable - n_censored_ties, n_times_ties
-    else:
-        # We select all acceptable pairs by keeping elements higher or equal than
-        # `duration`, which corresponds to B_{ij} = I((T_j >= T_i)) & (D_j = 2))
-        # as the duration has been filtered to only keep D_j = 2.
+
+    def _compute_weights(self, ipcw_i, array_ipcw_j):
+        """Compute W_{ij}^1 = G(T_i-|X_i) * G(T_i-|X_j)"""
+        n_concordant_pairs = array_ipcw_j.shape[0]
+        return n_concordant_pairs * (ipcw_i**2)
+
+
+class _StatsComputerTypeB(_StatsComputer):
+    duration_sign = -1
+    remove_censoring = True
+
+    def _get_idx_acceptable(self, event, duration, duration_i):
+        """Returns idx_acceptable and n_times_ties
+
+        We select all acceptable pairs by keeping elements higher or equal than
+        `duration`, which corresponds to B_{ij} = I((T_i >= T_j)) & (D_j = 2))
+        as the duration has been filtered to only keep D_j = 2.
+        """
         # Using searchsorted with `side=left` returns the index of the smallest element
         # in `duration` higher or equal than `duration_i`.
         return np.searchsorted(duration, duration_i, side="left"), 0
 
-
-def _compute_weights(ipcw_i, array_ipcw_j, pair_type):
-    """Compute W_{ij}^1 when pair_type is a, and W_{ij}^2 when pair_type is b."""
-    if pair_type == "a":
-        n_concordant_pairs = array_ipcw_j.shape[0]
-        return n_concordant_pairs * (ipcw_i**2)
-    else:
+    def _compute_weights(self, ipcw_i, array_ipcw_j):
+        """Compute W_{ij}^2 = G(T_i-|X_i) * G(T_j-|X_j)."""
         return (ipcw_i * array_ipcw_j).sum()
 
 
