@@ -37,7 +37,7 @@ jobs:
       - name: Upload doc preview
         # The publication of the preview itself happens in pr-doc-preview.yml
         if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: doc-preview
           path: |
