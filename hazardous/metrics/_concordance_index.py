@@ -324,10 +324,17 @@ class _StatsComputer:
         tied_tol=1e-8,
     ):
         """Compute the C-index with a quadratic time complexity."""
+        # note that event is obtained from y_test_tau thus event[i] = 0 if T_i > tau
         event = self._preprocess_event(event, event_of_interest)
+        # now event[i] is equal to 
+        # 0 if T_i > tau
+        # 0 if T_i <= tau and D_i = censoring
+        # 1 if T_i <= tau and D_i = event of interest
+        # 2 if T_i <= tau and D_i = competing event
         event, duration, y_pred, ipcw = self._sort_by_duration(
             event, duration, y_pred, ipcw
         )
+        # selects i such that T_i <= tau and D_i = 1 (event of interest)
         mask_event = event == 1
         y_pred_event, duration_event, ipcw_event = (
             y_pred[mask_event],
@@ -338,6 +345,7 @@ class _StatsComputer:
         if self.remove_censoring:
             # For b type statistics, we only compare individuals who experienced
             # the event of interest with individuals who experienced a competing event.
+            # selects j such that T_j <= tau and D_j = 2 (competing event)
             mask_competing = event == 2
             y_pred, duration, ipcw = (
                 y_pred[mask_competing],
@@ -346,9 +354,14 @@ class _StatsComputer:
             )
 
         stats = Counter()
+        # loop over i such that T_i <= tau and D_i = 1
         for y_pred_i, duration_i, ipcw_i in zip(
             y_pred_event, duration_event, ipcw_event
         ):
+            # [idx_acceptable:] selects j such that the pair (i, j) is comparable
+            # for type B, this means j such that (T_i >= T_j and D_j = 2)
+            # for type A, this means j such that (T_i < T_j) or (T_i = T_j and D_j = 0)
+            # n_ties_times returns the number of j such that (T_i = T_j and D_j = 1)
             idx_acceptable, n_ties_times = self._get_idx_acceptable(
                 event, duration, duration_i
             )
@@ -388,14 +401,17 @@ class _StatsComputer:
         The pair type selects whether we sort duration by ascending or descending order.
         Indeed, to be comparable:
         - A pair of type A requires (T_i < T_j) | ((T_i = T_j) & (D_j = 0))
-        - A pair of type B requires T_i >= T_j
+        - A pair of type B requires T_i >= T_j and D_j = 2
         """
-        duration = duration * self.duration_sign
-        # Sort by ascending duration first, then by descending event.
+        # For type A sort by ascending duration first, then by descending event.
         # After reordering, we would have:
         # duration = [10, 10, 10, 11]
         # event = [2, 1, 0, 1]
-        indices = np.lexsort((-event, duration))
+        # For type B sort by descending duration first, then by descending event.
+        # After reordering, we would have:
+        # duration = [11, 10, 10, 10]
+        # event = [1, 2, 1, 0]
+        indices = np.lexsort((-event, self.duration_sign*duration))
         event = event[indices]
         duration = duration[indices]
         y_pred = y_pred[indices]
@@ -411,22 +427,26 @@ class _StatsComputerTypeA(_StatsComputer):
     def _get_idx_acceptable(self, event, duration, duration_i):
         """Returns idx_acceptable and n_times_ties
 
-        We select all acceptable pairs by only keeping elements strictly higher than
-        `duration`, which corresponds to A_{ij} = I(T_i < T_j).
-        We also select censored pairs where T_i = T_j and D_j = 0.
+        We select all acceptable type A pairs by keeping:
+        - elements with `duration` strictly higher than `duration_i` (T_i < T_j) 
+        - or censored elements at `duration_i` (T_i = T_j and D_j = 0).
         """
         # Using searchsorted with `side=right` returns the index of the smallest
         # element in `duration` strictly higher than `duration_i`.
-        idx_acceptable = np.searchsorted(duration, duration_i, side="right")
+        idx_strictly_higher = np.searchsorted(duration, duration_i, side="right")
         idx_with_ties = np.searchsorted(duration, duration_i, side="left")
-        n_censored_ties = (event[idx_with_ties:idx_acceptable] == 0).sum()
-        n_competing_ties = (event[idx_with_ties:idx_acceptable] == 2).sum()
+        n_censored_ties = (event[idx_with_ties:idx_strictly_higher] == 0).sum()
+        n_competing_ties = (event[idx_with_ties:idx_strictly_higher] == 2).sum()
 
         # +1 to remove the individual `i` from the ties count.
         start_idx = idx_with_ties + n_competing_ties + 1
-        n_times_ties = (event[start_idx:idx_acceptable] == 1).sum()
-
-        return idx_acceptable - n_censored_ties, n_times_ties
+        n_times_ties = (event[start_idx:idx_strictly_higher] == 1).sum()
+        # `event` and `duration` sorted by ascending duration first and descending event second
+        # [idx_acceptable:idx_strictly_higher] contains all j such that T_i = T_j and D_j = 0
+        # [idx_strictly_higher:] contains all j such that T_i < T_j
+        # [idx_acceptable:] contains all j such that (i, j) is a comparable type A pair
+        idx_acceptable = idx_stricly_higher - n_censored_ties
+        return idx_acceptable, n_times_ties
 
     def _compute_weights(self, ipcw_i, array_ipcw_j):
         """Compute W_{ij}^1 = G(T_i-|X_i) * G(T_i-|X_j)"""
@@ -441,13 +461,15 @@ class _StatsComputerTypeB(_StatsComputer):
     def _get_idx_acceptable(self, event, duration, duration_i):
         """Returns idx_acceptable and n_times_ties
 
-        We select all acceptable pairs by keeping elements higher or equal than
-        `duration`, which corresponds to B_{ij} = I((T_i >= T_j)) & (D_j = 2))
-        as the duration has been filtered to only keep D_j = 2.
+        We select all acceptable type B pairs by keeping elements with `duration` less than or equal to
+        `duration_i` (T_i >= T_j and D_j = 2) as the duration has been filtered to only keep D_j = 2.
         """
+        # `duration` sorted in descending order
         # Using searchsorted with `side=left` returns the index of the smallest element
-        # in `duration` higher or equal than `duration_i`.
-        return np.searchsorted(duration, duration_i, side="left"), 0
+        # in `duration` less than or equal to `duration_i`.
+        # [idx_acceptable:] contains all j such that T_i >= T_j and D_j = 2
+        idx_acceptable = np.searchsorted(-duration, -duration_i, side="left")
+        return idx_acceptable, 0
 
     def _compute_weights(self, ipcw_i, array_ipcw_j):
         """Compute W_{ij}^2 = G(T_i-|X_i) * G(T_j-|X_j)."""
