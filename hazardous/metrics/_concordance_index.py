@@ -21,6 +21,17 @@ def concordance_index_incidence(
     r"""Time-dependent concordance index for prognostic models with competing risks \
     using inverse probability of censoring weighting.
 
+    This C-index is event-specific: we set the event of interest as a parameter,
+    and all other event labels are considered to be competing events –except 0, which
+    is the censoring event.
+
+    For example, if ``y_test`` has the following ``"event"`` columns: ``[1, 0, 2, 4]``,
+    and the event of interest is set to ``2``, then we consider the following events:
+    ``[2, 0, 1, 2]``, where 0, 1, 2 respectively denotes the censoring event, the event
+    of interest and competing events.
+
+    We define this C-index as:
+
     .. math::
 
         \mathrm{C}(t) = \frac{\sum_{i=1}^n \sum_{j=1}^n (\tilde{A}_{ij}
@@ -43,12 +54,18 @@ def concordance_index_incidence(
         Q_{ij}(t) &= I\{M(t, X_i) > M(t, X_j)\}
         \end{align}
 
-    where :math:`D_j = 0`, :math:`D_j = 1` and :math:`D_j = 2` respectively indicate
-    individuals having been censored, individuals having experienced the event of
-    interest, and individual having experienced a competing event. :math:`\hat{G}`
-    is a IPCW estimator, :math:`Q_{ij}(t)` is an indicator for the order of
-    predicted risk at :math:`t`, and :math:`M` is the predicted cumulative incidence
-    function for the event of interest.
+    where:
+
+    - :math:`\tilde{T_i} = \min(T_i, C_i)` and
+      :math:`\tilde{D_i} = I\{T_i \leq C_i \} D_i` are the observed time-to-event and
+      the observed event.
+    - :math:`D_j = 0`, :math:`D_j = 1` and :math:`D_j = 2` respectively indicate
+      individuals having been censored, individuals having experienced the event of
+      interest, and individual having experienced a competing event.
+    - :math:`\hat{G}` is a IPCW estimator.
+    - :math:`Q_{ij}(t)` is an indicator for the order of predicted risk at :math:`t`.
+    - :math:`M` is the predicted cumulative incidence function for the event of
+      interest.
 
     The concordance index (C-index) is a common metric in survival analysis that
     evaluates whether the model predictions correctly order pairs of individuals with
@@ -125,18 +142,22 @@ def concordance_index_incidence(
     References
     ----------
     .. [Wolbers2014] M. Wolbers, P. Blanche, M. T. Koller, J. C. Witteman, T. A. Gerds,
-       "Concordance for prognostic models with competing risks", 2014
+       `"Concordance for prognostic models with competing risks"
+       <https://pmc.ncbi.nlm.nih.gov/articles/PMC4059461/>`_, 2014
 
-    .. [Uno2011] H. Uno, T. Cai, M. J. Pencina, R. B. D'Agostino,  L. J. Wei, "On the
+    .. [Uno2011] H. Uno, T. Cai, M. J. Pencina, R. B. D'Agostino,  L. J. Wei, `"On the
        C-statistics for evaluating overall adequacy of risk prediction
-       procedures with censored survival data", 2011
+       procedures with censored survival data"
+       <https://pmc.ncbi.nlm.nih.gov/articles/PMC3079915/>`_, 2011
 
-    .. [Gerds2013] T. A. Gerds, M. W. Kattan, M. Schumacher, C. Yu, "Estimating a
+    .. [Gerds2013] T. A. Gerds, M. W. Kattan, M. Schumacher, C. Yu, `"Estimating a
        time-dependent concordance index for survival prediction models
-       with covariate dependent censoring", 2013
+       with covariate dependent censoring"
+       <https://onlinelibrary.wiley.com/doi/abs/10.1002/sim.5681>`_, 2013
 
-    .. [Blanche2019] P. Blanche, M. W. Kattan, T. A. Gerds, "The c-index is not proper
-       for the evaluation of-year predicted risks", 2019
+    .. [Blanche2019] P. Blanche, M. W. Kattan, T. A. Gerds, `"The c-index is not proper
+       for the evaluation of-year predicted risks"
+       <https://pubmed.ncbi.nlm.nih.gov/29462286>`_, 2019
     """
     c_index_report = _concordance_index_incidence_report(
         y_test,
@@ -223,6 +244,12 @@ def _concordance_index_incidence_report(
             )
         ipcw = np.ones(y_test["event"].shape[0])
 
+    if event_of_interest == 0:
+        raise ValueError(
+            "The event of interest can't be set to 0, because this value is reserved "
+            "to the censoring event."
+        )
+
     else:
         if y_train is None:
             # Raising here since the error raised by the IPCW estimator doesn't
@@ -231,7 +258,8 @@ def _concordance_index_incidence_report(
                 "ipcw_estimator is set, but y_train is None. "
                 "Set y_train to fix this error."
             )
-        # TODO: add cox option
+        # TODO: Add an option to use a Cox PH model to estimate the IPCW conditionally
+        # to covariates X_test.
         ipcw_estimator_ = KaplanMeierIPCW().fit(y_train)
         ipcw = ipcw_estimator_.compute_ipcw_at(
             y_test["duration"]
