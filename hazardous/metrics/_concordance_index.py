@@ -235,6 +235,12 @@ def _concordance_index_incidence_report(
             f"got: {y_test.shape[1]=} and {len(time_grid)=}."
         )
 
+    if event_of_interest == 0:
+        raise ValueError(
+            "The event of interest can't be set to 0, because this value is reserved "
+            "to the censoring event."
+        )
+
     if ipcw_estimator is None:
         if y_train is not None:
             warnings.warn(
@@ -243,13 +249,6 @@ def _concordance_index_incidence_report(
                 "to silence this warning."
             )
         ipcw = np.ones(y_test["event"].shape[0])
-
-    if event_of_interest == 0:
-        raise ValueError(
-            "The event of interest can't be set to 0, because this value is reserved "
-            "to the censoring event."
-        )
-
     else:
         if y_train is None:
             # Raising here since the error raised by the IPCW estimator doesn't
