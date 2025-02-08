@@ -765,17 +765,19 @@ def test_sksurv_consistancy_kidney(random_state, sksurv_cindex):
     assert_almost_equal(result["cindex"][0], sksurv_cindex, decimal=4)
 
 
-@pytest.mark.parametrize("pair_type, expected_idx_acceptable", [("a", 2), ("b", 1)])
+@pytest.mark.parametrize("pair_type, expected_idx_acceptable", [("a", 2), ("b", 4)])
 def test_get_idx_acceptable(pair_type, expected_idx_acceptable):
-    event = np.array([1, 1, 0, 1, 0, 1, 1])
-    duration = np.array([0, 1, 1, 2, 2, 4, 5])
     duration_i = 1
 
     if pair_type == "a":
+        event = np.array([1, 1, 0, 1, 0, 1, 1])
+        duration = np.array([0, 1, 1, 2, 2, 4, 5])
         idx_acceptable, time_ties = _StatsComputerTypeA()._get_idx_acceptable(
             event, duration, duration_i
         )
     else:
+        event = np.array([2, 2, 2, 2, 2, 2, 2])
+        duration = np.array([5, 4, 2, 2, 1, 1, 0])
         idx_acceptable, time_ties = _StatsComputerTypeB()._get_idx_acceptable(
             event, duration, duration_i
         )
