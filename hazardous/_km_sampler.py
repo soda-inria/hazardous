@@ -136,5 +136,19 @@ class _AalenJohansenSampler:
                 bounds_error=False,
                 fill_value="extrapolate",
             )
+        y_pred_surv = 1 - np.sum(
+            [
+                self.incidence_func_[event_id](times_event)
+                for event_id in self.event_ids_[1:]
+            ],
+            axis=0,
+        )
 
+        self.survival_func_ = interp1d(
+            x=times_event,
+            y=y_pred_surv,
+            kind="previous",
+            bounds_error=False,
+            fill_value="extrapolate",
+        )
         return self
