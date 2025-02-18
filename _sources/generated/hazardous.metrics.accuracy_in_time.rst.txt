@@ -1,0 +1,10 @@
+﻿:mod:`hazardous.metrics`.accuracy_in_time
+======================================================
+
+.. currentmodule:: hazardous.metrics
+
+.. autofunction:: accuracy_in_time
+
+.. raw:: html
+
+    <div class="clearer"></div>
