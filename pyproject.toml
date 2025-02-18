@@ -47,6 +47,7 @@ doc = [
     "sphinx-design",
     "sphinx-copybutton",
     "matplotlib",
+    "seaborn",
     "pillow",  # to scrape images from the examples
     "numpydoc",
     "pycox",
