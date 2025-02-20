@@ -473,7 +473,7 @@ class Scorer:
 bunch = load_metabric_()
 hp_params = {"time_sampler": "uniform"}
 
-time_grid = make_time_grid(bunch.y["duration"], n_steps=20)
+time_grid = make_time_grid(bunch.y["event"], bunch.y["duration"], n_time_grid_steps=20)
 
 scorer = Scorer()
 scorer.compute_scores(
