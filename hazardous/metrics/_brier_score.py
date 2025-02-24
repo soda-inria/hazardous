@@ -145,6 +145,7 @@ class IncidenceScoreComputer:
                 "'y_true' and 'y_pred' must have the same number of samples, "
                 f"got {event_true.shape[0]} and {y_pred.shape[0]} respectively."
             )
+        times = np.atleast_1d(times)
         if y_pred.shape[1] != times.shape[0]:
             raise ValueError(
                 f"'times' length ({times.shape[0]}) "
