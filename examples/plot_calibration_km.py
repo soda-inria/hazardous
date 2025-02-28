@@ -67,12 +67,12 @@ plt.show()
 # %%
 
 cox_probs_recalibrated = recalibrate_survival_function(
-    X_train,
-    y_train,
     X_conf,
+    y_conf,
     times_cox,
     surv_probs=cox_surv_probs,
     surv_probs_conf=cox.predict_survival_function(X_test).T,
+    return_function=True,
 )
 km_cox_recal = km_cal(y_train, times, cox_probs_recalibrated(times))
 
@@ -103,16 +103,18 @@ def get_target(df):
 df = pd.DataFrame(X_train)
 df = pd.concat([df, y_train], axis=1)
 df = df.astype("float32")
+df_test = pd.DataFrame(X_test)
+df_test = pd.concat([df_test, y_test], axis=1).astype("float32")
 
 df_train, df_val = train_test_split(df, test_size=0.2, random_state=0)
 
-
-x_train = df_train.drop(columns=["duration", "event"])
-x_val = df_val.drop(columns=["duration", "event"])
-x_mapper = DataFrameMapper([(col, None) for col in x_train.columns])
+x_mapper = DataFrameMapper(
+    [(col, None) for col in df_train.drop(columns=["duration", "event"]).columns]
+)
 
 x_train = x_mapper.fit_transform(df_train).astype("float32")
 x_val = x_mapper.transform(df_val).astype("float32")
+x_test = x_mapper.transform(df_test).astype("float32")
 
 
 num_durations = 10
@@ -120,9 +122,11 @@ labtrans = DeepHitSingle.label_transform(num_durations)
 
 y_train_ = labtrans.fit_transform(*get_target((df_train)))
 y_val_ = labtrans.transform(*get_target(df_val))
+y_test_ = labtrans.transform(*get_target(df_test))
 
 train = (x_train, y_train_)
 val = (x_val, y_val_)
+test = (x_test, y_test_)
 
 # %%
 
@@ -147,8 +151,8 @@ model.fit(
 )
 
 # %%
-surv = model.predict_surv_df(x_val)
-km_deephit = km_cal(y_train, surv.index, surv.values.T)
+surv = model.predict_surv_df(x_test)
+km_deephit = km_cal(y_conf, surv.index, surv.values.T)
 
 surv.mean(axis=1).plot(
     drawstyle="steps-post", label="DeepHit, km_cal = {}".format(km_deephit)
@@ -160,12 +164,12 @@ plt.xlabel("Time")
 
 # %%
 deephit_probs_recalibrated = recalibrate_survival_function(
-    x_train,
-    y_train,
-    x_val,
-    surv.index,
+    df_val.drop(columns=["duration", "event"]),
+    df_val[["duration", "event"]],
+    times=surv.index,
     surv_probs=surv.T,
     surv_probs_conf=model.predict_surv_df(x_val).T,
+    return_function=True,
 )
 # %%
 surv.mean(axis=1).plot(
@@ -183,16 +187,15 @@ plt.legend()
 plt.ylabel("S(t | x)")
 plt.xlabel("Time")
 
-print(
-    integrated_brier_score_survival(
-        y_train, df_val[["duration", "event"]], surv.T.values, surv.index
-    )
-)
+# %%
+print(integrated_brier_score_survival(y_train, y_test, surv.T.values, surv.index))
 print(
     integrated_brier_score_survival(
         y_train,
-        df_val[["duration", "event"]],
+        y_test,
         deephit_probs_recalibrated(surv.index),
         surv.index,
     )
 )
+
+# %%
