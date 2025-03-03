@@ -34,31 +34,31 @@ def concordance_index_incidence(
 
     .. math::
 
-        \mathrm{C}(t) = \frac{\sum_{i=1}^n \sum_{j=1}^n (\tilde{A}_{ij}
-        \hat{W}_{ij, 1}^{-1} + \tilde{B}_{ij} \hat{W}_{ij, 2}^{-1}) Q^{ij}(t)
-        \tilde{N}^1_i(t)}
-        {\sum_{i=1}^n \sum_{j=1}^n (\tilde{A}_{ij}
-        \hat{W}_{ij, 1}^{-1} + \tilde{B}_{ij} \hat{W}_{ij, 2}^{-1}) \tilde{N}^1_i(t)}
+        \mathrm{C}(t) = \frac{\sum_{i=1}^n \sum_{j=1}^n (A_{ij}
+        \hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) Q^{ij}(t)
+        N^1_i(t)}
+        {\sum_{i=1}^n \sum_{j=1}^n (A_{ij}
+        \hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) N^1_i(t)}
 
     where:
 
     .. math::
 
         \begin{align}
-        \tilde{N}^1_i(t) &= I\{\tilde{T}_i \leq t, \tilde{D}_i = 1\} \\
-        \tilde{A}_{ij} &= I\{\tilde{T}_i < \tilde{T}_j \cup (\tilde{T}_i =
-        \tilde{T}_j \cap D_j = 0)\} \\
-        \tilde{B}_{ij} &= I\{\tilde{T}_i \geq \tilde{T}_j, D_j = 2\} \\
-        \hat{W}_{ij,1} &= \hat{G}(\tilde{T}_i-|X_i) \hat{G}(\tilde{T}_i|X_j) \\
-        \hat{W}_{ij,2} &= \hat{G}(\tilde{T}_i-|X_i) \hat{G}(\tilde{T}_j-|X_j) \\
+        N^1_i(t) &= I\{T_i \leq t, D_i = 1\} \\
+        A_{ij} &= I\{T_i < T_j \cup (T_i =
+        T_j \cap D_j = 0)\} \\
+        B_{ij} &= I\{T_i \geq T_j, D_j = 2\} \\
+        \hat{W}_{ij,1} &= \hat{G}(T_i|X_i) \hat{G}(T_i|X_j) \\
+        \hat{W}_{ij,2} &= \hat{G}(T_i|X_i) \hat{G}(T_j|X_j) \\
         Q_{ij}(t) &= I\{M(t, X_i) > M(t, X_j)\}
         \end{align}
 
     where:
 
     - :math:`T_i` and :math:`D_i` are the observed time-to-event and event.
-    - :math:`D_j = 0, 1, 2` respectively denotes a censoring event, 
-    the event of interest and competing events.
+    - :math:`D_j = 0, 1, 2` respectively denotes a censoring event,
+      the event of interest and competing events.
     - :math:`\hat{G}` is a IPCW estimator.
     - :math:`Q_{ij}(t)` is an indicator for the order of predicted risk at :math:`t`.
     - :math:`M` is the predicted cumulative incidence function for the event of
