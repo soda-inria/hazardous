@@ -56,12 +56,9 @@ def concordance_index_incidence(
 
     where:
 
-    - :math:`\tilde{T_i} = \min(T_i, C_i)` and
-      :math:`\tilde{D_i} = I\{T_i \leq C_i \} D_i` are the observed time-to-event and
-      the observed event.
-    - :math:`D_j = 0`, :math:`D_j = 1` and :math:`D_j = 2` respectively indicate
-      individuals having been censored, individuals having experienced the event of
-      interest, and individual having experienced a competing event.
+    - :math:`T_i` and :math:`D_i` are the observed time-to-event and event.
+    - :math:`D_j = 0, 1, 2` respectively denotes a censoring event, 
+    the event of interest and competing events.
     - :math:`\hat{G}` is a IPCW estimator.
     - :math:`Q_{ij}(t)` is an indicator for the order of predicted risk at :math:`t`.
     - :math:`M` is the predicted cumulative incidence function for the event of
