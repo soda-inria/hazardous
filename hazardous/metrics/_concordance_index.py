@@ -25,12 +25,12 @@ def concordance_index_incidence(
     and all other event labels are considered to be competing events –except 0, which
     is the censoring event.
 
-    For example, if ``y_test`` has the following ``"event"`` columns: ``[1, 0, 2, 4]``,
+    For example, if ``y_test`` has the following ``"event"`` column: ``[1, 0, 2, 4]``,
     and the event of interest is set to ``2``, then we consider the following events:
     ``[2, 0, 1, 2]``, where 0, 1, 2 respectively denotes the censoring event, the event
     of interest and competing events.
 
-    We define this C-index as:
+    We define this C-index at time :math`\tau` as:
 
     .. math::
 
@@ -101,7 +101,7 @@ def concordance_index_incidence(
 
     Parameters
     ----------
-    y_test : array, dictionnary or dataframe of shape (n_samples, 2)
+    y_test : array, dict or dataframe of shape (n_samples, 2)
         The test target, consisting in the 'event' and 'duration' columns.
 
     y_pred: array of shape (n_samples, n_time_grid)
@@ -153,7 +153,7 @@ def concordance_index_incidence(
        <https://onlinelibrary.wiley.com/doi/abs/10.1002/sim.5681>`_, 2013
 
     .. [Blanche2019] P. Blanche, M. W. Kattan, T. A. Gerds, `"The c-index is not proper
-       for the evaluation of-year predicted risks"
+       for the evaluation of t-year predicted risks"
        <https://pubmed.ncbi.nlm.nih.gov/29462286>`_, 2019
     """
     c_index_report = _concordance_index_incidence_report(
@@ -475,7 +475,7 @@ class _StatsComputerTypeA(_StatsComputer):
         return idx_acceptable, n_times_ties
 
     def _compute_weights(self, ipcw_i, array_ipcw_j):
-        """Compute W_{ij}^1 = G(T_i-|X_i) * G(T_i-|X_j)"""
+        """Compute W_{ij}^1 = G(T_i|X_i) * G(T_i|X_j)"""
         n_concordant_pairs = array_ipcw_j.shape[0]
         return n_concordant_pairs * (ipcw_i**2)
 
@@ -499,7 +499,7 @@ class _StatsComputerTypeB(_StatsComputer):
         return idx_acceptable, 0
 
     def _compute_weights(self, ipcw_i, array_ipcw_j):
-        """Compute W_{ij}^2 = G(T_i-|X_i) * G(T_j-|X_j)."""
+        """Compute W_{ij}^2 = G(T_i|X_i) * G(T_j|X_j)."""
         return (ipcw_i * array_ipcw_j).sum()
 
 
