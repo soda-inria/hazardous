@@ -1,0 +1,10 @@
+﻿:mod:`hazardous.metrics`.concordance_index_incidence
+=================================================================
+
+.. currentmodule:: hazardous.metrics
+
+.. autofunction:: concordance_index_incidence
+
+.. raw:: html
+
+    <div class="clearer"></div>

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>hazardous.metrics.brier_score_survival &#8212; hazardous</title>
+    <title>hazardous.metrics.concordance_index_incidence &#8212; hazardous</title>
   
   
   
@@ -52,11 +52,11 @@
     <script src="../_static/copybutton.js?v=fd10adb8"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/hazardous.metrics.brier_score_survival';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/hazardous.metrics.concordance_index_incidence';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="hazardous.metrics.brier_score_incidence" href="hazardous.metrics.brier_score_incidence.html" />
-    <link rel="prev" title="hazardous.SurvivalBoost" href="hazardous.SurvivalBoost.html" />
+    <link rel="next" title="hazardous.metrics.accuracy_in_time" href="hazardous.metrics.accuracy_in_time.html" />
+    <link rel="prev" title="hazardous.metrics.integrated_brier_score_incidence" href="hazardous.metrics.integrated_brier_score_incidence.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -312,11 +312,11 @@
 <li class="toctree-l1"><a class="reference internal" href="hazardous.SurvivalBoost.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous</span></code>.SurvivalBoost</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_survival</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.brier_score_survival.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_survival</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.brier_score_incidence.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_incidence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.integrated_brier_score_survival.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.integrated_brier_score_survival</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.integrated_brier_score_incidence.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.integrated_brier_score_incidence</a></li>
-<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.concordance_index_incidence.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.concordance_index_incidence</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.concordance_index_incidence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.accuracy_in_time.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.accuracy_in_time</a></li>
 </ul>
 <ul class="nav bd-sidenav">
@@ -365,7 +365,7 @@
     
     <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_survival</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.concordance_index_incidence</span></li>
   </ul>
 </nav>
 </div>
@@ -382,74 +382,137 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="hazardous-metrics-brier-score-survival">
-<h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_survival<a class="headerlink" href="#hazardous-metrics-brier-score-survival" title="Link to this heading">#</a></h1>
+  <section id="hazardous-metrics-concordance-index-incidence">
+<h1><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.concordance_index_incidence<a class="headerlink" href="#hazardous-metrics-concordance-index-incidence" title="Link to this heading">#</a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="hazardous.metrics.brier_score_survival">
-<span class="sig-prename descclassname"><span class="pre">hazardous.metrics.</span></span><span class="sig-name descname"><span class="pre">brier_score_survival</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_train</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">times</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.metrics.brier_score_survival" title="Link to this definition">#</a></dt>
-<dd><p>Time-dependent Brier score of a survival function estimate.</p>
+<dt class="sig sig-object py" id="hazardous.metrics.concordance_index_incidence">
+<span class="sig-prename descclassname"><span class="pre">hazardous.metrics.</span></span><span class="sig-name descname"><span class="pre">concordance_index_incidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_test</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_train</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ipcw_estimator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'km'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_grid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">taus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_of_interest</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tied_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#hazardous.metrics.concordance_index_incidence" title="Link to this definition">#</a></dt>
+<dd><p>Time-dependent concordance index for prognostic models with competing risks using inverse probability of censoring weighting.</p>
+<p>This C-index is event-specific: we set the event of interest as a parameter,
+and all other event labels are considered to be competing events –except 0, which
+is the censoring event.</p>
+<p>For example, if <code class="docutils literal notranslate"><span class="pre">y_test</span></code> has the following <code class="docutils literal notranslate"><span class="pre">&quot;event&quot;</span></code> column: <code class="docutils literal notranslate"><span class="pre">[1,</span> <span class="pre">0,</span> <span class="pre">2,</span> <span class="pre">4]</span></code>,
+and the event of interest is set to <code class="docutils literal notranslate"><span class="pre">2</span></code>, then we consider the following events:
+<code class="docutils literal notranslate"><span class="pre">[2,</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2]</span></code>, where 0, 1, 2 respectively denotes the censoring event, the event
+of interest and competing events.</p>
+<p>We define this C-index at time :math`tau` as:</p>
 <div class="math notranslate nohighlight">
-\[\mathrm{BS}(t) = \frac{1}{n} \sum_{i=1}^n \mathbb{I}
-(y_i \leq t \land \delta_i = 1)
-\frac{(0 - \hat{S}(t | \mathbf{x}_i))^2}{\hat{G}(y_i)} +
-\mathbb{I}(y_i &gt; t)
-\frac{(1 - \hat{S}(t | \mathbf{x}_i))^2}{\hat{G}(t)} ,\]</div>
-<p>where <span class="math notranslate nohighlight">\(\hat{S}(t | \mathbf{x})\)</span> is the predicted probability of
-surviving up to time point <span class="math notranslate nohighlight">\(t\)</span> for a feature vector <span class="math notranslate nohighlight">\(\mathbf{x}\)</span>,
-and <span class="math notranslate nohighlight">\(\hat{G}(t)\)</span> is the probability of remaining uncensored at time
-<span class="math notranslate nohighlight">\(t\)</span>, estimated on the training set by the Kaplan-Meier estimator on the
-negation of the binary any-event indicator.</p>
-<p>Note that this assumes independence between censoring and the covariates.
-When this assumption is violated, the IPCW weights are biased and the Brier
-score is not a proper scoring rule anymore. See <a class="reference internal" href="#r30a9e330826f-gerds2006" id="id1">[Gerds2006]</a> for a study of this
-bias.</p>
+\[\mathrm{C}(t) = \frac{\sum_{i=1}^n \sum_{j=1}^n (A_{ij}
+\hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) Q^{ij}(t)
+N^1_i(t)}
+{\sum_{i=1}^n \sum_{j=1}^n (A_{ij}
+\hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) N^1_i(t)}\]</div>
+<p>where:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{align}
+N^1_i(t) &amp;= I\{T_i \leq t, D_i = 1\} \\
+A_{ij} &amp;= I\{T_i &lt; T_j \cup (T_i =
+T_j \cap D_j = 0)\} \\
+B_{ij} &amp;= I\{T_i \geq T_j, D_j = 2\} \\
+\hat{W}_{ij,1} &amp;= \hat{G}(T_i|X_i) \hat{G}(T_i|X_j) \\
+\hat{W}_{ij,2} &amp;= \hat{G}(T_i|X_i) \hat{G}(T_j|X_j) \\
+Q_{ij}(t) &amp;= I\{M(t, X_i) &gt; M(t, X_j)\}
+\end{align}\end{split}\]</div>
+<p>where:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(T_i\)</span> and <span class="math notranslate nohighlight">\(D_i\)</span> are the observed time-to-event and event.</p></li>
+<li><p><span class="math notranslate nohighlight">\(D_j = 0, 1, 2\)</span> respectively denotes a censoring event,
+the event of interest and competing events.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\hat{G}\)</span> is a IPCW estimator.</p></li>
+<li><p><span class="math notranslate nohighlight">\(Q_{ij}(t)\)</span> is an indicator for the order of predicted risk at <span class="math notranslate nohighlight">\(t\)</span>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(M\)</span> is the predicted cumulative incidence function for the event of
+interest.</p></li>
+</ul>
+<p>The concordance index (C-index) is a common metric in survival analysis that
+evaluates whether the model predictions correctly order pairs of individuals with
+respect to the timing of the event of interest. It is defined as the probability
+that the prediction is concordant for a pair of individuals and is computed as the
+ratio of the number of concordant pairs to the total number of pairs.
+This implementation extends the C-index to the competing risks setting, where
+multiple alternative events are considered, aiming to determine which event occurs
+first and when, following the formulas and notations in <a class="reference internal" href="#r0c6ee79f83d0-wolbers2014" id="id1">[Wolbers2014]</a>.</p>
+<p>Due to the right-censoring in the data, the order of some pairs is unknown,
+so we define the notion of comparable pairs, i.e. the pairs for which
+we can compare the order of occurrence of the event of interest.
+A pair <span class="math notranslate nohighlight">\((i, j)\)</span> is comparable, with <span class="math notranslate nohighlight">\(i\)</span> experiencing the event of
+interest at time <span class="math notranslate nohighlight">\(T_i\)</span> if:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(j\)</span> is censored or experience any event at a strictly greater time
+<span class="math notranslate nohighlight">\(T_j &gt; T_i\)</span> (pair of type A)</p></li>
+<li><p><span class="math notranslate nohighlight">\(j\)</span> is censored at the exact same time <span class="math notranslate nohighlight">\(T_i = T_j\)</span> (pair of type A).</p></li>
+<li><p><span class="math notranslate nohighlight">\(j\)</span> experiences a competing event before or at time <span class="math notranslate nohighlight">\(T_i\)</span>
+(pair of type B)</p></li>
+</ul>
+<p>A pair is then considered concordant if the predicted incidence of the event of
+interest for <span class="math notranslate nohighlight">\(i\)</span> at time <span class="math notranslate nohighlight">\(\tau\)</span> is larger than the predicted incidence
+for <span class="math notranslate nohighlight">\(j\)</span>. If both predicted incidences are ties, the pair is counted as
+<span class="math notranslate nohighlight">\(1/2\)</span> for the count of concordant pairs.</p>
+<p>The C-index has been shown to depend on the censoring distribution, and an
+inverse probability of censoring weighting (IPCW) allows to overcome this
+limitation <a class="reference internal" href="#r0c6ee79f83d0-uno2011" id="id2">[Uno2011]</a>, <a class="reference internal" href="#r0c6ee79f83d0-gerds2013" id="id3">[Gerds2013]</a>. By default, the IPCW is implemented with a
+Kaplan-Meier estimator. Additionnally, the C-index is not a proper metric to
+evaluate a survival model <a class="reference internal" href="#r0c6ee79f83d0-blanche2019" id="id4">[Blanche2019]</a>, and alternatives as the integrated Brier
+score (<code class="docutils literal notranslate"><span class="pre">integrated_brier_score_incidence</span></code>) should be considered.
+The C-index is a ranking metric and, unlike proper scoring rule metrics,
+cannot evaluate the calibration of the estimator.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>y_train</strong><span class="classifier">record-array, dictionnary or dataframe of shape (n_samples, 2)</span></dt><dd><p>The target, consisting in the ‘event’ and ‘duration’ columns. If the
-‘event’ column holds more than 1 event types, they are automatically
-collapsed to a single event type to compute the Brier score of the
-“any-event” survival function estimate.
-This is only used to estimate the IPCW values to adjust for censoring in
-the evaluation data.</p>
+<dt><strong>y_test</strong><span class="classifier">array, dict or dataframe of shape (n_samples, 2)</span></dt><dd><p>The test target, consisting in the ‘event’ and ‘duration’ columns.</p>
 </dd>
-<dt><strong>y_test</strong><span class="classifier">record-array, dictionnary or dataframe of shape (n_samples, 2)</span></dt><dd><p>The ground truth, consisting in the ‘event’ and ‘duration’ columns.
-The same remark applies as for <code class="docutils literal notranslate"><span class="pre">y_train</span></code> with respect to the ‘event’
-column.</p>
+<dt><strong>y_pred: array of shape (n_samples, n_time_grid)</strong></dt><dd><p>Cumulative incidence for the event of interest, at the time points
+from the input time_grid.</p>
 </dd>
-<dt><strong>y_pred</strong><span class="classifier">array-like of shape (n_samples, n_times)</span></dt><dd><p>Survival probability estimates predicted at <code class="docutils literal notranslate"><span class="pre">times</span></code>.</p>
+<dt><strong>y_train</strong><span class="classifier">array, dictionnary or dataframe of shape (n_samples, 2), default=None</span></dt><dd><p>The train target, consisting in the ‘event’ and ‘duration’ columns.
+Only used when ipcw_estimator = “km”.</p>
 </dd>
-<dt><strong>times</strong><span class="classifier">array-like of shape (n_times)</span></dt><dd><p>Times at which the survival probability <code class="docutils literal notranslate"><span class="pre">y_pred</span></code> has been estimated
-and for which we compute the Brier score.</p>
+<dt><strong>ipcw_estimator</strong><span class="classifier">None, ‘km’, or fitted estimator, default=”km”</span></dt><dd><p>The inverse probability of censoring weighted (IPCW) estimator.</p>
+<ul class="simple">
+<li><p>Pass None to set uniform weights to all samples.</p></li>
+<li><p>Pass “km” to use the Kaplan-Meier IPCW estimator. It fits using y_train,
+which must be set.</p></li>
+</ul>
+</dd>
+<dt><strong>time_grid: array of shape (n_time_grid,), default=None</strong></dt><dd><p>Time points used to predict the cumulative incidence.</p>
+</dd>
+<dt><strong>taus: float or array of shape (n_taus,), default=None</strong></dt><dd><p>Timepoint(s) at which the concordance index is evaluated.</p>
+</dd>
+<dt><strong>event_of_interest: int, default=1</strong></dt><dd><p>For competing risks, the event of interest.</p>
+</dd>
+<dt><strong>tied_tol</strong><span class="classifier">float, default=1e-8</span></dt><dd><p>The tolerance range to consider two probabilities equal.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>brier_score</strong><span class="classifier">np.ndarray of shape (n_times)</span></dt><dd></dd>
+<dt>cindex: array of shape (n_taus,)</dt><dd><p>Value of the concordance index for each tau in taus.</p>
+</dd>
 </dl>
 </dd>
 </dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><a class="reference internal" href="hazardous.metrics.integrated_brier_score_survival.html#hazardous.metrics.integrated_brier_score_survival" title="hazardous.metrics.integrated_brier_score_survival"><code class="xref py py-obj docutils literal notranslate"><span class="pre">integrated_brier_score_survival</span></code></a></dt><dd><p>Time-integrated Brier score of a survival function estimate.</p>
-</dd>
-</dl>
-</div>
 <p class="rubric">References</p>
 <div role="list" class="citation-list">
-<div class="citation" id="r30a9e330826f-graf1999" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span>Graf1999<span class="fn-bracket">]</span></span>
-<p>E. Graf, C. Schmoor, W. Sauerbrei, M. Schumacher, “Assessment
-and comparison of prognostic classification schemes for survival data”,
-1999</p>
+<div class="citation" id="r0c6ee79f83d0-wolbers2014" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">Wolbers2014</a><span class="fn-bracket">]</span></span>
+<p>M. Wolbers, P. Blanche, M. T. Koller, J. C. Witteman, T. A. Gerds,
+<a class="reference external" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4059461/">“Concordance for prognostic models with competing risks”</a>, 2014</p>
 </div>
-<div class="citation" id="r30a9e330826f-gerds2006" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">Gerds2006</a><span class="fn-bracket">]</span></span>
-<p>T. Gerds and M. Schumacher, “Consistent Estimation of the
-Expected Brier Score in General Survival Models with Right-Censored
-Event Times”, 2006</p>
+<div class="citation" id="r0c6ee79f83d0-uno2011" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">Uno2011</a><span class="fn-bracket">]</span></span>
+<p>H. Uno, T. Cai, M. J. Pencina, R. B. D’Agostino,  L. J. Wei, <a class="reference external" href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3079915/">“On the
+C-statistics for evaluating overall adequacy of risk prediction
+procedures with censored survival data”</a>, 2011</p>
+</div>
+<div class="citation" id="r0c6ee79f83d0-gerds2013" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">Gerds2013</a><span class="fn-bracket">]</span></span>
+<p>T. A. Gerds, M. W. Kattan, M. Schumacher, C. Yu, <a class="reference external" href="https://onlinelibrary.wiley.com/doi/abs/10.1002/sim.5681">“Estimating a
+time-dependent concordance index for survival prediction models
+with covariate dependent censoring”</a>, 2013</p>
+</div>
+<div class="citation" id="r0c6ee79f83d0-blanche2019" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">Blanche2019</a><span class="fn-bracket">]</span></span>
+<p>P. Blanche, M. W. Kattan, T. A. Gerds, <a class="reference external" href="https://pubmed.ncbi.nlm.nih.gov/29462286">“The c-index is not proper
+for the evaluation of t-year predicted risks”</a>, 2019</p>
 </div>
 </div>
 </dd></dl>
@@ -467,20 +530,20 @@ Event Times”, 2006</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="hazardous.SurvivalBoost.html"
+       href="hazardous.metrics.integrated_brier_score_incidence.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous</span></code>.SurvivalBoost</p>
+        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.integrated_brier_score_incidence</p>
       </div>
     </a>
     <a class="right-next"
-       href="hazardous.metrics.brier_score_incidence.html"
+       href="hazardous.metrics.accuracy_in_time.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.brier_score_incidence</p>
+        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.accuracy_in_time</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -503,7 +566,7 @@ Event Times”, 2006</p>
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.metrics.brier_score_survival"><code class="docutils literal notranslate"><span class="pre">brier_score_survival()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hazardous.metrics.concordance_index_incidence"><code class="docutils literal notranslate"><span class="pre">concordance_index_incidence()</span></code></a></li>
 </ul>
   </nav></div>
 
@@ -511,7 +574,7 @@ Event Times”, 2006</p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/generated/hazardous.metrics.brier_score_survival.rst.txt"
+      <li><a href="../_sources/generated/hazardous.metrics.concordance_index_incidence.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>

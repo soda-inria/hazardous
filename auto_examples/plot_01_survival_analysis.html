@@ -378,7 +378,7 @@
 to download the full example code.</p>
 </div>
 <section class="sphx-glr-example-title" id="survival-analysis-with-survivalboost">
-<span id="sphx-glr-auto-examples-plot-01-survival-analysis-py"></span><h1>Survival analysis with SurvivalBoost<a class="headerlink" href="#survival-analysis-with-survivalboost" title="Link to this heading">#</a></h1>
+<span id="example-intro"></span><span id="sphx-glr-auto-examples-plot-01-survival-analysis-py"></span><h1>Survival analysis with SurvivalBoost<a class="headerlink" href="#survival-analysis-with-survivalboost" title="Link to this heading">#</a></h1>
 <p>Survival analysis is a time-to-event regression problem that deals with censored data.
 We refer to individuals as censored if they did not experience the event during the
 period of observation.</p>
@@ -393,6 +393,7 @@ is the processed data set used in the
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pycox.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">metabric</span>
+
 
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
@@ -512,6 +513,7 @@ Name: proportion, dtype: float64
 </div>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="sklearn.model_selection.train_test_split" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">train_test_split</span></a>
 
+
 <span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="sklearn.model_selection.train_test_split" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">train_test_split</span></a><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -528,8 +530,8 @@ given the patient features <span class="math notranslate nohighlight">\(x\)</spa
 “duration”. This allows SurvivalBoost to estimate the survival function <span class="math notranslate nohighlight">\(S\)</span>.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hazardous</span><span class="w"> </span><span class="kn">import</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class"><span class="n">SurvivalBoost</span></a>
 
-<a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a> <span class="o">=</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class"><span class="n">SurvivalBoost</span></a><span class="p">(</span><span class="n">show_progressbar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
 
+<a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a> <span class="o">=</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class"><span class="n">SurvivalBoost</span></a><span class="p">(</span><span class="n">show_progressbar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
 <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a>
 </pre></div>
 </div>
@@ -973,6 +975,7 @@ When <code class="docutils literal notranslate"><span class="pre">times</span></
 <p>Let’s plot the estimated survival function for some patients.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
+
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
 
 <span class="n">patient_ids_to_plot</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
@@ -1116,57 +1119,27 @@ performs on a test set.</p>
 <p>The Brier score and the C-index are measures that <strong>assess the quality of a
 predicted survival curve</strong> on a finite data sample.</p>
 <ul class="simple">
-<li><p><strong>The Brier score in time is a strictly proper scoring rule</strong>, which means that an
-estimate of the survival probabilities at a given time <span class="math notranslate nohighlight">\(t\)</span> has minimal Brier
+<li><p>The <a class="reference internal" href="../generated/hazardous.metrics.brier_score_survival.html#hazardous.metrics.brier_score_survival" title="hazardous.metrics.brier_score_survival"><code class="xref py py-func docutils literal notranslate"><span class="pre">Brier</span> <span class="pre">score</span> <span class="pre">in</span> <span class="pre">time</span></code></a> is
+<strong>a strictly proper scoring rule</strong>, which means that an estimate of the survival
+probabilities at a given time <span class="math notranslate nohighlight">\(t\)</span> has minimal Brier
 score if and only if it matches the oracle survival probabilities induced by
 the underlying data generating process. In that respect, the <strong>Brier score</strong>
 assesses both the <strong>calibration</strong> and the <strong>ranking power</strong> of a survival
 probability estimator. It is comprised between 0 and 1 (lower is better). It
 answers the question <em>“how close to the real probabilities are our estimates?”</em>.</p></li>
-<li><p>On the other hand, the <strong>C-index</strong> only assesses the <strong>ranking power</strong>: it
+<li><p>On the other hand, the
+<a class="reference internal" href="../generated/hazardous.metrics.concordance_index_incidence.html#hazardous.metrics.concordance_index_incidence" title="hazardous.metrics.concordance_index_incidence"><code class="xref py py-func docutils literal notranslate"><span class="pre">C-index</span></code></a>
+only assesses the <strong>ranking power</strong>: it
 represents the probability that, for a randomly selected pair of patients,
 the patient with the higher estimated survival probability will survive
 longer than the other. It is comprised between 0 and 1 (higher is better),
 with 0.5 corresponding to random predictions.</p></li>
 </ul>
-<details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
-<summary class="sd-summary-title sd-card-header">
-<span class="sd-summary-text">Mathematical formulation (Brier score)</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
-<div class="math notranslate nohighlight">
-\[\mathrm{BS}^c(t) = \frac{1}{n} \sum_{i=1}^n I(d_i \leq t \cap \delta_i = 1)
-\frac{(0 - \hat{S}(t | \mathbf{x}_i))^2}{\hat{G}(d_i)} + I(d_i &gt; t)
-\frac{(1 - \hat{S}(t | \mathbf{x}_i))^2}{\hat{G}(t)}\]</div>
-<p class="sd-card-text">In the survival analysis context, the Brier Score can be seen as the Mean
-Squared Error (MSE) between our probability <span class="math notranslate nohighlight">\(\hat{S}(t)\)</span> and our
-target label <span class="math notranslate nohighlight">\(\delta_i \in {0, 1}\)</span>, weighted by the inverse probability
-of censoring <span class="math notranslate nohighlight">\(\frac{1}{\hat{G}(t)}\)</span>.
-In practice we estimate <span class="math notranslate nohighlight">\(\hat{G}(t)\)</span> using a variant of
-the Kaplan-Estimator with swapped event indicator.</p>
-<ul class="simple">
-<li><p class="sd-card-text">When no event or censoring has happened at <span class="math notranslate nohighlight">\(t\)</span> yet, i.e.
-<span class="math notranslate nohighlight">\(I(d_i &gt; t)\)</span>, we penalize a low probability of survival with
-<span class="math notranslate nohighlight">\((1 - \hat{S}(t|\mathbf{x}_i))^2\)</span>.</p></li>
-<li><p class="sd-card-text">Conversely, when an individual has experienced an event before <span class="math notranslate nohighlight">\(t\)</span>, i.e.
-<span class="math notranslate nohighlight">\(I(d_i \leq t \cap \delta_i = 1)\)</span>, we penalize a high probability
-of survival with <span class="math notranslate nohighlight">\((0 - \hat{S}(t|\mathbf{x}_i))^2\)</span>.</p></li>
-</ul>
-</div>
-</details><details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3">
-<summary class="sd-summary-title sd-card-header">
-<span class="sd-summary-text">Mathematical formulation (Harrell’s C-index)</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
-<div class="math notranslate nohighlight">
-\[\mathrm{C_{index}} = \frac{\sum_{i,j} I(d_i &lt; d_j \space \cap \space
-\delta_i = 1 \space \cap \space \mu_i &lt; \mu_j)}
-{\sum_{i,j} I(d_i &lt; d_j \space \cap \space \delta_i = 1)}\]</div>
-<p class="sd-card-text">where <span class="math notranslate nohighlight">\(\mu_i\)</span> and <span class="math notranslate nohighlight">\(\mu_j\)</span> are the time-averaged predicted survival
-probabilities for individual <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span>.</p>
-</div>
-</details><p>Additionnaly, we compute the Integrated Brier Score (IBS), which we will use to
-summarize the Brier score in time:</p>
-<div class="math notranslate nohighlight">
-\[\mathrm{IBS} = \frac{1}{t_{max} - t_{min}}\int^{t_{max}}_{t_{min}}
-\mathrm{BS(t)} dt\]</div>
+<p>Additionnaly, we compute the
+<a class="reference internal" href="../generated/hazardous.metrics.integrated_brier_score_survival.html#hazardous.metrics.integrated_brier_score_survival" title="hazardous.metrics.integrated_brier_score_survival"><code class="xref py py-func docutils literal notranslate"><span class="pre">Integrated</span> <span class="pre">Brier</span> <span class="pre">Score</span></code></a>
+(IBS), which we will use to summarize the Brier score in time:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hazardous.metrics</span><span class="w"> </span><span class="kn">import</span> <a href="../generated/hazardous.metrics.integrated_brier_score_survival.html#hazardous.metrics.integrated_brier_score_survival" title="hazardous.metrics.integrated_brier_score_survival" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">integrated_brier_score_survival</span></a>
+
 
 <span class="n">ibs_survboost</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.integrated_brier_score_survival.html#hazardous.metrics.integrated_brier_score_survival" title="hazardous.metrics.integrated_brier_score_survival" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">integrated_brier_score_survival</span></a><span class="p">(</span>
     <span class="n">y_train</span><span class="p">,</span>
@@ -1184,6 +1157,7 @@ summarize the Brier score in time:</p>
 which doesn’t take the patient features into account.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">lifelines</span><span class="w"> </span><span class="kn">import</span> <span class="n">KaplanMeierFitter</span>
 
+
 <span class="n">km_model</span> <span class="o">=</span> <span class="n">KaplanMeierFitter</span><span class="p">()</span>
 <span class="n">km_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">])</span>
 <span class="n">survival_curve_agg_km</span> <span class="o">=</span> <span class="n">km_model</span><span class="o">.</span><span class="n">survival_function_at_times</span><span class="p">(</span>
@@ -1199,40 +1173,53 @@ which doesn’t take the patient features into account.</p>
     <span class="n">survival_curves_km</span><span class="p">,</span>
     <span class="n">times</span><span class="o">=</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="o">.</span><span class="n">time_grid_</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;IBS for Kaplan-Meier: </span><span class="si">{</span><span class="n">ibs_km</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;IBS for Kaplan-Meier at: </span><span class="si">{</span><span class="n">ibs_km</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>IBS for Kaplan-Meier: 0.1653
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>IBS for Kaplan-Meier at: 0.1653
 </pre></div>
 </div>
 <p>Let’s also compute the concordance index for both the Kaplan-Meier and SurvivalBoost.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">lifelines.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">concordance_index</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">hazardous.metrics</span><span class="w"> </span><span class="kn">import</span> <a href="../generated/hazardous.metrics.concordance_index_incidence.html#hazardous.metrics.concordance_index_incidence" title="hazardous.metrics.concordance_index_incidence" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">concordance_index_incidence</span></a>
 
-<span class="n">concordance_index_km</span> <span class="o">=</span> <span class="n">concordance_index</span><span class="p">(</span>
-    <span class="n">event_observed</span><span class="o">=</span><span class="n">y_test</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">],</span>
-    <span class="n">event_times</span><span class="o">=</span><span class="n">y_test</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">],</span>
-    <span class="n">predicted_scores</span><span class="o">=</span><span class="n">survival_curves_km</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+
+<span class="n">quantiles</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">]</span>
+<span class="n">taus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="o">.</span><span class="n">time_grid_</span><span class="p">,</span> <span class="n">quantiles</span><span class="p">)</span>
+<span class="n">concordance_index_km</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.concordance_index_incidence.html#hazardous.metrics.concordance_index_incidence" title="hazardous.metrics.concordance_index_incidence" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">concordance_index_incidence</span></a><span class="p">(</span>
+    <span class="n">y_test</span><span class="p">,</span>
+    <span class="n">y_pred</span><span class="o">=</span><span class="mi">1</span> <span class="o">-</span> <span class="n">survival_curves_km</span><span class="p">,</span>
+    <span class="n">y_train</span><span class="o">=</span><span class="n">y_train</span><span class="p">,</span>
+    <span class="n">time_grid</span><span class="o">=</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="o">.</span><span class="n">time_grid_</span><span class="p">,</span>
+    <span class="n">taus</span><span class="o">=</span><span class="n">taus</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Concordance index for Kaplan-Meier: </span><span class="si">{</span><span class="n">concordance_index_km</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Concordance index at quantiles </span><span class="si">{</span><span class="n">quantiles</span><span class="si">}</span><span class="s2"> &quot;</span>
+    <span class="sa">f</span><span class="s2">&quot;for Kaplan-Meier: </span><span class="si">{</span><span class="n">concordance_index_km</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Concordance index for Kaplan-Meier: 0.50
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Concordance index at quantiles [0.25, 0.5, 0.75] for Kaplan-Meier: [0.5 0.5 0.5]
 </pre></div>
 </div>
 <p>0.5 corresponds to random chance, which makes sense as the Kaplan-Meier estimator
 doesn’t depend on the patient features.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">concordance_index_survboost</span> <span class="o">=</span> <span class="n">concordance_index</span><span class="p">(</span>
-    <span class="n">event_observed</span><span class="o">=</span><span class="n">y_test</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">],</span>
-    <span class="n">event_times</span><span class="o">=</span><span class="n">y_test</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">],</span>
-    <span class="n">predicted_scores</span><span class="o">=</span><span class="n">survival_curves</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">concordance_index_survboost</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.concordance_index_incidence.html#hazardous.metrics.concordance_index_incidence" title="hazardous.metrics.concordance_index_incidence" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">concordance_index_incidence</span></a><span class="p">(</span>
+    <span class="n">y_test</span><span class="p">,</span>
+    <span class="n">y_pred</span><span class="o">=</span><span class="n">incidence_curves</span><span class="p">,</span>
+    <span class="n">y_train</span><span class="o">=</span><span class="n">y_train</span><span class="p">,</span>
+    <span class="n">time_grid</span><span class="o">=</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="o">.</span><span class="n">time_grid_</span><span class="p">,</span>
+    <span class="n">taus</span><span class="o">=</span><span class="n">taus</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Concordance index for SurvivalBoost: </span><span class="si">{</span><span class="n">concordance_index_survboost</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Concordance index at quantiles </span><span class="si">{</span><span class="n">quantiles</span><span class="si">}</span><span class="s2"> &quot;</span>
+    <span class="sa">f</span><span class="s2">&quot;for SurvivalBoost: </span><span class="si">{</span><span class="n">concordance_index_survboost</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Concordance index for SurvivalBoost: 0.67
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Concordance index at quantiles [0.25, 0.5, 0.75] for SurvivalBoost: [0.732 0.713 0.667]
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 9.793 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 9.898 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-01-survival-analysis-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/a6916f06450964ef8d10eb5f311100d1/plot_01_survival_analysis.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_01_survival_analysis.ipynb</span></code></a></p>
