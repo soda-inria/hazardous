@@ -18,6 +18,8 @@ def km_cal(y_conf, times, surv_prob_at_conf, return_diff_at_t=False):
     kaplan_sampler.fit(y_conf)
     surv_func = kaplan_sampler.survival_func_
 
+    times = np.sort(times)
+
     t_max = max(times)
 
     # global surv prob from KM

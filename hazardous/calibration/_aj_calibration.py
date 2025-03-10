@@ -18,6 +18,8 @@ def aj_cal(y, times, inc_prob_at_conf, return_diff_at_t=False):
     event, duration = check_y_survival(y)
     event_ids_ = np.array(sorted(list(set([0]) | set(event))))
 
+    times = np.sort(times)
+
     aalen_sampler = _AalenJohansenSampler()
     aalen_sampler.fit(y)
     t_max = max(times)
@@ -57,7 +59,14 @@ def aj_cal(y, times, inc_prob_at_conf, return_diff_at_t=False):
 
 
 def recalibrate_incidence_functions(
-    X, y, X_conf, times, estimator=None, inc_probs=None, inc_prob_at_conf=None
+    X_conf,
+    y_conf,
+    times,
+    estimator=None,
+    X=None,
+    inc_probs=None,
+    inc_prob_conf=None,
+    return_function=False,
 ):
     """
     Args:
@@ -69,12 +78,12 @@ def recalibrate_incidence_functions(
     Returns:
         estimator_calibrated:
     """
-    event, duration = check_y_survival(y)
+    event, duration = check_y_survival(y_conf)
     event_ids_ = np.array(sorted(list(set([0]) | set(event))))
 
-    if estimator is None and (inc_probs is None or inc_prob_at_conf is None):
+    if estimator is None and (inc_probs is None or inc_prob_conf is None):
         raise ValueError(
-            "Either estimator or (inc_prob and inc_prob_at_conf) must be provided"
+            "Either estimator or (inc_prob and inc_prob_conf) must be provided"
         )
 
     # Calculate the survival probabilities to compute the calibration
@@ -85,24 +94,27 @@ def recalibrate_incidence_functions(
             )
 
         inc_probs = estimator.predict_cumulative_incidence(X, times)
-    if inc_prob_at_conf is None:
+    if inc_prob_conf is None:
         if not hasattr(estimator, "predict_cumulative_incidence"):
             raise ValueError(
                 "Estimator must have a predict_cumulative_incidence method"
             )
-        inc_prob_at_conf = estimator.predict_cumulative_incidence(X_conf, times)
+        inc_prob_conf = estimator.predict_cumulative_incidence(X_conf, times)
 
     # Calculate the calibration
-    differences_at_t = aj_cal(y, times, inc_prob_at_conf, return_diff_at_t=True)[1]
+    differences_at_t = aj_cal(y_conf, times, inc_prob_conf, return_diff_at_t=True)[1]
+    # import ipdb; ipdb.set_trace()
+
     recalibrated_inc_functions = []
 
     recalibrated_surv_probs = recalibrate_survival_function(
-        X,
-        y,
         X_conf,
+        y_conf,
         times,
+        estimator=estimator,
+        X=X,
         surv_probs=inc_probs[:, 0, :],
-        surv_probs_conf=inc_prob_at_conf[:, 0, :],
+        surv_probs_conf=inc_prob_conf[:, 0, :],
         return_function=False,
     )
 
@@ -111,7 +123,7 @@ def recalibrate_incidence_functions(
     for event_id in event_ids_[1:]:
         diff_at_t = differences_at_t[event_id]
         inc_probs_calibrated = inc_probs[:, event_id, :] - diff_at_t
-
+        # import ipdb; ipdb.set_trace()
         # Recalibrate the survival function
         recalibrated_inc_functions.append(inc_probs_calibrated)
 
