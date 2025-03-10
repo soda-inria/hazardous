@@ -3,7 +3,8 @@ from numbers import Real
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.ensemble import HistGradientBoostingClassifier
-from sklearn.utils.validation import check_array, check_random_state
+from sklearn.model_selection import train_test_split
+from sklearn.utils.validation import check_random_state
 from tqdm import tqdm
 
 from ._ipcw import AlternatingCensoringEstimator, KaplanMeierIPCW
@@ -12,7 +13,7 @@ from .metrics._brier_score import (
     integrated_brier_score_incidence,
     integrated_brier_score_survival,
 )
-from .utils import check_y_survival
+from .utils import check_array, check_y_survival
 
 
 class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
@@ -72,18 +73,20 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
         )
         # Precompute the censoring probabilities at the time of the events on the
         # training set:
-        self.ipcw_train = self.ipcw_estimator.compute_ipcw_at(self.duration_train)
+        self.update_ipcw(y=y_train)
 
-    def draw(self, ipcw_training=False, X=None):
+    def draw(self, y, X=None, ipcw_training=False):
+        events, durations = check_y_survival(y)
+        any_events = events > 0
+
         # Sample time horizons uniformly on the observed time range:
-        observation_durations = self.duration_train
-        n_samples = observation_durations.shape[0]
+        n_samples = durations.shape[0]
 
         # Sample from t_min=0 event if never observed in the training set
         # because we want to make sure that the model learns to predict a 0
         # incidence at t=0.
         t_min = 0.0
-        t_max = observation_durations.max()
+        t_max = durations.max()
         sampled_time_horizons = self.rng.uniform(t_min, t_max, n_samples)
 
         # Add some hard zeros to make sure that the model learns to
@@ -106,17 +109,15 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
             # * 0 when an event has happened before the sampled time horizon.
             #   The sample weight is zero in that case.
 
-            if not hasattr(self, "inv_any_survival_train"):
-                self.inv_any_survival_train = self.ipcw_estimator.compute_ipcw_at(
-                    self.duration_train, ipcw_training=True, X=X
-                )
+            if not hasattr(self, "ipiw"):
+                self.update_ipiw(X=X, y=y)
 
-            censored_observations = self.any_event_train == 0
+            censored_observations = any_events == 0
             y_targets, sample_weight = self._weighted_binary_targets(
                 censored_observations,
-                observation_durations,
+                durations,
                 sampled_time_horizons,
-                ipcw_y_duration=self.inv_any_survival_train,
+                ipcw_y_duration=self.ipiw_y_duration,
                 ipcw_training=True,
                 X=X,
             )
@@ -133,26 +134,25 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
             #   than the sampled time horizon. The sample weight is zero in
             #   that case.
             y_binary, sample_weight = self._weighted_binary_targets(
-                self.any_event_train,
-                observation_durations,
+                any_events,
+                durations,
                 sampled_time_horizons,
-                ipcw_y_duration=self.ipcw_train,
+                ipcw_y_duration=self.ipcw_y_duration,
                 ipcw_training=False,
                 X=X,
             )
-            y_targets = y_binary * self.event_train
+            y_targets = y_binary * events
 
         return sampled_time_horizons.reshape(-1, 1), y_targets, sample_weight
 
-    def fit(self, X):
-        self.inv_any_survival_train = self.ipcw_estimator.compute_ipcw_at(
-            self.duration_train, ipcw_training=True, X=X
-        )
+    def fit(self, X, y):
+        self.update_ipiw(X=X, y=y)
 
         for _ in range(self.n_iter_before_feedback):
             sampled_time_horizons, y_targets, sample_weight = self.draw(
-                ipcw_training=True,
+                y,
                 X=X,
+                ipcw_training=True,
             )
             self.ipcw_estimator.fit_censoring_estimator(
                 X,
@@ -161,9 +161,19 @@ class WeightedMultiClassTargetSampler(IncidenceScoreComputer):
                 sample_weight=sample_weight,
             )
 
-        self.ipcw_train = self.ipcw_estimator.compute_ipcw_at(
-            self.duration_train,
+    def update_ipcw(self, y, X=None):
+        _, durations = check_y_survival(y)
+        self.ipcw_y_duration = self.ipcw_estimator.compute_ipcw_at(
+            durations,
             ipcw_training=False,
+            X=X,
+        )
+
+    def update_ipiw(self, y, X=None):
+        _, durations = check_y_survival(y)
+        self.ipiw_y_duration = self.ipcw_estimator.compute_ipcw_at(
+            durations,
+            ipcw_training=True,
             X=X,
         )
 
@@ -332,6 +342,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         n_iter_before_feedback=20,
         random_state=None,
         n_horizons_per_observation=3,
+        split_censor_incidence=False,
     ):
         self.hard_zero_fraction = hard_zero_fraction
         self.n_iter = n_iter
@@ -346,6 +357,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         self.ipcw_strategy = ipcw_strategy
         self.random_state = random_state
         self.n_horizons_per_observation = n_horizons_per_observation
+        self.split_censor_incidence = split_censor_incidence
 
     def fit(self, X, y, times=None):
         """Fit the model.
@@ -382,8 +394,6 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         # Add 0 as a special event id for the survival function.
         self.event_ids_ = np.array(sorted(list(set([0]) | set(event))))
 
-        self.estimator_ = self._build_base_estimator()
-
         # Compute the default time grid used at prediction time.
         any_event_mask = event > 0
         observed_times = duration[any_event_mask]
@@ -400,6 +410,8 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             self.time_grid_ = times.copy()
             self.time_grid_.sort()
 
+        self.estimator_ = self._build_base_estimator()
+
         if self.ipcw_strategy == "alternating":
             ipcw_estimator = AlternatingCensoringEstimator(
                 incidence_estimator=self.estimator_
@@ -412,8 +424,20 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                 "Valid values are 'alternating' and 'kaplan-meier'."
             )
 
+        if self.split_censor_incidence:
+            X_incidence, X_censor, y_incidence, y_censor = train_test_split(
+                X,
+                y,
+                stratify=event,
+                test_size=0.1,
+                random_state=self.random_state,
+            )
+        else:
+            X_incidence = X_censor = X
+            y_incidence = y_censor = y
+
         self.weighted_targets_ = WeightedMultiClassTargetSampler(
-            y,
+            y_incidence,
             hard_zero_fraction=self.hard_zero_fraction,
             random_state=self.random_state,
             ipcw_estimator=ipcw_estimator,
@@ -425,7 +449,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             iterator = tqdm(iterator)
 
         for idx_iter in iterator:
-            X_with_time = np.empty((0, X.shape[1] + 1))
+            X_with_time = np.empty((0, X_incidence.shape[1] + 1))
             y_targets = np.empty((0,))
             sample_weight = np.empty((0,))
             for _ in range(self.n_horizons_per_observation):
@@ -433,9 +457,11 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
                     sampled_times_,
                     y_targets_,
                     sample_weight_,
-                ) = self.weighted_targets_.draw(X=X, ipcw_training=False)
+                ) = self.weighted_targets_.draw(
+                    y_incidence, X=X_incidence, ipcw_training=False
+                )
 
-                X_with_time_ = np.hstack([sampled_times_, X])
+                X_with_time_ = np.hstack([sampled_times_, X_incidence])
                 X_with_time = np.vstack([X_with_time, X_with_time_])
                 y_targets = np.hstack([y_targets, y_targets_])
                 sample_weight = np.hstack([sample_weight, sample_weight_])
@@ -454,7 +480,8 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             if (idx_iter % self.n_iter_before_feedback == 0) and isinstance(
                 ipcw_estimator, AlternatingCensoringEstimator
             ):
-                self.weighted_targets_.fit(X)
+                self.weighted_targets_.fit(X=X_censor, y=y_censor)
+                self.weighted_targets_.update_ipcw(X=X_incidence, y=y_incidence)
 
             # XXX: implement verbose logging with a version of IBS that
             # can handle competing risks.

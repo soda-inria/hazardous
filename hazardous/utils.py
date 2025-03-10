@@ -2,6 +2,9 @@ from numbers import Integral
 
 import numpy as np
 import pandas as pd
+import sklearn
+from sklearn.utils.fixes import parse_version
+from sklearn.utils.validation import check_array as check_array_sk
 from sklearn.utils.validation import check_scalar
 
 
@@ -53,3 +56,19 @@ def check_event_of_interest(k):
             f"got: event_of_interest={k}"
         )
     return
+
+
+def check_array(X, **params):
+    # Fix check_array() force_all_finite deprecation warning
+    sklearn_version = parse_version(parse_version(sklearn.__version__).base_version)
+
+    x_all_finite = True  # default value
+    for kwarg in ["force_all_finite", "ensure_all_finite"]:
+        if params.get(kwarg, False):
+            x_all_finite = params.pop(kwarg)
+            break
+
+    if sklearn_version < parse_version("1.6.0"):
+        return check_array_sk(X, force_all_finite=x_all_finite, **params)
+    else:
+        return check_array_sk(X, ensure_all_finite=x_all_finite, **params)
