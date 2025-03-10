@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'hazardous'
-copyright = '2023, Olivier Grisel and Vincent Maladière'
+copyright = '2025, Hazardous developers'
 author = 'Olivier Grisel and Vincent Maladière'
 release = '0.1.0'
 
