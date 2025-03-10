@@ -6,13 +6,12 @@ Predictive Competing Risks and Survival Analysis.
 
 ## Installation and usage
 
-XXX: the following will work only once the 0.1.0 release is out!
-
+With Pypi:
 ```
 pip install hazardous
 ```
 
-or
+or with conda forge:
 
 ```
 conda install -c conda-forge hazardous
