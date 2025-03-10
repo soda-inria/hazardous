@@ -6,15 +6,9 @@ Predictive Competing Risks and Survival Analysis.
 
 ## Installation and usage
 
-With Pypi:
+Installation:
 ```
 pip install hazardous
-```
-
-or with conda forge:
-
-```
-conda install -c conda-forge hazardous
 ```
 
 Then browse the [online documentation](https://soda-inria.github.io/hazardous/)

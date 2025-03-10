@@ -80,6 +80,7 @@ Proper Scoring Rule and Stochastic Optimization with Competing Risks
    :maxdepth: 2
    :caption: Contents:
 
+   install
    api
    auto_examples/index
    downloading_seer
