@@ -277,17 +277,17 @@ theoretical CIFs:
 
  .. code-block:: none
 
-    Integrated theoretical any event survival curve in 0.609 s
+    Integrated theoretical any event survival curve in 0.586 s
     /opt/hostedtoolcache/Python/3.10.16/x64/lib/python3.10/site-packages/sklearn/utils/deprecation.py:151: FutureWarning: 'force_all_finite' was renamed to 'ensure_all_finite' in 1.6 and will be removed in 1.8.
       warnings.warn(
-    SurvivalBoost fit: 4.394 s
-    SurvivalBoost prediction: 2.952 s
-    Integrated theoretical cumulative incidence curve for event 1 in 3.012 s
-    Aalen-Johansen for event 1 fit in 5.120 s
-    Integrated theoretical cumulative incidence curve for event 2 in 5.217 s
-    Aalen-Johansen for event 2 fit in 5.070 s
-    Integrated theoretical cumulative incidence curve for event 3 in 5.151 s
-    Aalen-Johansen for event 3 fit in 5.047 s
+    SurvivalBoost fit: 4.147 s
+    SurvivalBoost prediction: 2.953 s
+    Integrated theoretical cumulative incidence curve for event 1 in 3.013 s
+    Aalen-Johansen for event 1 fit in 5.319 s
+    Integrated theoretical cumulative incidence curve for event 2 in 5.417 s
+    Aalen-Johansen for event 2 fit in 5.275 s
+    Integrated theoretical cumulative incidence curve for event 3 in 5.358 s
+    Aalen-Johansen for event 3 fit in 5.255 s
 
 
 
@@ -330,17 +330,17 @@ of censoring.
 
  .. code-block:: none
 
-    Integrated theoretical any event survival curve in 0.581 s
+    Integrated theoretical any event survival curve in 0.578 s
     /opt/hostedtoolcache/Python/3.10.16/x64/lib/python3.10/site-packages/sklearn/utils/deprecation.py:151: FutureWarning: 'force_all_finite' was renamed to 'ensure_all_finite' in 1.6 and will be removed in 1.8.
       warnings.warn(
-    SurvivalBoost fit: 4.264 s
-    SurvivalBoost prediction: 3.033 s
-    Integrated theoretical cumulative incidence curve for event 1 in 3.094 s
-    Aalen-Johansen for event 1 fit in 5.118 s
-    Integrated theoretical cumulative incidence curve for event 2 in 5.214 s
-    Aalen-Johansen for event 2 fit in 5.077 s
-    Integrated theoretical cumulative incidence curve for event 3 in 5.157 s
-    Aalen-Johansen for event 3 fit in 5.103 s
+    SurvivalBoost fit: 4.174 s
+    SurvivalBoost prediction: 2.989 s
+    Integrated theoretical cumulative incidence curve for event 1 in 3.049 s
+    Aalen-Johansen for event 1 fit in 5.320 s
+    Integrated theoretical cumulative incidence curve for event 2 in 5.415 s
+    Aalen-Johansen for event 2 fit in 5.290 s
+    Integrated theoretical cumulative incidence curve for event 3 in 5.370 s
+    Aalen-Johansen for event 3 fit in 5.319 s
 
 
 
@@ -364,7 +364,7 @@ the large time horizons:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 47.158 seconds)
+   **Total running time of the script:** (0 minutes 48.001 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_02_marginal_cumulative_incidence_estimation.py:

@@ -409,33 +409,35 @@ is the censoring event.</p>
 and the event of interest is set to <code class="docutils literal notranslate"><span class="pre">2</span></code>, then we consider the following events:
 <code class="docutils literal notranslate"><span class="pre">[2,</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">2]</span></code>, where 0, 1, 2 respectively denotes the censoring event, the event
 of interest and competing events.</p>
-<p>We define this C-index at time :math`tau` as:</p>
+<p>We define this C-index at time <span class="math notranslate nohighlight">\(\tau\)</span> as:</p>
 <div class="math notranslate nohighlight">
-\[\mathrm{C}(t) = \frac{\sum_{i=1}^n \sum_{j=1}^n (A_{ij}
-\hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) Q^{ij}(t)
-N^1_i(t)}
+\[\mathrm{C}(\tau) = \frac{\sum_{i=1}^n \sum_{j=1}^n (A_{ij}
+\hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) Q_{ij}(\tau)
+N^1_i(\tau)}
 {\sum_{i=1}^n \sum_{j=1}^n (A_{ij}
-\hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) N^1_i(t)}\]</div>
+\hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) N^1_i(\tau)}\]</div>
 <p>where:</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}\begin{align}
-N^1_i(t) &amp;= I\{T_i \leq t, D_i = 1\} \\
-A_{ij} &amp;= I\{T_i &lt; T_j \cup (T_i =
-T_j \cap D_j = 0)\} \\
-B_{ij} &amp;= I\{T_i \geq T_j, D_j = 2\} \\
-\hat{W}_{ij,1} &amp;= \hat{G}(T_i|X_i) \hat{G}(T_i|X_j) \\
-\hat{W}_{ij,2} &amp;= \hat{G}(T_i|X_i) \hat{G}(T_j|X_j) \\
-Q_{ij}(t) &amp;= I\{M(t, X_i) &gt; M(t, X_j)\}
+N^1_i(\tau) &amp;= I\{t_i \leq \tau, \delta_i = 1\} \\
+A_{ij} &amp;= I\{t_i &lt; t_j \cup (t_i =
+t_j \cap \delta_j = 0)\} \\
+B_{ij} &amp;= I\{t_i \geq t_j, \delta_j = 2\} \\
+\hat{W}_{ij,1} &amp;= \hat{G}(t_i| X = x_i) \hat{G}(t_i|X = x_j) \\
+\hat{W}_{ij,2} &amp;= \hat{G}(t_i|X = x_i) \hat{G}(t_j|X =x_j) \\
+Q_{ij}(t) &amp;= I\{F_k(\tau| X = x_i) &gt; F_k(\tau| X = x_j)\}
 \end{align}\end{split}\]</div>
 <p>where:</p>
 <ul class="simple">
-<li><p><span class="math notranslate nohighlight">\(T_i\)</span> and <span class="math notranslate nohighlight">\(D_i\)</span> are the observed time-to-event and event.</p></li>
-<li><p><span class="math notranslate nohighlight">\(D_j = 0, 1, 2\)</span> respectively denotes a censoring event,
-the event of interest and competing events.</p></li>
+<li><p><span class="math notranslate nohighlight">\(t_i\)</span> and <span class="math notranslate nohighlight">\(\delta_i\)</span> are the observed time-to-event and event
+for the individual i.</p></li>
+<li><p><span class="math notranslate nohighlight">\(\delta = 0, 1, 2\)</span> respectively denotes a censoring event,
+the event of interest and the competing events.</p></li>
 <li><p><span class="math notranslate nohighlight">\(\hat{G}\)</span> is a IPCW estimator.</p></li>
-<li><p><span class="math notranslate nohighlight">\(Q_{ij}(t)\)</span> is an indicator for the order of predicted risk at <span class="math notranslate nohighlight">\(t\)</span>.</p></li>
-<li><p><span class="math notranslate nohighlight">\(M\)</span> is the predicted cumulative incidence function for the event of
-interest.</p></li>
+<li><p><span class="math notranslate nohighlight">\(Q_{ij}(\tau)\)</span> is an indicator for the order of predicted risk at
+<span class="math notranslate nohighlight">\(\tau\)</span>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(F_k\)</span> is the predicted cumulative incidence function for the event of
+interest k.</p></li>
 </ul>
 <p>The concordance index (C-index) is a common metric in survival analysis that
 evaluates whether the model predictions correctly order pairs of individuals with
@@ -446,7 +448,7 @@ This implementation extends the C-index to the competing risks setting, where
 multiple alternative events are considered, aiming to determine which event occurs
 first and when, following the formulas and notations in <a class="reference internal" href="#r0c6ee79f83d0-wolbers2014" id="id1">[Wolbers2014]</a>.</p>
 <p>Due to the right-censoring in the data, the order of some pairs is unknown,
-so we define the notion of comparable pairs, i.e. the pairs for which
+so we define the notion of comparable pairs, i.e. pairs for which
 we can compare the order of occurrence of the event of interest.
 A pair <span class="math notranslate nohighlight">\((i, j)\)</span> is comparable, with <span class="math notranslate nohighlight">\(i\)</span> experiencing the event of
 interest at time <span class="math notranslate nohighlight">\(T_i\)</span> if:</p>
