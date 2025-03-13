@@ -79,6 +79,7 @@ Proper Scoring Rule and Stochastic Optimization with Competing Risks
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   :hidden:
 
    install
    api
