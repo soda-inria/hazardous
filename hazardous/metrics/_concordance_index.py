@@ -30,39 +30,41 @@ def concordance_index_incidence(
     ``[2, 0, 1, 2]``, where 0, 1, 2 respectively denotes the censoring event, the event
     of interest and competing events.
 
-    We define this C-index at time :math`\tau` as:
+    We define this C-index at time :math:`\tau` as:
 
     .. math::
 
-        \mathrm{C}(t) = \frac{\sum_{i=1}^n \sum_{j=1}^n (A_{ij}
-        \hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) Q^{ij}(t)
-        N^1_i(t)}
+        \mathrm{C}(\tau) = \frac{\sum_{i=1}^n \sum_{j=1}^n (A_{ij}
+        \hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) Q_{ij}(\tau)
+        N^1_i(\tau)}
         {\sum_{i=1}^n \sum_{j=1}^n (A_{ij}
-        \hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) N^1_i(t)}
+        \hat{W}_{ij, 1}^{-1} + B_{ij} \hat{W}_{ij, 2}^{-1}) N^1_i(\tau)}
 
     where:
 
     .. math::
 
         \begin{align}
-        N^1_i(t) &= I\{T_i \leq t, D_i = 1\} \\
-        A_{ij} &= I\{T_i < T_j \cup (T_i =
-        T_j \cap D_j = 0)\} \\
-        B_{ij} &= I\{T_i \geq T_j, D_j = 2\} \\
-        \hat{W}_{ij,1} &= \hat{G}(T_i|X_i) \hat{G}(T_i|X_j) \\
-        \hat{W}_{ij,2} &= \hat{G}(T_i|X_i) \hat{G}(T_j|X_j) \\
-        Q_{ij}(t) &= I\{M(t, X_i) > M(t, X_j)\}
+        N^1_i(\tau) &= I\{t_i \leq \tau, \delta_i = 1\} \\
+        A_{ij} &= I\{t_i < t_j \cup (t_i =
+        t_j \cap \delta_j = 0)\} \\
+        B_{ij} &= I\{t_i \geq t_j, \delta_j = 2\} \\
+        \hat{W}_{ij,1} &= \hat{G}(t_i| X = x_i) \hat{G}(t_i|X = x_j) \\
+        \hat{W}_{ij,2} &= \hat{G}(t_i|X = x_i) \hat{G}(t_j|X =x_j) \\
+        Q_{ij}(t) &= I\{F_k(\tau| X = x_i) > F_k(\tau| X = x_j)\}
         \end{align}
 
     where:
 
-    - :math:`T_i` and :math:`D_i` are the observed time-to-event and event.
-    - :math:`D_j = 0, 1, 2` respectively denotes a censoring event,
-      the event of interest and competing events.
+    - :math:`t_i` and :math:`\delta_i` are the observed time-to-event and event
+      for the individual i.
+    - :math:`\delta = 0, 1, 2` respectively denotes a censoring event,
+      the event of interest and the competing events.
     - :math:`\hat{G}` is a IPCW estimator.
-    - :math:`Q_{ij}(t)` is an indicator for the order of predicted risk at :math:`t`.
-    - :math:`M` is the predicted cumulative incidence function for the event of
-      interest.
+    - :math:`Q_{ij}(\tau)` is an indicator for the order of predicted risk at
+      :math:`\tau`.
+    - :math:`F_k` is the predicted cumulative incidence function for the event of
+      interest k.
 
     The concordance index (C-index) is a common metric in survival analysis that
     evaluates whether the model predictions correctly order pairs of individuals with
@@ -74,7 +76,7 @@ def concordance_index_incidence(
     first and when, following the formulas and notations in [Wolbers2014]_.
 
     Due to the right-censoring in the data, the order of some pairs is unknown,
-    so we define the notion of comparable pairs, i.e. the pairs for which
+    so we define the notion of comparable pairs, i.e. pairs for which
     we can compare the order of occurrence of the event of interest.
     A pair :math:`(i, j)` is comparable, with :math:`i` experiencing the event of
     interest at time :math:`T_i` if:
