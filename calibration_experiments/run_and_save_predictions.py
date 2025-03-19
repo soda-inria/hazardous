@@ -6,6 +6,7 @@ from pathlib import Path
 
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
 from hazardous import SurvivalBoost
+from hazardous.data._seer import load_seer, FeatureEncoder
 
 from models_sota._deephit import DeepHitEstimator
 from models_sota._aalen_johansen import AalenJohansenEstimator
@@ -14,20 +15,21 @@ from models_sota._rsf import RSFEstimator
 from models_sota.survtrace._model import SurvTRACE
 
 PATH_PREDICTIONS = Path("preds/")
-DATASET_NAME = "competing_weibull"
+DATASET_NAME = "seer"
 
 if DATASET_NAME == "competing_weibull":
     n_samples = 10000
     n_events = 3
+
+if DATASET_NAME == "seer":
+    n_samples = None
 
 
 def init_survivalboost(
     random_state=None,
     **model_params,
 ):
-    return SurvivalBoost(random_state=random_state, n_iter=50).set_params(
-        **model_params
-    )
+    return SurvivalBoost(random_state=random_state).set_params(**model_params)
 
 
 def init_deephit(
@@ -99,8 +101,17 @@ for seed in range(5):
             censoring_relative_scale=1.5,
             random_state=seed,
         )
-        y = y.astype({"event": int, "duration": int})
-        y = y[["event", "duration"]]
+    if DATASET_NAME == "seer":
+        X, y = load_seer(
+            input_path="../hazardous/data/seer_cancer_cardio_raw_data.txt",
+            return_X_y=True,
+        )
+        if n_samples is not None and n_samples < len(X):
+            X, _, y, _ = train_test_split(X, y, random_state=seed, train_size=n_samples)
+        X = FeatureEncoder().fit_transform(X)
+    import ipdb
+
+    ipdb.set_trace()
     X_train_, X_test, y_train_, y_test = train_test_split(
         X, y, random_state=seed, test_size=0.3
     )
