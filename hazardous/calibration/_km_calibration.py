@@ -86,3 +86,37 @@ def recalibrate_survival_function(
             fill_value="extrapolate",
         )
     return surv_probs_calibrated
+
+
+def recalibrate_survival_function_predictions(
+    surv_probs,
+    surv_probs_conf,
+    y_conf,
+    times,
+    return_function=False,
+):
+    """
+    Args:
+        X (n_conf, n_features): samples to recalibrate the estimator
+        y (n_conf, 2): target
+        estimator (BaseEstimator): trained estimator
+        times (n_times): times to recalibrate the survival function
+
+    Returns:
+        estimator_calibrated:
+    """
+
+    # Calculate the calibration
+    diff_at_t = km_cal(y_conf, times, surv_probs_conf, return_diff_at_t=True)[1]
+    surv_probs_calibrated = surv_probs - diff_at_t
+
+    if return_function:
+        # Recalibrate the survival function
+        return interp1d(
+            x=times,
+            y=surv_probs_calibrated,
+            kind="previous",
+            bounds_error=False,
+            fill_value="extrapolate",
+        )
+    return surv_probs_calibrated

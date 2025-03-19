@@ -147,3 +147,15 @@ for event_id in range(1, 4):
     plt.show()
 
 # %%
+
+from sklearn.datasets import make_regression
+from sklearn.isotonic import IsotonicRegression
+
+X, y = make_regression(n_samples=10, n_features=1, random_state=41)
+iso_reg = IsotonicRegression().fit(X, y)
+iso_reg.predict([0.1, 0.2])
+# %%
+X
+# %%
+y
+# %%
