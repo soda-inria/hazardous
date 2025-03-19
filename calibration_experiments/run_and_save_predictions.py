@@ -107,6 +107,7 @@ for seed in range(5):
             return_X_y=True,
         )
         X = FeatureEncoder().fit_transform(X)
+        n_events = 3
     X_train_, X_test, y_train_, y_test = train_test_split(
         X, y, random_state=seed, test_size=0.3
     )
