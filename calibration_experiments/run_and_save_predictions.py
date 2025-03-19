@@ -22,7 +22,7 @@ if DATASET_NAME == "competing_weibull":
     n_events = 3
 
 if DATASET_NAME == "seer":
-    n_samples = None
+    n_samples = 10000
 
 
 def init_survivalboost(
@@ -106,20 +106,18 @@ for seed in range(5):
             input_path="../hazardous/data/seer_cancer_cardio_raw_data.txt",
             return_X_y=True,
         )
-        if n_samples is not None and n_samples < len(X):
-            X, _, y, _ = train_test_split(X, y, random_state=seed, train_size=n_samples)
         X = FeatureEncoder().fit_transform(X)
-    import ipdb
-
-    ipdb.set_trace()
     X_train_, X_test, y_train_, y_test = train_test_split(
         X, y, random_state=seed, test_size=0.3
     )
+    if n_samples is not None and n_samples < len(X):
+        X_train_, _, y_train_, _ = train_test_split(
+            X_train_, y_train_, random_state=seed, train_size=n_samples
+        )
     X_train, X_conf, y_train, y_conf = train_test_split(
         X_train_, y_train_, random_state=seed, test_size=0.5
     )
     times = np.quantile(y_train_["duration"], np.linspace(0, 1, 100))
-
     for model_name in list(models):
         model = INIT_MODEL_FUNCS[model_name](random_state=seed)
         model.fit(X_train.astype("float64"), y_train)
