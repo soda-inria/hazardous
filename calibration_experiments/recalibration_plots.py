@@ -23,7 +23,7 @@ PATH_PREDICTIONS = Path("preds/")
 DATASET_NAME = "competing_weibull"
 
 if DATASET_NAME == "competing_weibull":
-    n_samples = 8000
+    n_samples = 10000
     n_events = 3
 
     X, y = make_synthetic_competing_weibull(

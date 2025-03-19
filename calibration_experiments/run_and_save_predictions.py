@@ -17,7 +17,7 @@ PATH_PREDICTIONS = Path("preds/")
 DATASET_NAME = "competing_weibull"
 
 if DATASET_NAME == "competing_weibull":
-    n_samples = 8000
+    n_samples = 10000
     n_events = 3
 
 
@@ -79,7 +79,6 @@ INIT_MODEL_FUNCS = {
 models = INIT_MODEL_FUNCS.keys()
 
 
-# %%
 def compute_ft(model, X_conf, y_conf):
     f_t = [
         model.predict_cumulative_incidence(
@@ -91,12 +90,8 @@ def compute_ft(model, X_conf, y_conf):
     return f_t
 
 
-# %%
 for seed in range(5):
     if DATASET_NAME == "competing_weibull":
-        n_samples = 8000
-        n_events = 3
-
         X, y = make_synthetic_competing_weibull(
             n_samples=n_samples,
             return_X_y=True,
