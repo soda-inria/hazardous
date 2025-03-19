@@ -109,7 +109,7 @@ for seed in range(5):
     )
     times = np.quantile(y_train_["duration"], np.linspace(0, 1, 100))
 
-    for model_name in list(models)[-1:]:
+    for model_name in list(models):
         model = INIT_MODEL_FUNCS[model_name](random_state=seed)
         model.fit(X_train.astype("float64"), y_train)
         predictions_model = {}
