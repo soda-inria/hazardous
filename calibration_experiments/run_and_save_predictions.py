@@ -8,6 +8,8 @@ from hazardous.data._competing_weibull import make_synthetic_competing_weibull
 from hazardous import SurvivalBoost
 from hazardous.data._seer import load_seer, FeatureEncoder
 
+# from hazardous.data._metabric import load metabric
+
 from models_sota._deephit import DeepHitEstimator
 from models_sota._aalen_johansen import AalenJohansenEstimator
 from models_sota._finegray import FineGrayEstimator
@@ -28,6 +30,9 @@ if DATASET_NAME == "seer100k":
     n_samples = 100000
 
 if DATASET_NAME == "seer":
+    n_samples = None
+
+if DATASET_NAME == "metabric":
     n_samples = None
 
 
@@ -114,6 +119,10 @@ for seed in range(5):
         )
         X = FeatureEncoder().fit_transform(X)
         n_events = 3
+
+    # if DATASET_NAME.find("metabric") != -1:
+    #     X, y = load_metabric(return_X_y=True)
+
     X_train_, X_test, y_train_, y_test = train_test_split(
         X, y, random_state=seed, test_size=0.3
     )
