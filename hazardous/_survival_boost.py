@@ -573,7 +573,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         return self.predict_cumulative_incidence(X, times=times)[:, 0, :]
 
     def predict_incidence_after_s(self, X, censored_times, times=None):
-        """Estimate the conditional incidence functions for each event type
+        r"""Estimate the conditional incidence functions for each event type
         knowing that the individual has been censored at a given time :math:`s` i.e.
         has survived until this time :math:`s`.
 
@@ -582,20 +582,20 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         .. math::
 
             \forall s > t,
-
             F_k(t| x_i, T > s) = \mathbb{P}(T \leq t, \Delta = k| X=x_i, T > s)
             = \frac{\mathbb{P}(s < T \leq t, \Delta = k| X=x_i)}
             {\mathbb{P}(T > s| X=x_i)}
             = \frac{F_k(t| x_i) - F_k(s| x_i)}{S(s| x_i)}
 
         And:
-            \forall s > t,
 
+        .. math::
+
+            \forall s > t,
             S(t| x_i, T > s) = \mathbb{P}(T \geq t| X=x_i, T > s)
             = \frac{\mathbb{P}(T \geq t| X=x_i)}
             {\mathbb{P}(T > s| X=x_i)}
             = \frac{S(t| x_i)}{S(s| x_i)}
-
 
         where :math:`F_k(t| x_i)` is the estimated cumulative incidence function for
         event type :math:`k` at time :math:`t` and :math:`S(s| x_i)` is the estimated
