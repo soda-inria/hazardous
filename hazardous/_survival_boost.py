@@ -577,21 +577,19 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         knowing that the individual has been censored at a given time :math:`s` i.e.
         has survived until this time :math:`s`.
 
-        For each incidence function, we return:
+        For each incidence function, :math:`\forall s > t`, we return:
 
         .. math::
 
-            \forall s > t,
             F_k(t| x_i, T > s) = \mathbb{P}(T \leq t, \Delta = k| X=x_i, T > s)
             = \frac{\mathbb{P}(s < T \leq t, \Delta = k| X=x_i)}
             {\mathbb{P}(T > s| X=x_i)}
             = \frac{F_k(t| x_i) - F_k(s| x_i)}{S(s| x_i)}
 
-        And:
+        And, :math:`\forall s > t`:
 
         .. math::
 
-            \forall s > t,
             S(t| x_i, T > s) = \mathbb{P}(T \geq t| X=x_i, T > s)
             = \frac{\mathbb{P}(T \geq t| X=x_i)}
             {\mathbb{P}(T > s| X=x_i)}
@@ -658,14 +656,12 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         return incidence_functions_knowing_censoring_time
 
     def predict_survival_after_s(self, X, censored_times, times=None):
-        """Estimate the survival function for each event type
+        r"""Estimate the survival function for each event type
         knowing that the individual has been censored at a given time :math:`s` i.e.
         has survived until this time :math:`s`.
 
-        We return an estimate of:
+        :math:`\forall s > t`, we return an estimate of:
         .. math::
-
-            \forall s > t,
 
             S(t| x_i, T > s) = \mathbb{P}(T \geq t| X=x_i, T > s)
             = \frac{\mathbb{P}(T \geq t| X=x_i)}
@@ -691,7 +687,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        incidence_functions_knowing_censoring_time : ndarray of shape
+        survival_function_knowing_censoring_time : ndarray of shape
             (n_samples, 1, n_times) The estimated probabilities of the
             different time horizons. For the times that are lower than the observed
             event times, the survival function is 1.
