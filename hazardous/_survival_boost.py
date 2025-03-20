@@ -637,21 +637,25 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         ).reshape(len(X), len(self.event_ids_), 1)
 
         # Compute the incidence functions knowing the censoring time.
-        survival_functions = predictions_at_censoring_time[:, 0, :]
+        survival_function = predictions_at_censoring_time[:, 0, :]
 
         incidence_functions_knowing_censoring_time[
             :, 1:, :
         ] -= predictions_at_censoring_time[:, 1:, :]
-        incidence_functions_knowing_censoring_time /= survival_functions[:, :, None]
+        incidence_functions_knowing_censoring_time /= survival_function[:, None, :]
 
         # Put to 1 survival function for times lower than the censoring time and
         # incidence functions to 0.
-        mask = (times[:, None] <= censored_times).T
+
+        mask = censored_times[:, None] < times[None, :]
         incidence_functions_knowing_censoring_time[:, 1:, :] = np.where(
-            mask[:, None, :], 0, incidence_functions_knowing_censoring_time[:, 1:, :]
+            mask[:, None, :], incidence_functions_knowing_censoring_time[:, 1:, :], 0
         )
         incidence_functions_knowing_censoring_time[:, 0, :] = np.where(
-            mask, 1, incidence_functions_knowing_censoring_time[:, 0, :]
+            mask, incidence_functions_knowing_censoring_time[:, 0, :], 1.0
+        )
+        incidence_functions_knowing_censoring_time = np.clip(
+            incidence_functions_knowing_censoring_time, 0, 1
         )
         return incidence_functions_knowing_censoring_time
 
