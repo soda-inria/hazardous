@@ -572,9 +572,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         """
         return self.predict_cumulative_incidence(X, times=times)[:, 0, :]
 
-    def predict_incidence_functions_knowing_censoring_time(
-        self, X, censored_times, times=None
-    ):
+    def predict_incidence_after_s(self, X, censored_times, times=None):
         """Estimate the conditional incidence functions for each event type
         knowing that the individual has been censored at a given time :math:`s` i.e.
         has survived until this time :math:`s`.
@@ -582,19 +580,20 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         For each incidence function, we return:
 
         .. math::
+
             \forall s > t,
 
             F_k(t| x_i, T > s) = \mathbb{P}(T \leq t, \Delta = k| X=x_i, T > s)
             = \frac{\mathbb{P}(s < T \leq t, \Delta = k| X=x_i)}
-            {\mathbb{P}(s < T \leq t | X=x_i)}
+            {\mathbb{P}(T > s| X=x_i)}
             = \frac{F_k(t| x_i) - F_k(s| x_i)}{S(s| x_i)}
 
         And:
             \forall s > t,
 
-            S(t| x_i, T > s) = \mathbb{P}(T \geq t, \Delta = k| X=x_i, T > s)
-            = \frac{\mathbb{P}(T \geq t, \Delta = k| X=x_i)}
-            {\mathbb{P}(s < T \leq t | X=x_i)}
+            S(t| x_i, T > s) = \mathbb{P}(T \geq t| X=x_i, T > s)
+            = \frac{\mathbb{P}(T \geq t| X=x_i)}
+            {\mathbb{P}(T > s| X=x_i)}
             = \frac{S(t| x_i)}{S(s| x_i)}
 
 
@@ -658,20 +657,19 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         )
         return incidence_functions_knowing_censoring_time
 
-    def predict_survival_function_knowing_censoring_time(
-        self, X, censored_times, times=None
-    ):
+    def predict_survival_after_s(self, X, censored_times, times=None):
         """Estimate the survival function for each event type
         knowing that the individual has been censored at a given time :math:`s` i.e.
         has survived until this time :math:`s`.
 
         We return an estimate of:
         .. math::
+
             \forall s > t,
 
-            S(t| x_i, T > s) = \mathbb{P}(T \geq t, \Delta = k| X=x_i, T > s)
-            = \frac{\mathbb{P}(T \geq t, \Delta = k| X=x_i)}
-            {\mathbb{P}(s < T \leq t | X=x_i)}
+            S(t| x_i, T > s) = \mathbb{P}(T \geq t| X=x_i, T > s)
+            = \frac{\mathbb{P}(T \geq t| X=x_i)}
+            {\mathbb{P}(T > s| X=x_i)}
             = \frac{S(t| x_i)}{S(s| x_i)}
 
 
