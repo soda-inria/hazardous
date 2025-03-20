@@ -76,6 +76,9 @@ class RSFEstimator(BaseEstimator):
         self.event_ids_ = np.array(sorted(list(set([0]) | set(event))))
         df = pd.concat([X, y], axis=1)
         cols = df.columns.to_list()
+        # remove space in column names
+        cols = [col.replace(" ", "") for col in cols]
+        df.culumns = cols
         names = " + ".join(cols)
 
         r_df = r_dataframe(df)
@@ -110,8 +113,13 @@ class RSFEstimator(BaseEstimator):
             The conditional cumulative cumulative incidence at times.
         """
         check_is_fitted(self, "parsed")
-
-        r_df = r_dataframe(X)
+        X = self._check_input(X, y=None, reset=False)
+        df = X.copy()
+        cols = df.columns.to_list()
+        # remove_space_in_column_names
+        cols = [col.replace(" ", "") for col in cols]
+        df.culumns = cols
+        r_df = r_dataframe(df)
 
         # predict
         object_pred_r = r.predict(self.r_parsed, r_df)
