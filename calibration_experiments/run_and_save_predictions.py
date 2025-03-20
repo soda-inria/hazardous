@@ -15,14 +15,20 @@ from models_sota._rsf import RSFEstimator
 from models_sota.survtrace._model import SurvTRACE
 
 PATH_PREDICTIONS = Path("preds/")
-DATASET_NAME = "seer"
+DATASET_NAME = "seer100k"
 
 if DATASET_NAME == "competing_weibull":
     n_samples = 10000
     n_events = 3
 
-if DATASET_NAME == "seer":
+if DATASET_NAME == "seer10k":
     n_samples = 10000
+
+if DATASET_NAME == "seer100k":
+    n_samples = 100000
+
+if DATASET_NAME == "seer":
+    n_samples = None
 
 
 def init_survivalboost(
@@ -101,7 +107,7 @@ for seed in range(5):
             censoring_relative_scale=1.5,
             random_state=seed,
         )
-    if DATASET_NAME == "seer":
+    if DATASET_NAME.find("seer") != -1:
         X, y = load_seer(
             input_path="../hazardous/data/seer_cancer_cardio_raw_data.txt",
             return_X_y=True,
@@ -119,7 +125,7 @@ for seed in range(5):
         X_train_, y_train_, random_state=seed, test_size=0.5
     )
     times = np.quantile(y_train_["duration"], np.linspace(0, 1, 100))
-    for model_name in list(models):
+    for model_name in list(models)[-2:-1]:
         model = INIT_MODEL_FUNCS[model_name](random_state=seed)
         model.fit(X_train.astype("float64"), y_train)
         predictions_model = {}

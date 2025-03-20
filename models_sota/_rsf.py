@@ -77,12 +77,10 @@ class RSFEstimator(BaseEstimator):
         df = pd.concat([X, y], axis=1)
         cols = df.columns.to_list()
         # remove space in column names
-        cols = [col.replace(" ", "") for col in cols]
-        df.culumns = cols
+        cols = [f"col{i}" for i in range(X.shape[1])] + y.columns.to_list()
+        df.columns = cols
         names = " + ".join(cols)
-
         r_df = r_dataframe(df)
-
         rsf_object = rfs.rfsrc(
             Formula(f"Surv(duration, event) ~ {names}"),
             data=r_df,
@@ -115,9 +113,7 @@ class RSFEstimator(BaseEstimator):
         check_is_fitted(self, "parsed")
         X = self._check_input(X, y=None, reset=False)
         df = X.copy()
-        cols = df.columns.to_list()
-        # remove_space_in_column_names
-        cols = [col.replace(" ", "") for col in cols]
+        cols = ["col_{i}" for i in range(df.shape[1])]
         df.culumns = cols
         r_df = r_dataframe(df)
 
