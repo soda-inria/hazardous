@@ -572,6 +572,131 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         """
         return self.predict_cumulative_incidence(X, times=times)[:, 0, :]
 
+    def predict_incidence_after_s(self, X, censored_times, times=None):
+        r"""Estimate the conditional incidence functions for each event type
+        knowing that the individual has been censored at a given time :math:`s` i.e.
+        has survived until this time :math:`s`.
+
+        For each incidence function, :math:`\forall s > t`, we return:
+
+        .. math::
+
+            F_k(t| x_i, T > s) = \mathbb{P}(T \leq t, \Delta = k| X=x_i, T > s)
+            = \frac{\mathbb{P}(s < T \leq t, \Delta = k| X=x_i)}
+            {\mathbb{P}(T > s| X=x_i)}
+            = \frac{F_k(t| x_i) - F_k(s| x_i)}{S(s| x_i)}
+
+        And, :math:`\forall s > t`:
+
+        .. math::
+
+            S(t| x_i, T > s) = \mathbb{P}(T \geq t| X=x_i, T > s)
+            = \frac{\mathbb{P}(T \geq t| X=x_i)}
+            {\mathbb{P}(T > s| X=x_i)}
+            = \frac{S(t| x_i)}{S(s| x_i)}
+
+        where :math:`F_k(t| x_i)` is the estimated cumulative incidence function for
+        event type :math:`k` at time :math:`t` and :math:`S(s| x_i)` is the estimated
+        survival function at time :math:`s`.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The feature vectors for each observation for which to estimate the
+            incidence functions knowing the censoring time.
+
+        censored_times : array-like of shape (n_samples,)
+            The time of censoring for each observation.
+
+        times : array-like, default=None
+            The time horizons at which to estimate the probabilities. If ``None``,
+            it uses the grid generated during ``fit`` based on the parameter
+            ``n_time_grid_steps``.
+
+        Returns
+        -------
+        incidence_functions_knowing_censoring_time : ndarray of shape
+            (n_samples, n_events + 1, n_times) The estimated probabilities of the
+            different time horizons. For the times that are lower than the observed
+            event times, the survival function is 1, and the incidence functions will
+            be 0.
+        """
+        if times is None:
+            times = self.time_grid_
+        incidence_functions_knowing_censoring_time = self.predict_cumulative_incidence(
+            X, times=times
+        )
+
+        X_with_time = np.hstack([censored_times[:, None], X])
+        predictions_at_censoring_time = self.estimator_.predict_proba(X_with_time)[
+            :, :, None
+        ]
+
+        # Compute the incidence functions knowing the censoring time.
+        survival_function = predictions_at_censoring_time[:, 0, :]
+
+        incidence_functions_knowing_censoring_time[
+            :, 1:, :
+        ] -= predictions_at_censoring_time[:, 1:, :]
+        incidence_functions_knowing_censoring_time /= survival_function[:, None, :]
+
+        # Put to 1 survival function for times lower than the censoring time and
+        # incidence functions to 0.
+
+        mask = censored_times[:, None] < times[None, :]
+        incidence_functions_knowing_censoring_time[:, 1:, :] = np.where(
+            mask[:, None, :], incidence_functions_knowing_censoring_time[:, 1:, :], 0
+        )
+        incidence_functions_knowing_censoring_time[:, 0, :] = np.where(
+            mask, incidence_functions_knowing_censoring_time[:, 0, :], 1.0
+        )
+        incidence_functions_knowing_censoring_time = np.clip(
+            incidence_functions_knowing_censoring_time, 0, 1
+        )
+        return incidence_functions_knowing_censoring_time
+
+    def predict_survival_after_s(self, X, censored_times, times=None):
+        r"""Estimate the survival function for each event type
+        knowing that the individual has been censored at a given time :math:`s` i.e.
+        has survived until this time :math:`s`.
+
+        :math:`\forall s > t`, we return an estimate of:
+        .. math::
+
+            S(t| x_i, T > s) = \mathbb{P}(T \geq t| X=x_i, T > s)
+            = \frac{\mathbb{P}(T \geq t| X=x_i)}
+            {\mathbb{P}(T > s| X=x_i)}
+            = \frac{S(t| x_i)}{S(s| x_i)}
+
+
+        where :math:`S(s| x_i)` is the estimated survival function at time :math:`s`.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The feature vectors for each observation for which to estimate the
+            incidence functions knowing the censoring time.
+
+        censored_times : array-like of shape (n_samples,)
+            The time of censoring for each observation.
+
+        times : array-like, default=None
+            The time horizons at which to estimate the probabilities. If ``None``,
+            it uses the grid generated during ``fit`` based on the parameter
+            ``n_time_grid_steps``.
+
+        Returns
+        -------
+        survival_function_knowing_censoring_time : ndarray of shape
+            (n_samples, 1, n_times) The estimated probabilities of the
+            different time horizons. For the times that are lower than the observed
+            event times, the survival function is 1.
+        """
+
+        return self.predict_incidence_functions_knowing_censoring_time(
+            X, censored_times, times=times
+        )[:, 0, :]
+
     def _build_base_estimator(self):
         return HistGradientBoostingClassifier(
             loss="log_loss",
