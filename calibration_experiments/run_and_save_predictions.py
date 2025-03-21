@@ -8,7 +8,7 @@ from hazardous.data._competing_weibull import make_synthetic_competing_weibull
 from hazardous import SurvivalBoost
 from hazardous.data._seer import load_seer, FeatureEncoder
 
-# from hazardous.data._metabric import load metabric
+from hazardous.data._metabric import load_metabric
 
 from models_sota._deephit import DeepHitEstimator
 from models_sota._aalen_johansen import AalenJohansenEstimator
@@ -17,7 +17,7 @@ from models_sota._rsf import RSFEstimator
 from models_sota.survtrace._model import SurvTRACE
 
 PATH_PREDICTIONS = Path("preds/")
-DATASET_NAME = "seer100k"
+DATASET_NAME = "metabric"
 
 if DATASET_NAME == "competing_weibull":
     n_samples = 10000
@@ -118,11 +118,13 @@ for seed in range(5):
             return_X_y=True,
         )
         X = FeatureEncoder().fit_transform(X)
-        n_events = 3
+        n_events = y["event"].max()
 
-    # if DATASET_NAME.find("metabric") != -1:
-    #     X, y = load_metabric(return_X_y=True)
-
+    if DATASET_NAME.find("metabric") != -1:
+        X, y = load_metabric(return_X_y=True)
+        X = FeatureEncoder().fit_transform(X)
+        n_events = y["event"].max()
+        print(n_events)
     X_train_, X_test, y_train_, y_test = train_test_split(
         X, y, random_state=seed, test_size=0.3
     )

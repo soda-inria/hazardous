@@ -113,8 +113,8 @@ class RSFEstimator(BaseEstimator):
         check_is_fitted(self, "parsed")
         X = self._check_input(X, y=None, predict_time=True, reset=False)
         df = X.copy()
-        cols = ["col_{i}" for i in range(df.shape[1])]
-        df.culumns = cols
+        cols = [f"col{i}" for i in range(df.shape[1])]
+        df.columns = cols
         r_df = r_dataframe(df)
 
         # predict
