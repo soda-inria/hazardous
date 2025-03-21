@@ -111,7 +111,7 @@ class RSFEstimator(BaseEstimator):
             The conditional cumulative cumulative incidence at times.
         """
         check_is_fitted(self, "parsed")
-        X = self._check_input(X, predict_time=True, reset=False)
+        X = self._check_input(X, y=None, predict_time=True, reset=False)
         df = X.copy()
         cols = ["col_{i}" for i in range(df.shape[1])]
         df.culumns = cols
