@@ -111,7 +111,7 @@ class RSFEstimator(BaseEstimator):
             The conditional cumulative cumulative incidence at times.
         """
         check_is_fitted(self, "parsed")
-        X = self._check_input(X, y=None, reset=False)
+        X = self._check_input(X, predict_time=True, reset=False)
         df = X.copy()
         cols = ["col_{i}" for i in range(df.shape[1])]
         df.culumns = cols
@@ -168,11 +168,10 @@ class RSFEstimator(BaseEstimator):
         all_event_y_pred = np.asarray(all_event_y_pred)
         return all_event_y_pred.swapaxes(0, 1)
 
-    def _check_input(self, X, y, reset=True):
+    def _check_input(self, X, y, reset=True, predict_time=True):
         if not hasattr(X, "__dataframe__"):
             X = pd.DataFrame(X)
-
-        if not hasattr(y, "__dataframe__"):
+        if not predict_time and not hasattr(y, "__dataframe__"):
             raise TypeError(f"'y' must be a Pandas dataframe, got {type(y)}.")
 
         # Check no categories
