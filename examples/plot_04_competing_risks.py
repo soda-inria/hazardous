@@ -70,8 +70,8 @@ survival_curves = incidence_curves[:, 0]  # survival function S(t)
 
 import matplotlib.pyplot as plt
 
-fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(20, 5))
-
+fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(15, 4))
+sns.despine()
 patient_ids_to_plot = [0, 1, 2, 3]
 
 for event_id in range(n_events + 1):
@@ -98,18 +98,16 @@ for event_id in range(n_events + 1):
             color=ax[event_id].lines[idx].get_color(),
         )
 
-    ax[event_id].set_xlabel("Months")
+    ax[event_id].set_xlabel("Time")
     if event_id == 0:
-        ax[event_id].set_title("Survival Function S(t)")
+        ax[event_id].set_title("Survival Function")
     else:
-        ax[event_id].set_title(
-            f"Estimated Incidence Probabilities for Event {event_id}"
-        )
+        ax[event_id].set_title(f"Incidence Fucntion, Event {event_id}")
 
 
-ax[0].set_ylabel("Predicted Survival Probability")
-ax[1].set_ylabel("Predicted Incidence Probabilities")
-
+ax[0].set_ylabel("Survival Probability")
+ax[1].set_ylabel("Incidence Probabilities")
+ax[-1].legend(loc="lower right")
 plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 
 plt.show()
@@ -129,8 +127,8 @@ censoring_function_knowing_censoring_time = survival_boost.predict_incidence_aft
 
 
 # %%
-fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(20, 5))
-
+fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(15, 4))
+sns.despine()
 patient_ids_to_plot = [0, 1, 2, 3, 4]
 
 for event_id in range(n_events + 1):
@@ -153,19 +151,17 @@ for event_id in range(n_events + 1):
             color=ax[event_id].lines[idx].get_color(),
         )
 
-    ax[event_id].set_xlabel("Months")
+    ax[event_id].set_xlabel("Time")
     if event_id == 0:
-        ax[event_id].set_title("Survival Function S(t)")
+        ax[event_id].set_title("Survival Function")
     else:
-        ax[event_id].set_title(
-            f"Estimated Incidence Probabilities for Event {event_id}"
-        )
+        ax[event_id].set_title(f"Incidence Function, Event {event_id}")
 
 
-ax[0].set_ylabel("Predicted Survival Probability")
-ax[1].set_ylabel("Predicted Incidence Probabilities")
+ax[0].set_ylabel("Survival Probabilities")
+ax[1].set_ylabel("Incidence Probabilities")
 
-plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+ax[-1].legend(loc="lower right")
 
 plt.show()
 # %%

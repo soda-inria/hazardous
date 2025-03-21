@@ -626,15 +626,11 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
         incidence_functions_knowing_censoring_time = self.predict_cumulative_incidence(
             X, times=times
         )
-        predictions_at_censoring_time = [
-            self.predict_cumulative_incidence(
-                X.iloc[i : i + 1], times=np.array([censored_times[i]])
-            )
-            for i in range(len(X))
+
+        X_with_time = np.hstack([censored_times[:, None], X])
+        predictions_at_censoring_time = self.estimator_.predict_proba(X_with_time)[
+            :, :, None
         ]
-        predictions_at_censoring_time = np.asarray(
-            predictions_at_censoring_time
-        ).reshape(len(X), len(self.event_ids_), 1)
 
         # Compute the incidence functions knowing the censoring time.
         survival_function = predictions_at_censoring_time[:, 0, :]
