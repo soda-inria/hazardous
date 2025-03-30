@@ -5,11 +5,11 @@ from sklearn.model_selection import train_test_split
 from pathlib import Path
 
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
-from hazardous import SurvivalBoost
 from hazardous.data._seer import load_seer, FeatureEncoder
 
 from hazardous.data._metabric import load_metabric
 
+from hazardous import SurvivalBoost
 from models_sota._deephit import DeepHitEstimator
 from models_sota._aalen_johansen import AalenJohansenEstimator
 from models_sota._finegray import FineGrayEstimator
@@ -124,7 +124,6 @@ for seed in range(5):
         X, y = load_metabric(return_X_y=True)
         X = FeatureEncoder().fit_transform(X)
         n_events = y["event"].max()
-        print(n_events)
     X_train_, X_test, y_train_, y_test = train_test_split(
         X, y, random_state=seed, test_size=0.3
     )
@@ -161,7 +160,10 @@ for seed in range(5):
         path_dir.mkdir(parents=True, exist_ok=True)
 
         pd.DataFrame(times).to_parquet(path_dir / "times.parquet")
-
+        pd.DataFrame(
+            [y_train.index, y_conf.index, y_test.index],
+            index=["y_train", "y_conf", "y_test"],
+        ).to_parquet(path_dir / "index.parquet")
         for pred in predictions_model:
             path_dir_pred = path_dir / f"{pred}"
             path_dir_pred.mkdir(parents=True, exist_ok=True)

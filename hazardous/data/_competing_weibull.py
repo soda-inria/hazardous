@@ -158,3 +158,35 @@ def make_synthetic_competing_weibull(
 
     frame = pd.concat([X, y], axis=1)
     return Bunch(data=frame[X.columns], target=frame[y.columns], frame=frame)
+
+
+def load_synthetic(
+    input_path=None,
+    return_X_y=False,
+):
+    """ """
+    if input_path is None:
+        X, y = make_synthetic_competing_weibull(
+            n_samples=10_000,
+            return_X_y=True,
+            n_events=3,
+            censoring_relative_scale=1.5,
+            random_state=0,
+        )
+        return X, y
+    # Extract the target events and remove the corresponding columns from the
+    # data.
+    data = pd.read_csv(
+        input_path,
+    )
+
+    X = data.drop(columns=["event", "duration"])
+    y = data[["event", "duration"]]
+    y["event"] = y["event"].astype(int)
+    if return_X_y:
+        return X, y
+
+    return Bunch(
+        X=X,
+        y=y,
+    )
