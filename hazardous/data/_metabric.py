@@ -50,6 +50,7 @@ def load_metabric(
     )
     kept_columns = vect_df.columns.difference(target_columns)
     X = vect_df[kept_columns]
+    X = X.fillna(X.mean())
 
     y_ = vect_df[target_columns]
     y_["event"] = (y_["LR"] + y_["DR"]) > 0
