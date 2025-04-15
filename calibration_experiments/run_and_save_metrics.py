@@ -28,7 +28,7 @@ from models_sota._rsf import RSFEstimator
 from models_sota.survtrace._model import SurvTRACE
 
 PATH_PREDICTIONS = Path("preds/")
-DATASET_NAME = "metabric"
+DATASET_NAME = "seer10k"
 
 if DATASET_NAME == "competing_weibull":
     n_samples = None
@@ -122,6 +122,7 @@ def load_dataset(dataset_name, n_samples=None, seed=None):
         X, y = load_seer(
             input_path="../hazardous/data/seer_cancer_cardio_raw_data.txt",
             return_X_y=True,
+            survtrace_preprocessing=True,
         )
         X = FeatureEncoder().fit_transform(X)
 
@@ -147,14 +148,11 @@ if __name__ == "__main__":
             DATASET_NAME, n_samples=n_samples, seed=seed
         )
         n_events = y_train_["event"].max()
+        X_train, X_conf, y_train, y_conf = train_test_split(
+            X_train_, y_train_, random_state=seed, test_size=0.5
+        )
+        times = np.quantile(y_train_["duration"], np.linspace(0, 1, 100))
         for recalibration in [False, True]:
-            if recalibration:
-                X_train, X_conf, y_train, y_conf = train_test_split(
-                    X_train_, y_train_, random_state=seed, test_size=0.5
-                )
-            else:
-                X_train, y_train = X_train_.copy(), y_train_.copy()
-            times = np.quantile(y_train_["duration"], np.linspace(0, 1, 100))
             for model_name in list(models):
                 metrics_model = {}
 
@@ -256,3 +254,5 @@ if __name__ == "__main__":
                 json.dump(metrics_model, open(path_file_agg, "w"))
 
     print(f"Wrote {path_dir}")
+
+# %%
