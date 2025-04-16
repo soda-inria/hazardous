@@ -4,7 +4,7 @@ from scipy.interpolate import interp1d
 from hazardous._km_sampler import _KaplanMeierSampler
 
 
-def km_cal(y_conf, times, surv_prob_at_conf, return_diff_at_t=False):
+def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False):
     """
     Args:
         y (n_samples, 2): samples to fit the KM estimator
@@ -73,7 +73,7 @@ def recalibrate_survival_function(
         surv_probs_conf = estimator.predict_survival_function(X_conf, times)
 
     # Calculate the calibration
-    diff_at_t = km_cal(y_conf, times, surv_probs_conf, return_diff_at_t=True)[1]
+    diff_at_t = km_calibration(y_conf, times, surv_probs_conf, return_diff_at_t=True)[1]
     surv_probs_calibrated = surv_probs - diff_at_t
 
     if return_function:
@@ -107,7 +107,7 @@ def recalibrate_survival_function_predictions(
     """
 
     # Calculate the calibration
-    diff_at_t = km_cal(y_conf, times, surv_probs_conf, return_diff_at_t=True)[1]
+    diff_at_t = km_calibration(y_conf, times, surv_probs_conf, return_diff_at_t=True)[1]
     surv_probs_calibrated = surv_probs - diff_at_t
 
     if return_function:

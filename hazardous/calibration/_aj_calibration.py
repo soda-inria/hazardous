@@ -2,7 +2,7 @@ import numpy as np
 
 from hazardous._km_sampler import _AalenJohansenSampler
 from hazardous.calibration._km_calibration import (
-    km_cal,
+    km_calibration,
     recalibrate_survival_function,
     recalibrate_survival_function_predictions,
 )
@@ -28,17 +28,17 @@ def aj_calibration(y, times, inc_prob_at_conf, return_diff_at_t=False):
     aalen_sampler.fit(y)
     t_max = max(times)
 
-    AJ_calibrations = {}
+    aj_calibrations = {}
     differences_at_t = {}
 
-    KM_cal, diff_at_t = km_cal(
+    km_cal, diff_at_t = km_calibration(
         y,
         times,
         surv_prob_at_conf=inc_prob_at_conf[:, 0, :],
         return_diff_at_t=True,
     )
 
-    AJ_calibrations[0] = KM_cal
+    aj_calibrations[0] = km_cal
     differences_at_t[0] = diff_at_t
 
     for event_id in event_ids_[1:]:
@@ -55,11 +55,11 @@ def aj_calibration(y, times, inc_prob_at_conf, return_diff_at_t=False):
         # taking the difference between the survival probabilities
         # at time t and the survival probabilities at time t from KM
         diff_at_t = inc_probs - inc_probs_AJ
-        AJ_calibrations[event_id] = np.trapz(diff_at_t**2, times) / t_max
+        aj_calibrations[event_id] = np.trapz(diff_at_t**2, times) / t_max
         differences_at_t[event_id] = diff_at_t
     if return_diff_at_t:
-        return AJ_calibrations, differences_at_t
-    return AJ_calibrations
+        return aj_calibrations, differences_at_t
+    return aj_calibrations
 
 
 def recalibrate_incidence_functions(

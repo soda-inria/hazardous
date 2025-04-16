@@ -23,6 +23,7 @@ from hazardous.metrics import (
 from hazardous import SurvivalBoost
 from models_sota._deephit import DeepHitEstimator
 from models_sota._aalen_johansen import AalenJohansenEstimator
+
 from models_sota._finegray import FineGrayEstimator
 from models_sota._rsf import RSFEstimator
 from models_sota.survtrace._model import SurvTRACE
@@ -152,7 +153,7 @@ if __name__ == "__main__":
             X_train_, y_train_, random_state=seed, test_size=0.5
         )
         times = np.quantile(y_train_["duration"], np.linspace(0, 1, 100))
-        for recalibration in [False, True]:
+        for recalibration in [True]:
             for model_name in list(models):
                 metrics_model = {}
 
@@ -183,7 +184,7 @@ if __name__ == "__main__":
                         prediction_test,
                         prediction_conf,
                         times,
-                        y_conf,
+                        pd.concat([y_conf, y_train], axis=0),
                     )
 
                     prediction_infty_conf = model.predict_cumulative_incidence(
@@ -193,7 +194,7 @@ if __name__ == "__main__":
                         prediction_infty_test,
                         prediction_infty_conf,
                         np.array([y_train["duration"].max()]),
-                        y_conf,
+                        pd.concat([y_conf, y_train], axis=0),
                     )
                     prediction_duration_test = model.predict_cumulative_incidence(
                         X_test, times=y_test.duration.values
@@ -206,7 +207,7 @@ if __name__ == "__main__":
                             prediction_duration_test,
                             prediction_duration_conf,
                             y_test.duration.values,
-                            y_conf,
+                            pd.concat([y_conf, y_train], axis=0),
                         )
                     )
                     prediction_duration_test = np.array(
