@@ -29,7 +29,7 @@ from models_sota._rsf import RSFEstimator
 from models_sota.survtrace._model import SurvTRACE
 
 PATH_PREDICTIONS = Path("preds/")
-DATASET_NAME = "metabric"
+DATASET_NAME = "seer10k"
 
 if DATASET_NAME == "competing_weibull":
     n_samples = None
@@ -115,11 +115,11 @@ def compute_ft(model, X, y):
 
 
 def load_dataset(dataset_name, n_samples=None, seed=None):
-    if DATASET_NAME == "competing_weibull":
+    if dataset_name == "competing_weibull":
         X, y = load_synthetic(
             input_path="../hazardous/data/competing_synthetic.csv", return_X_y=True
         )
-    if DATASET_NAME.find("seer") != -1:
+    if dataset_name.find("seer") != -1:
         X, y = load_seer(
             input_path="../hazardous/data/seer_cancer_cardio_raw_data.txt",
             return_X_y=True,
@@ -127,7 +127,7 @@ def load_dataset(dataset_name, n_samples=None, seed=None):
         )
         X = FeatureEncoder().fit_transform(X)
 
-    if DATASET_NAME.find("metabric") != -1:
+    if dataset_name.find("metabric") != -1:
         X, y = load_metabric(return_X_y=True)
         X = FeatureEncoder().fit_transform(X)
 
@@ -138,6 +138,10 @@ def load_dataset(dataset_name, n_samples=None, seed=None):
     if n_samples is not None and n_samples < len(X_train_):
         X_train_, _, y_train_, _ = train_test_split(
             X_train_, y_train_, random_state=seed, train_size=n_samples
+        )
+    if len(X_test) > 10000:
+        X_test, _, y_test, _ = train_test_split(
+            X_test, y_test, random_state=seed, train_size=5000
         )
 
     return X_train_, X_test, y_train_, y_test
@@ -159,11 +163,6 @@ if __name__ == "__main__":
 
                 model = INIT_MODEL_FUNCS[model_name](random_state=seed)
                 model.fit(X_train.astype("float64"), y_train)
-
-                # Need to save this for visualization
-                prediction_whole_train = model.predict_cumulative_incidence(
-                    X_train, times=times
-                ).mean(axis=0)
 
                 prediction_test = model.predict_cumulative_incidence(
                     X_test, times=times
@@ -284,8 +283,8 @@ if __name__ == "__main__":
                 path_dir.mkdir(parents=True, exist_ok=True)
 
                 path_dir_pred = path_dir / "vizualization_mean_predictions.csv"
-                prediction_whole_train = pd.DataFrame(prediction_whole_train)
-                prediction_whole_train.to_parquet(path_dir_pred)
+                prediction_visu = pd.DataFrame(final_prediction).mean(axis=0)
+                prediction_visu.to_parquet(path_dir_pred)
                 # save metrics in a json
                 path_file_agg = path_dir / "metrics.json"
                 json.dump(metrics_model, open(path_file_agg, "w"))
