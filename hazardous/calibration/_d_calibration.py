@@ -18,11 +18,11 @@ def d_calibration(
     ----------
     fk : array-like, shape = (n_conf,)
         Incidence function for event k, each pb is computed such as
-        F_k(y_i["duration]| x_i).
+        F_k(y_i["duration"]| x_i).
     fk_infty : array-like, shape = (n_conf,)
         Incidence function for event k at time infty.
     s_t : array-like, shape = (n_conf,)
-        Survival function, each pb is computed such as S(y_i["duration]| x_i).
+        Survival function, each pb is computed such as S(y_i["duration"]| x_i).
     y_conf : array-like, shape = (n_conf, 2)
         Conformal samples.
     n_buckets : int

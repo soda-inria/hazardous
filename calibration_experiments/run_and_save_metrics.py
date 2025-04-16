@@ -28,7 +28,7 @@ from models_sota._rsf import RSFEstimator
 from models_sota.survtrace._model import SurvTRACE
 
 PATH_PREDICTIONS = Path("preds/")
-DATASET_NAME = "seer10k"
+DATASET_NAME = "metabric"
 
 if DATASET_NAME == "competing_weibull":
     n_samples = None
@@ -102,14 +102,14 @@ INIT_MODEL_FUNCS = {
 models = INIT_MODEL_FUNCS.keys()
 
 
-def compute_ft(model, X_conf, y_conf):
+def compute_ft(model, X, y):
     f_t = [
         model.predict_cumulative_incidence(
-            X_conf.iloc[i : i + 1], times=np.array([y_conf["duration"].iloc[i]])
+            X.iloc[i : i + 1], times=np.array([y["duration"].iloc[i]])
         )
-        for i in range(len(X_conf))
+        for i in range(len(X))
     ]
-    f_t = np.asarray(f_t).reshape(len(X_conf), n_events + 1, 1)
+    f_t = np.asarray(f_t).reshape(len(X), n_events + 1, 1)
     return f_t
 
 
@@ -168,6 +168,13 @@ if __name__ == "__main__":
                     X_test, times=times
                 )
 
+                prediction_infty_test = model.predict_cumulative_incidence(
+                    X_test, times=np.array([y_train["duration"].max()])
+                )
+                if recalibration is False:
+                    prediction_duration_test = compute_ft(model, X_test, y_test)
+                    s_t = prediction_duration_test[:, 0, :]
+
                 if recalibration:
                     prediction_conf = model.predict_cumulative_incidence(
                         X_conf, times=times
@@ -178,6 +185,41 @@ if __name__ == "__main__":
                         times,
                         y_conf,
                     )
+
+                    prediction_infty_conf = model.predict_cumulative_incidence(
+                        X_conf, times=np.array([y_train["duration"].max()])
+                    )
+                    prediction_infty_test = recalibrate_incidence_functions_predictions(
+                        prediction_infty_test,
+                        prediction_infty_conf,
+                        np.array([y_train["duration"].max()]),
+                        y_conf,
+                    )
+                    prediction_duration_test = model.predict_cumulative_incidence(
+                        X_test, times=y_test.duration.values
+                    )
+                    prediction_duration_conf = model.predict_cumulative_incidence(
+                        X_conf, times=y_test.duration.values
+                    )
+                    prediction_duration_test = (
+                        recalibrate_incidence_functions_predictions(
+                            prediction_duration_test,
+                            prediction_duration_conf,
+                            y_test.duration.values,
+                            y_conf,
+                        )
+                    )
+                    prediction_duration_test = np.array(
+                        [
+                            prediction_duration_test[i, :, i]
+                            for i in range(len(prediction_duration_test))
+                        ]
+                    )
+                    prediction_duration_test = prediction_duration_test.reshape(
+                        len(X_test), n_events + 1, 1
+                    )
+                    s_t = prediction_duration_test[:, 0, :]
+
                 else:
                     final_prediction = prediction_test
 
@@ -185,12 +227,6 @@ if __name__ == "__main__":
                     y_test, times, final_prediction, return_diff_at_t=True
                 )
                 metrics_model["ajk_cal"] = [*ajk_cal.values()]
-
-                prediction_infty_test = model.predict_cumulative_incidence(
-                    X_test, times=np.array([y_train["duration"].max()])
-                )
-                prediction_duration_test = compute_ft(model, X_test, y_test)
-                s_t = prediction_duration_test[:, 0, :]
 
                 metrics_model["d_cal"] = {}
                 metrics_model["ibs"] = {}
