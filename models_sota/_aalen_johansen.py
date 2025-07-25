@@ -46,7 +46,7 @@ class AalenJohansenEstimator(BaseEstimator):
         self._check_input(y)
         event, duration = check_y_survival(y)
 
-        self.times_ = np.unique(duration[event > 0])
+        self.time_grid_ = np.unique(duration[event > 0])
         self.event_ids_ = np.array(sorted(list(set([0]) | set(event))))
 
         self.aj_fitter_events_ = []
@@ -83,7 +83,7 @@ class AalenJohansenEstimator(BaseEstimator):
         check_is_fitted(self, "aj_fitter_events_")
 
         if times is None:
-            times = self.times_
+            times = self.time_grid_
 
         all_y_pred = []
         for aj in self.aj_fitter_events_:
@@ -127,7 +127,7 @@ class AalenJohansenEstimator(BaseEstimator):
                 y_train=self.y_train,
                 y_test=y,
                 y_pred=predicted_curves_for_event,
-                times=self.times_,
+                times=self.time_grid_,
                 event_of_interest=event_id,
             )
 

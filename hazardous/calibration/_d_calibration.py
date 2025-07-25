@@ -4,13 +4,7 @@ import pandas as pd
 from hazardous.utils import check_y_survival
 
 
-def d_calibration(
-    fk,
-    fk_infty,
-    s_t,
-    y_conf,
-    event_of_interest="any",
-):
+def d_calibration(fk, fk_infty, s_t, y_conf, event_of_interest="any", epsilon=1e-3):
     """
     Compute D-calibration for survival function.
 
@@ -60,10 +54,10 @@ def d_calibration(
     fk_infty_c = fk_infty[events == 0]
     s_c = s_t[events == 0]
 
-    df = pd.DataFrame(fk_c / fk_infty_c, columns=["c"])
+    df = pd.DataFrame(fk_c / (fk_infty_c + epsilon), columns=["c"])
     df["fk_infty_c"] = fk_infty_c
     df["fk_c"] = fk_c
-    df["s_c"] = s_c
+    df["s_c"] = s_c + epsilon
 
     for buck in range(1, 100 + 1):
         li = buckets[buck - 1]

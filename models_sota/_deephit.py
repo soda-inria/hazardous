@@ -117,7 +117,7 @@ class DeepHitEstimator(tt.Model):
         self.y_train = y_train
         self.in_features = X_train.shape[1]
         self.num_risks = y_train[1].max()
-        self.times_ = self.labtrans.cuts
+        self.time_grid_ = self.labtrans.cuts
 
         self.net = CauseSpecificNet(
             in_features=self.in_features,
@@ -186,9 +186,9 @@ class DeepHitEstimator(tt.Model):
             event_pred = np.hstack([y_pred_at_0, event_pred, y_pred_t_max])
 
             if times is None:
-                times = self.times_
+                times = self.time_grid_
 
-            times_event = np.hstack([[0], self.times_, [np.inf]])
+            times_event = np.hstack([[0], self.time_grid_, [np.inf]])
 
             all_y_pred = []
             for idx in range(event_pred.shape[0]):

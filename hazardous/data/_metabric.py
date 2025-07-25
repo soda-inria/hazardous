@@ -41,6 +41,7 @@ def load_metabric(
         df["year_diag"] = df["Date.Of.Diagnosis"].str[:4].astype(int)
         df.columns = df.columns.str.replace(".", "_")
         df.columns = df.columns.str.replace(" ", "_")
+        df = df[kept_columns + target_columns]
     # Extract the target events and remove the corresponding columns from the
     # data.
 
@@ -48,6 +49,7 @@ def load_metabric(
     vect_df = vectorizer.fit_transform(
         df.dropna(subset=target_columns, how="any")[kept_columns + target_columns]
     )
+    # import ipdb; ipdb.set_trace()
     kept_columns = vect_df.columns.difference(target_columns)
     X = vect_df[kept_columns]
     X = X.fillna(X.mean())

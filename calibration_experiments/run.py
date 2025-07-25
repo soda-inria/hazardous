@@ -11,7 +11,6 @@ from hazardous.data._metabric import load_metabric
 
 from hazardous.calibration._aj_calibration import (
     aj_calibration,
-    recalibrate_incidence_functions_predictions,
 )
 from hazardous.calibration._d_calibration import d_calibration
 from hazardous.metrics import (
@@ -19,15 +18,22 @@ from hazardous.metrics import (
     concordance_index_incidence,
     accuracy_in_time,
 )
+from hazardous.recalibration_posthoc.ts_recalibration import (
+    RecalibrationTS,
+)
+from hazardous.recalibration_posthoc.aj_recalibration import (
+    RecalibrationAJ,
+)
 
 from models_sota._deephit import DeepHitEstimator
 from models_sota._aalen_johansen import AalenJohansenEstimator
 from models_sota._finegray import FineGrayEstimator
 from models_sota._rsf import RSFEstimator
 from models_sota.survtrace._model import SurvTRACE
+from hazardous import SurvivalBoost
 
 PATH_PREDICTIONS = Path("preds/")
-DATASET_NAME = "seer10k"
+DATASET_NAME = "metabric"
 
 if DATASET_NAME == "competing_weibull":
     n_samples = None
@@ -82,24 +88,39 @@ def init_survtrace(random_state=None, **model_params):
     return SurvTRACE(random_state=random_state, max_epochs=100)
 
 
+def init_survivalboost(random_state=None, **model_params):
+    return SurvivalBoost(random_state=random_state, n_iter=50, show_progressbar=False)
+
+
 INIT_MODEL_FUNCS = {
     "DeepHit": init_deephit,
     "FineGray": init_fine_and_gray,
     "AalenJohansen": init_aalen_johansen,
     "RSF": init_random_survival_forest,
     "SurvTRACE": init_survtrace,
+    #    "SurvivalBoost": init_survivalboost,
 }
 
 models = INIT_MODEL_FUNCS.keys()
 
 
-def compute_ft(model, X, y):
-    f_t = [
-        model.predict_cumulative_incidence(
-            X.iloc[i : i + 1], times=np.array([y["duration"].iloc[i]])
-        )
-        for i in range(len(X))
-    ]
+def compute_ft(model, X, y, model_name):
+    # import ipdb; ipdb.set_trace()
+    if model_name == "AalenJohansen":
+        X_array = X.values if isinstance(X, pd.DataFrame) else X
+        f_t = [
+            model.predict_cumulative_incidence(
+                X_array[i : i + 1], times=np.array([y["duration"].iloc[i]])
+            )
+            for i in range(X.shape[0])
+        ]
+    else:
+        f_t = [
+            model.predict_cumulative_incidence(
+                X.iloc[i : i + 1], times=np.array([y["duration"].iloc[i]])
+            )
+            for i in range(X.shape[0])
+        ]
     f_t = np.asarray(f_t).reshape(len(X), n_events + 1, 1)
     return f_t
 
@@ -147,74 +168,45 @@ if __name__ == "__main__":
             X_train_, y_train_, random_state=seed, test_size=0.5
         )
         times = np.quantile(y_train_["duration"], np.linspace(0, 1, 100))
-        for recalibration in [True, False]:
-            for model_name in list(models):
-                metrics_model = {}
-
-                model = INIT_MODEL_FUNCS[model_name](random_state=seed)
-                model.fit(X_train.astype("float64"), y_train)
-
-                prediction_test = model.predict_cumulative_incidence(
-                    X_test, times=times
+        for model_name in list(models):
+            model = INIT_MODEL_FUNCS[model_name](random_state=seed)
+            model.fit(X_train.astype("float64"), y_train)
+            for recalibration in ["False", "aj_recalibration", "ts_recalibration"]:  #
+                if recalibration == "False":
+                    model_recal = model
+                    prediction_test = model.predict_cumulative_incidence(
+                        X_test, times=times
+                    )
+                    prediction_duration_test = compute_ft(
+                        model, X_test, y_test, model_name
+                    )
+                elif recalibration == "aj_recalibration":
+                    model_recal = RecalibrationAJ(model, seed=seed)
+                    model_recal = model_recal.fit(X_conf, y_conf, times=times)
+                    prediction_test = model_recal.predict_cumulative_incidence(X_test)
+                    prediction_duration_test = model_recal.compute_ft(X_test, y_test)
+                elif recalibration == "ts_recalibration":
+                    model_recal = RecalibrationTS(model, seed=seed)
+                    model_recal = model_recal.fit(X_conf, y_conf, times=times)
+                    prediction_test = model_recal.predict_cumulative_incidence(X_test)
+                    prediction_duration_test = model_recal.compute_ft(X_test, y_test)
+                    # import ipdb; ipdb.set_trace()
+                print(
+                    f"Running model {model_name} with seed {seed}, recalibration"
+                    f" {recalibration}"
                 )
+                metrics_model = {}
+                metrics_model["model_name"] = model_name
+                metrics_model["recalibration"] = recalibration
+                metrics_model["seed"] = seed
 
-                prediction_infty_test = model.predict_cumulative_incidence(
+                prediction_infty_test = model_recal.predict_cumulative_incidence(
                     X_test, times=np.array([y_train["duration"].max()])
                 )
-                if recalibration is False:
-                    prediction_duration_test = compute_ft(model, X_test, y_test)
-                    s_t = prediction_duration_test[:, 0, :]
 
-                if recalibration:
-                    prediction_conf = model.predict_cumulative_incidence(
-                        X_conf, times=times
-                    )
-                    final_prediction = recalibrate_incidence_functions_predictions(
-                        prediction_test,
-                        prediction_conf,
-                        times,
-                        pd.concat([y_conf, y_train], axis=0),
-                    )
-
-                    prediction_infty_conf = model.predict_cumulative_incidence(
-                        X_conf, times=np.array([y_train["duration"].max()])
-                    )
-                    prediction_infty_test = recalibrate_incidence_functions_predictions(
-                        prediction_infty_test,
-                        prediction_infty_conf,
-                        np.array([y_train["duration"].max()]),
-                        pd.concat([y_conf, y_train], axis=0),
-                    )
-                    prediction_duration_test = model.predict_cumulative_incidence(
-                        X_test, times=y_test.duration.values
-                    )
-                    prediction_duration_conf = model.predict_cumulative_incidence(
-                        X_conf, times=y_test.duration.values
-                    )
-                    prediction_duration_test = (
-                        recalibrate_incidence_functions_predictions(
-                            prediction_duration_test,
-                            prediction_duration_conf,
-                            y_test.duration.values,
-                            pd.concat([y_conf, y_train], axis=0),
-                        )
-                    )
-                    prediction_duration_test = np.array(
-                        [
-                            prediction_duration_test[i, :, i]
-                            for i in range(len(prediction_duration_test))
-                        ]
-                    )
-                    prediction_duration_test = prediction_duration_test.reshape(
-                        len(X_test), n_events + 1, 1
-                    )
-                    s_t = prediction_duration_test[:, 0, :]
-
-                else:
-                    final_prediction = prediction_test
-
-                ajk_cal, _ = aj_calibration(
-                    y_test, times, final_prediction, return_diff_at_t=True
+                s_t = prediction_duration_test[:, 0, :]
+                ajk_cal = aj_calibration(
+                    y_test, times, prediction_test, return_diff_at_t=False
                 )
                 metrics_model["ajk_cal"] = [*ajk_cal.values()]
 
@@ -222,7 +214,7 @@ if __name__ == "__main__":
                 metrics_model["ibs"] = {}
                 metrics_model["c_index"] = {}
                 for event_id in range(1, n_events + 1):
-                    predictions_event = final_prediction[:, event_id, :]
+                    predictions_event = prediction_test[:, event_id, :]
                     c_index = concordance_index_incidence(
                         y_test=y_test,
                         y_pred=predictions_event,
@@ -239,7 +231,6 @@ if __name__ == "__main__":
                         times=times,
                         event_of_interest=event_id,
                     )
-
                     fk_infty = prediction_infty_test[:, event_id, :]
                     dk_cal = d_calibration(
                         fk=prediction_duration_test[:, event_id, :],
@@ -267,13 +258,13 @@ if __name__ == "__main__":
                     PATH_PREDICTIONS
                     / DATASET_NAME
                     / model_name
-                    / f"recalibration_{recalibration}"
+                    / recalibration
                     / f"seed_{seed}"
                 )
                 path_dir.mkdir(parents=True, exist_ok=True)
 
                 path_dir_pred = path_dir / "vizualization_mean_predictions.csv"
-                prediction_visu = pd.DataFrame(final_prediction).mean(axis=0)
+                prediction_visu = pd.DataFrame(prediction_test.mean(axis=0))
                 prediction_visu.to_parquet(path_dir_pred)
                 # save metrics in a json
                 path_file_agg = path_dir / "metrics.json"

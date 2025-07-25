@@ -355,7 +355,7 @@ class SurvTRACE(NeuralNet):
         del risks, surv
 
         if times is not None:
-            time_grid = self.times_
+            time_grid = self.time_grid_
             all_event_y_pred = []
             for event_id in self.event_ids_:
                 # Interpolate each sample
@@ -399,7 +399,7 @@ class SurvTRACE(NeuralNet):
             return -loss
 
     @property
-    def times_(self):
+    def time_grid_(self):
         check_is_fitted(self, "target_encoder_")
         return self.target_encoder_.time_grid_
 
