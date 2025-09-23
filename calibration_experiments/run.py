@@ -93,10 +93,10 @@ def init_survivalboost(random_state=None, **model_params):
 
 
 INIT_MODEL_FUNCS = {
-    "DeepHit": init_deephit,
-    "FineGray": init_fine_and_gray,
-    "AalenJohansen": init_aalen_johansen,
-    "RSF": init_random_survival_forest,
+    # "DeepHit": init_deephit,
+    # "FineGray": init_fine_and_gray,
+    # "AalenJohansen": init_aalen_johansen,
+    # "RSF": init_random_survival_forest,
     "SurvTRACE": init_survtrace,
     #    "SurvivalBoost": init_survivalboost,
 }
@@ -159,6 +159,8 @@ def load_dataset(dataset_name, n_samples=None, seed=None):
 
 
 if __name__ == "__main__":
+    print(f"Running experiments on dataset {DATASET_NAME}")
+    print(models)
     for seed in range(5):
         X_train_, X_test, y_train_, y_test = load_dataset(
             DATASET_NAME, n_samples=n_samples, seed=seed
@@ -188,9 +190,9 @@ if __name__ == "__main__":
                 elif recalibration == "ts_recalibration":
                     model_recal = RecalibrationTS(model, seed=seed)
                     model_recal = model_recal.fit(X_conf, y_conf, times=times)
+                    # import ipdb; ipdb.set_trace()
                     prediction_test = model_recal.predict_cumulative_incidence(X_test)
                     prediction_duration_test = model_recal.compute_ft(X_test, y_test)
-                    # import ipdb; ipdb.set_trace()
                 print(
                     f"Running model {model_name} with seed {seed}, recalibration"
                     f" {recalibration}"

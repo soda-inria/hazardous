@@ -1,9 +1,10 @@
 # %%
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, TensorDataset
 
-from hazardous.recalibration_posthoc.temperature_scaling import ModelWithTemperature
+from hazardous.recalibration_posthoc.temperature_scaling import (
+    InverseTemperatureScalingCalibrator,
+)
 from hazardous.utils import check_y_survival
 from models_sota._aalen_johansen import AalenJohansenEstimator
 
@@ -31,32 +32,28 @@ class RecalibrationTS:
         prediction_conf = self.model.predict_cumulative_incidence(
             X_conf, times=self.times
         )
-        prediction_conf_logits = np.log(
-            (prediction_conf + epsilon)
-        )  #  / (prediction_conf[:, 0, :][:, None, :]+ epsilon)
-        # prediction_conf_logits = np.swapaxes(
-        # np.swapaxes(prediction_conf_logits, 0, 1), 1, 2)
 
         aj = AalenJohansenEstimator().fit(X_conf, y_conf)
         aj_preds_times = aj.predict_cumulative_incidence(X_conf, self.times)
         self.temperature = []
         for idx, tau in enumerate(self.times):
-            logits_tau = prediction_conf_logits[:, :, idx]
+            predictions_tau = prediction_conf[:, :, idx]
             # compute the targets at time tau
             targets_tau = aj_preds_times[:, :, idx]
 
-            # Create a DataLoader for the validation set
-            valid_dataset = TensorDataset(
-                torch.tensor(X_conf.values, dtype=torch.float32),
-                torch.tensor(targets_tau, dtype=torch.float32),
-            )
-            valid_loader = DataLoader(valid_dataset, batch_size=64, shuffle=False)
-            model_with_temperature = ModelWithTemperature()
-            model_with_temperature.set_temperature(valid_loader, logits_tau)
+            model_with_temperature = InverseTemperatureScalingCalibrator()
+            model_with_temperature.fit(predictions_tau, targets_tau)
             # import ipdb; ipdb.set_trace()
-            self.temperature.append(model_with_temperature.temperature.item())
+            self.temperature.append(
+                (1.0 / model_with_temperature.inv_temperature_).item()
+            )
         self.temperature = np.asarray(self.temperature)
         return self
+
+    def _get_logits(self, X):
+        X = X + 1e-10
+        X /= np.sum(X, axis=-1, keepdims=True)
+        return torch.as_tensor(np.log(X), dtype=torch.float32)
 
     def predict_cumulative_incidence(self, X, times=None, epsilon=1e-5):
         """
@@ -64,13 +61,11 @@ class RecalibrationTS:
         temperature scaling model.
         """
         prediction = self.model.predict_cumulative_incidence(X, times=self.times)
-        prediction_logits = np.log(
-            (prediction + epsilon)
-        )  # / (prediction[:, 0, :][:, None, :] + epsilon)
+        prediction_logits = self._get_logits(prediction)
         prediction_logits_temps = prediction_logits / self.temperature[None, None, :]
         # apply softmax on the logits
-        prediction_after_temp = np.exp(prediction_logits_temps) / np.sum(
-            np.exp(prediction_logits_temps), axis=1, keepdims=True
+        prediction_after_temp = (
+            torch.softmax(prediction_logits_temps, dim=1).detach().numpy()
         )
         if times is None:
             return prediction_after_temp
