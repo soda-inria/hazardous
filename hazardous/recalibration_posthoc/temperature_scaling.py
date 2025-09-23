@@ -21,7 +21,7 @@ class InverseTemperatureScalingCalibrator(BaseEstimator):
         X = np.clip(X, 1e-10, 1 - 1e-10)
         logits = self._get_logits(X)
         labels = torch.as_tensor(y, dtype=torch.float32)
-        self.inv_temperature_ = nn.Parameter(torch.ones(1) / 1.5)
+        self.inv_temperature_ = nn.Parameter(torch.ones(1))
         criterion = nn.CrossEntropyLoss()
 
         optimizer = torch.optim.Adam([self.inv_temperature_], lr=0.01)

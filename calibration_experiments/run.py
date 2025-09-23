@@ -189,7 +189,9 @@ if __name__ == "__main__":
                     prediction_duration_test = model_recal.compute_ft(X_test, y_test)
                 elif recalibration == "ts_recalibration":
                     model_recal = RecalibrationTS(model, seed=seed)
-                    model_recal = model_recal.fit(X_conf, y_conf, times=times)
+                    model_recal = model_recal.fit(
+                        X_conf, y_conf, times=times, X_aj=X_train_, y_aj=y_train_
+                    )
                     # import ipdb; ipdb.set_trace()
                     prediction_test = model_recal.predict_cumulative_incidence(X_test)
                     prediction_duration_test = model_recal.compute_ft(X_test, y_test)

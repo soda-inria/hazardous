@@ -16,9 +16,11 @@ class RecalibrationTS:
     of a model's predictions.
     """
 
-    def __init__(self, model, seed=0):
+    def __init__(self, model, seed=0, X_aj=None, y_aj=None):
         self.model = model
         torch.manual_seed(seed)
+        self.X_aj = X_aj
+        self.y_aj = y_aj
 
     def fit(self, X_conf, y_conf, times=None, epsilon=1e-5):
         """
@@ -33,8 +35,11 @@ class RecalibrationTS:
         prediction_conf = self.model.predict_cumulative_incidence(
             X_conf, times=self.times
         )
-
-        aj = AalenJohansenEstimator().fit(X_conf, y_conf)
+        # Fit an Aalen-Johansen estimator on the validation set to get the targets
+        if self.X_aj is not None:
+            aj = AalenJohansenEstimator().fit(self.X_aj, self.y_aj)
+        else:
+            aj = AalenJohansenEstimator().fit(X_conf, y_conf)
         aj_preds_times = aj.predict_cumulative_incidence(X_conf, self.times)
         self.temperature = []
         for idx, tau in enumerate(self.times):
