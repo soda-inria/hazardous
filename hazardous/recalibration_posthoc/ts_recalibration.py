@@ -24,6 +24,7 @@ class RecalibrationTS:
         """
         Fit the temperature scaling model using the validation set.
         """
+        X_conf = np.clip(X_conf, 1e-10, 1 - 1e-10)
         if times is None:
             times = self.model.time_grid_
         self.times = times
@@ -61,6 +62,7 @@ class RecalibrationTS:
         temperature scaling model.
         """
         prediction = self.model.predict_cumulative_incidence(X, times=self.times)
+        prediction = np.clip(prediction, 1e-10, 1 - 1e-10)
         prediction_logits = self._get_logits(prediction)
         prediction_logits_temps = prediction_logits / self.temperature[None, None, :]
         # apply softmax on the logits
@@ -88,13 +90,13 @@ class RecalibrationTS:
 
     def compute_ft(self, X, y, epsilon=1e-5):
         prediction = self.model.predict_cumulative_incidence(X, times=self.times)
-        prediction_logits = np.log(
-            (prediction + epsilon)
-        )  # / (prediction[:, 0, :][:, None, :] + epsilon)
+        prediction = np.clip(prediction, 1e-10, 1 - 1e-10)
+        prediction_logits = self._get_logits(prediction)
+        # / (prediction[:, 0, :][:, None, :] + epsilon)
         prediction_logits_temps = prediction_logits / self.temperature[None, None, :]
         # apply softmax on the logits
-        prediction_after_temp = np.exp(prediction_logits_temps) / np.sum(
-            np.exp(prediction_logits_temps), axis=1, keepdims=True
+        prediction_after_temp = (
+            torch.softmax(prediction_logits_temps, dim=1).detach().numpy()
         )
 
         recalibrated_probabities = np.zeros((X.shape[0], self.event_ids_.shape[0], 1))
