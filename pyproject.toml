@@ -3,7 +3,10 @@ name = "hazardous"
 description = "Predictive Competing Risks and Survival Analysis."
 authors = [
     { name = "Olivier Grisel", email = "olivier.grisel@ensta.org" },
-    { name = "Vincent Maladière", email = "vincent.maladiere@inria.fr" }
+    { name = "Vincent Maladière", email = "vincent.maladiere@inria.fr" },
+    { name = "Julie Alberge", email = "julie.alberge@inria.fr" },
+    { name = "Judith Abecassis", email = "judith.abecassis@inria.fr" },
+    { name = "Gael Varoquaux", email = "gael.varoquaux@inria.fr" },
 ]
 readme = "README.md"
 requires-python = ">=3.9"
@@ -36,7 +39,7 @@ test = [
     "pandas",
 ]
 oldest_deps = [
-    "numpy==1.22",
+    "numpy==2.0",
     "scikit-learn==1.1.3",
     "pandas==1.5.1",
 ]

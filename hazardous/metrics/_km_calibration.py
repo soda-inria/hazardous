@@ -153,7 +153,7 @@ class KMCalibration:
         surv_probs_mean = surv_prob_at_conf.mean(axis=0)
 
         diff_at_t = surv_probs_mean - surv_probs_km
-        return np.trapz(diff_at_t**self.alpha, times) / t_max
+        return np.trapezoid(diff_at_t**self.alpha, times) / t_max
 
     def difference_at_t(self, times, surv_prob_at_conf):
         """Compute the pointwise difference between mean predictions and KM.

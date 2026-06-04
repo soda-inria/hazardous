@@ -182,7 +182,7 @@ class AJCalibration:
             inc_probs_aj = inc_func_aj(times)
             inc_probs_mean = inc_prob_at_conf[:, event_id, :].mean(axis=0)
             diff_at_t = inc_probs_mean - inc_probs_aj
-            scores[event_id] = np.trapz(diff_at_t**self.alpha, times) / t_max
+            scores[event_id] = np.trapezoid(diff_at_t**self.alpha, times) / t_max
 
         return scores
 
