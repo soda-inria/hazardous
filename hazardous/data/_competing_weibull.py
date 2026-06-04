@@ -62,6 +62,7 @@ def make_synthetic_competing_weibull(
     scale_ranges=DEFAULT_SCALE_RANGES,
     censoring_relative_scale=1.5,
     random_state=None,
+    return_non_censored=False,
 ):
     """Generate a synthetic dataset with competing Weibull-distributed events.
 
@@ -146,18 +147,22 @@ def make_synthetic_competing_weibull(
             duration=event_durations[duration_argmin, np.arange(n_samples)],
         )
     )
-    y = _censor(y, censoring_relative_scale, random_state=random_state)
+    y_censored = _censor(y, censoring_relative_scale, random_state=random_state)
     if feature_rounding is not None:
         X = X.round(feature_rounding)
 
     if target_rounding is not None:
-        y = y.round(target_rounding)
+        y_censored = y_censored.round(target_rounding)
 
     if return_X_y:
-        return X, y
+        return X, y_censored
 
-    frame = pd.concat([X, y], axis=1)
-    return Bunch(data=frame[X.columns], target=frame[y.columns], frame=frame)
+    # frame = pd.concat([X, y_censored, y], axis=1)
+    return Bunch(
+        data=X,
+        target=y_censored,
+        target_non_censored=y,
+    )
 
 
 def load_synthetic(

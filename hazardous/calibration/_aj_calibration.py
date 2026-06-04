@@ -5,7 +5,7 @@ from hazardous.calibration._km_calibration import km_calibration
 from hazardous.utils import check_y_survival
 
 
-def aj_calibration(y, times, inc_prob_at_conf, return_diff_at_t=False):
+def aj_calibration(y, times, inc_prob_at_conf, return_diff_at_t=False, alpha=2):
     """
     Args:
         y (n_samples, 2): samples to fit the Aalen-Johansen estimator
@@ -51,7 +51,7 @@ def aj_calibration(y, times, inc_prob_at_conf, return_diff_at_t=False):
         # taking the difference between the survival probabilities
         # at time t and the survival probabilities at time t from KM
         diff_at_t = inc_probs - inc_probs_AJ
-        aj_calibrations[event_id] = np.trapz(diff_at_t**2, times) / t_max
+        aj_calibrations[event_id] = np.trapz(diff_at_t**alpha, times) / t_max
         differences_at_t[event_id] = diff_at_t
     if return_diff_at_t:
         return aj_calibrations, differences_at_t

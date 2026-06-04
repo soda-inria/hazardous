@@ -496,3 +496,111 @@ class _SurvTRACEModule(nn.Module):
         elif isinstance(module, nn.LayerNorm):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
+
+
+class SurvTRACEEstimator(NeuralNet):
+    # train 2 models, one for the competing risk, one for the
+    # survival function
+    def __init__(
+        self,
+        module=None,
+        criterion=None,
+        optimizer=None,
+        train_split=None,
+        callbacks=None,
+        categorical_columns=None,
+        numeric_columns=None,
+        quantile_horizons=None,
+        batch_size=1024,
+        lr=1e-3,
+        patience=5,
+        optimizer__weight_decay=0,
+        device="cpu",
+        max_epochs=100,
+        iterator_valid__batch_size=10_000,
+        random_state=None,
+        hidden_size=16,
+        # BertEncoder
+        num_hidden_layers=3,
+        # BertCLS
+        intermediate_size=64,
+        **kwargs,
+    ):
+        self.survival_estimator = SurvTRACE(
+            module=module,
+            criterion=criterion,
+            optimizer=optimizer,
+            train_split=train_split,
+            callbacks=callbacks,
+            categorical_columns=categorical_columns,
+            numeric_columns=numeric_columns,
+            quantile_horizons=quantile_horizons,
+            batch_size=batch_size,
+            lr=lr,
+            patience=patience,
+            optimizer__weight_decay=optimizer__weight_decay,
+            device=device,
+            max_epochs=max_epochs,
+            iterator_valid__batch_size=iterator_valid__batch_size,
+            random_state=random_state,
+            hidden_size=hidden_size,
+            # BertEncoder
+            num_hidden_layers=num_hidden_layers,
+            # BertCLS
+            intermediate_size=intermediate_size,
+            **kwargs,
+        )
+        self.competing_risk_estimator = SurvTRACE(
+            module=module,
+            criterion=criterion,
+            optimizer=optimizer,
+            train_split=train_split,
+            callbacks=callbacks,
+            categorical_columns=categorical_columns,
+            numeric_columns=numeric_columns,
+            quantile_horizons=quantile_horizons,
+            batch_size=batch_size,
+            lr=lr,
+            patience=patience,
+            optimizer__weight_decay=optimizer__weight_decay,
+            device=device,
+            max_epochs=max_epochs,
+            iterator_valid__batch_size=iterator_valid__batch_size,
+            random_state=random_state,
+            hidden_size=hidden_size,
+            # BertEncoder
+            num_hidden_layers=num_hidden_layers,
+            # BertCLS
+            intermediate_size=intermediate_size,
+        )
+
+    def fit(self, X, y=None):
+        y_survival = y.copy()
+        y_survival["event"] = (y_survival["event"] > 0).astype(int)
+        self.survival_estimator.fit(X, y_survival)
+        self.competing_risk_estimator.fit(X, y)
+        self.event_ids_ = self.competing_risk_estimator.event_ids_
+        self.n_events = self.competing_risk_estimator.n_events
+        self.time_grid_ = self.competing_risk_estimator.time_grid_
+        return self
+
+    def predict_cumulative_incidence(self, X, times=None):
+        check_is_fitted(self, ["survival_estimator_", "competing_risk_estimator_"])
+        if times is None:
+            times = self.time_grid_
+
+        risks = self.competing_risk_estimator.predict_cumulative_incidence(
+            X, times=times
+        )[
+            :, 1:, :
+        ]  # remove the first column corresponding to survival
+        surv = self.survival_estimator.predict_survival_function(X)
+        y_pred = np.concatenate([surv, risks], axis=1)
+        return y_pred
+
+    def score(self, X, y):
+        """Return
+
+        #TODO: implement time integrated NLL.
+        """
+        return self.competing_risk_estimator.score(X, y)

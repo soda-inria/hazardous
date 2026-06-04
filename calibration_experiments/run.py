@@ -17,7 +17,9 @@ from hazardous.metrics import (
     integrated_brier_score_incidence,
     concordance_index_incidence,
     accuracy_in_time,
+    integrated_nll_incidence,
 )
+
 from hazardous.recalibration_posthoc.ts_recalibration import (
     RecalibrationTS,
 )
@@ -27,15 +29,13 @@ from hazardous.recalibration_posthoc.aj_recalibration import (
 
 from models_sota._deephit import DeepHitEstimator
 from models_sota._aalen_johansen import AalenJohansenEstimator
-from models_sota._finegray import FineGrayEstimator
-from models_sota._rsf import RSFEstimator
 from models_sota.survtrace._model import SurvTRACE
 from hazardous import SurvivalBoost
 
 PATH_PREDICTIONS = Path("preds/")
-DATASET_NAME = "metabric"
+DATASET_NAME = "seer100k"  # "metabric", "seer10k", "competing_weibull"
 
-if DATASET_NAME == "competing_weibull":
+if DATASET_NAME == "seer100k":
     n_samples = None
 
 if DATASET_NAME == "seer10k":
@@ -77,10 +77,14 @@ def init_aalen_johansen(calculate_variance=False, random_state=None):
 
 
 def init_fine_and_gray(random_state=None, **model_params):
+    from models_sota._finegray import FineGrayEstimator
+
     return FineGrayEstimator(random_state=random_state)
 
 
 def init_random_survival_forest(random_state=None, **model_params):
+    from models_sota._rsf import RSFEstimator
+
     return RSFEstimator(random_state=random_state)
 
 
@@ -97,8 +101,8 @@ INIT_MODEL_FUNCS = {
     # "FineGray": init_fine_and_gray,
     # "AalenJohansen": init_aalen_johansen,
     # "RSF": init_random_survival_forest,
-    "SurvTRACE": init_survtrace,
-    #    "SurvivalBoost": init_survivalboost,
+    # "SurvTRACE": init_survtrace,
+    "SurvivalBoost": init_survivalboost,
 }
 
 models = INIT_MODEL_FUNCS.keys()
@@ -188,12 +192,17 @@ if __name__ == "__main__":
                     prediction_test = model_recal.predict_cumulative_incidence(X_test)
                     prediction_duration_test = model_recal.compute_ft(X_test, y_test)
                 elif recalibration == "ts_recalibration":
-                    model_recal = RecalibrationTS(model, seed=seed)
-                    model_recal = model_recal.fit(
-                        X_conf, y_conf, times=times, X_aj=X_train_, y_aj=y_train_
+                    model_recal = RecalibrationTS(
+                        model, seed=seed, X_aj=X_train_, y_aj=y_train_
                     )
-                    # import ipdb; ipdb.set_trace()
-                    prediction_test = model_recal.predict_cumulative_incidence(X_test)
+                    model_recal = model_recal.fit(
+                        X_conf,
+                        y_conf,
+                        times=times,
+                    )
+                    prediction_test = model_recal.predict_cumulative_incidence(
+                        X_test, times=times
+                    )
                     prediction_duration_test = model_recal.compute_ft(X_test, y_test)
                 print(
                     f"Running model {model_name} with seed {seed}, recalibration"
@@ -257,6 +266,12 @@ if __name__ == "__main__":
                     .flatten()
                     .tolist()
                 )
+                metrics_model["integrated_nll_incidence"] = integrated_nll_incidence(
+                    y_test=y_test,
+                    y_pred=prediction_test,
+                    y_train=y_train,
+                    times=times,
+                )
 
                 path_dir = (
                     PATH_PREDICTIONS
@@ -275,5 +290,3 @@ if __name__ == "__main__":
                 json.dump(metrics_model, open(path_file_agg, "w"))
 
     print(f"Wrote {path_dir}")
-
-# %%

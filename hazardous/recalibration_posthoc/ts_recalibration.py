@@ -41,7 +41,7 @@ class RecalibrationTS:
         else:
             aj = AalenJohansenEstimator().fit(X_conf, y_conf)
         aj_preds_times = aj.predict_cumulative_incidence(X_conf, self.times)
-        self.temperature = []
+        self.inv_temperature = []
         for idx, tau in enumerate(self.times):
             predictions_tau = prediction_conf[:, :, idx]
             # compute the targets at time tau
@@ -50,15 +50,15 @@ class RecalibrationTS:
             model_with_temperature = InverseTemperatureScalingCalibrator()
             model_with_temperature.fit(predictions_tau, targets_tau)
             # import ipdb; ipdb.set_trace()
-            self.temperature.append(
-                (1.0 / model_with_temperature.inv_temperature_).item()
+            self.inv_temperature.append(
+                (model_with_temperature.inv_temperature_).item()
             )
-        self.temperature = np.asarray(self.temperature)
+        self.inv_temperature = np.asarray(self.inv_temperature)
         return self
 
     def _get_logits(self, X):
         X = X + 1e-10
-        X /= np.sum(X, axis=-1, keepdims=True)
+        X /= np.sum(X, axis=1, keepdims=True)
         return torch.as_tensor(np.log(X), dtype=torch.float32)
 
     def predict_cumulative_incidence(self, X, times=None, epsilon=1e-5):
@@ -69,12 +69,14 @@ class RecalibrationTS:
         prediction = self.model.predict_cumulative_incidence(X, times=self.times)
         prediction = np.clip(prediction, 1e-10, 1 - 1e-10)
         prediction_logits = self._get_logits(prediction)
-        prediction_logits_temps = prediction_logits / self.temperature[None, None, :]
+        prediction_logits_temps = (
+            prediction_logits * self.inv_temperature[None, None, :]
+        )
         # apply softmax on the logits
         prediction_after_temp = (
             torch.softmax(prediction_logits_temps, dim=1).detach().numpy()
         )
-        if times is None:
+        if times is None or times is self.times:
             return prediction_after_temp
         else:
             # Interpolate the recalibrated probabilities to the requested times
@@ -84,7 +86,6 @@ class RecalibrationTS:
             )
             for sample in range(X.shape[0]):
                 for event_id in self.event_ids_:
-                    # import ipdb; ipdb.set_trace()
                     recalibrated_probabities[sample, event_id, :] = np.interp(
                         times,
                         self.times,
@@ -98,7 +99,9 @@ class RecalibrationTS:
         prediction = np.clip(prediction, 1e-10, 1 - 1e-10)
         prediction_logits = self._get_logits(prediction)
         # / (prediction[:, 0, :][:, None, :] + epsilon)
-        prediction_logits_temps = prediction_logits / self.temperature[None, None, :]
+        prediction_logits_temps = (
+            prediction_logits * self.inv_temperature[None, None, :]
+        )
         # apply softmax on the logits
         prediction_after_temp = (
             torch.softmax(prediction_logits_temps, dim=1).detach().numpy()
