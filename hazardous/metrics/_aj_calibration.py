@@ -103,16 +103,10 @@ class AJCalibration:
     >>> times = np.linspace(0, 20, 30)
     >>> # Perfect calibration: predictions equal AJ estimates
     >>> from lifelines import AalenJohansenFitter
-    >>> aj1 = AalenJohansenFitter().fit(
-            durations=duration,
-            event_observed=event,
-            event_of_interest=1,
-        )
-    >>> aj2 = AalenJohansenFitter().fit(
-            durations=duration,
-            event_observed=event,
-            event_of_interest=2,
-        )
+    >>> aj1 = AalenJohansenFitter().fit(durations=duration, event_observed=event,
+    >>>                                 event_of_interest=1)
+    >>> aj2 = AalenJohansenFitter().fit(durations=duration, event_observed=event,
+    >>>                                 event_of_interest=2)
     >>> n_events = 2  # event ids 0, 1, 2
     >>> surv = np.tile(aj1.survival_func_, (n, 1))
     >>> cif1 = np.tile(aj1.incidence_func_, (n, 1))
