@@ -35,7 +35,7 @@ References
 import numpy as np
 from scipy.interpolate import interp1d
 
-from hazardous._km_sampler import _KaplanMeierSampler
+from .._km_sampler import _KaplanMeierSampler
 
 
 class KMCalibration:

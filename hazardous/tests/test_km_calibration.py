@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose
 
-from hazardous._km_sampler import _KaplanMeierSampler
-from hazardous.metrics._km_calibration import KMCalibration, km_calibration
+from .._km_sampler import _KaplanMeierSampler
+from ..metrics._km_calibration import KMCalibration, km_calibration
 
 
 def _make_survival_data(n=400, scale=10.0, seed=0):

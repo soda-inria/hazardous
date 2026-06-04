@@ -36,9 +36,9 @@ References
 
 import numpy as np
 
-from hazardous._km_sampler import _AalenJohansenSampler
-from hazardous.metrics._km_calibration import KMCalibration
-from hazardous.utils import check_y_survival
+from .._km_sampler import _AalenJohansenSampler
+from ..metrics._km_calibration import KMCalibration
+from ..utils import check_y_survival
 
 
 class AJCalibration:
