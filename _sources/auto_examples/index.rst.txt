@@ -7,6 +7,10 @@ Below is a gallery of examples on how to use ``hazardous`` for predictive
 competive risk analysis problems.
 
 
+.. raw:: html
+
+  <div id='sg-tag-list' class='sphx-glr-tag-list'></div>
+
 
 .. raw:: html
 
@@ -23,7 +27,7 @@ competive risk analysis problems.
   .. image:: /auto_examples/images/thumb/sphx_glr_plot_01_survival_analysis_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_01_survival_analysis.py`
+  :doc:`/auto_examples/plot_01_survival_analysis`
 
 .. raw:: html
 
@@ -40,7 +44,7 @@ competive risk analysis problems.
   .. image:: /auto_examples/images/thumb/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_02_marginal_cumulative_incidence_estimation.py`
+  :doc:`/auto_examples/plot_02_marginal_cumulative_incidence_estimation`
 
 .. raw:: html
 
@@ -57,7 +61,7 @@ competive risk analysis problems.
   .. image:: /auto_examples/images/thumb/sphx_glr_plot_03_competing_risks_thumb.png
     :alt:
 
-  :ref:`sphx_glr_auto_examples_plot_03_competing_risks.py`
+  :doc:`/auto_examples/plot_03_competing_risks`
 
 .. raw:: html
 

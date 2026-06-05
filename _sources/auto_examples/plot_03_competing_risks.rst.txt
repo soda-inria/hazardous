@@ -172,7 +172,7 @@ formula above.
 
  .. code-block:: none
 
-    /opt/hostedtoolcache/Python/3.10.16/x64/lib/python3.10/site-packages/sklearn/utils/deprecation.py:151: FutureWarning: 'force_all_finite' was renamed to 'ensure_all_finite' in 1.6 and will be removed in 1.8.
+    /opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/sklearn/utils/deprecation.py:132: FutureWarning: 'force_all_finite' was renamed to 'ensure_all_finite' in 1.6 and will be removed in 1.8.
       warnings.warn(
 
 
@@ -227,7 +227,7 @@ of a survival function.
     y_pred_aj = predict_aalen_johansen(y_train, time_grid, n_sample_test=X_test.shape[0])
 
     accuracy, taus = accuracy_in_time(y_test, y_pred_aj, time_grid, quantiles=quantiles)
-    results.append(dict(model_name="Aalan-Johansen", accuracy=accuracy, taus=taus))
+    results.append(dict(model_name="Aalen-Johansen", accuracy=accuracy, taus=taus))
 
 
 
@@ -237,13 +237,13 @@ of a survival function.
 
  .. code-block:: none
 
-    /opt/hostedtoolcache/Python/3.10.16/x64/lib/python3.10/site-packages/lifelines/fitters/aalen_johansen_fitter.py:112: Warning: Tied event times were detected. The Aalen-Johansen estimator cannot handle tied event times.
+    /opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/lifelines/fitters/aalen_johansen_fitter.py:112: Warning: Tied event times were detected. The Aalen-Johansen estimator cannot handle tied event times.
                     To resolve ties, data is randomly jittered.
       warnings.warn(
-    /opt/hostedtoolcache/Python/3.10.16/x64/lib/python3.10/site-packages/lifelines/fitters/aalen_johansen_fitter.py:112: Warning: Tied event times were detected. The Aalen-Johansen estimator cannot handle tied event times.
+    /opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/lifelines/fitters/aalen_johansen_fitter.py:112: Warning: Tied event times were detected. The Aalen-Johansen estimator cannot handle tied event times.
                     To resolve ties, data is randomly jittered.
       warnings.warn(
-    /opt/hostedtoolcache/Python/3.10.16/x64/lib/python3.10/site-packages/lifelines/fitters/aalen_johansen_fitter.py:112: Warning: Tied event times were detected. The Aalen-Johansen estimator cannot handle tied event times.
+    /opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/lifelines/fitters/aalen_johansen_fitter.py:112: Warning: Tied event times were detected. The Aalen-Johansen estimator cannot handle tied event times.
                     To resolve ties, data is randomly jittered.
       warnings.warn(
 
@@ -441,7 +441,7 @@ the accuracy-over-time figure for the Aalen-Johansen model.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 30.292 seconds)
+   **Total running time of the script:** (0 minutes 30.535 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_03_competing_risks.py:
