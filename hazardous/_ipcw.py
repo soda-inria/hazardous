@@ -1,14 +1,14 @@
 import numpy as np
 from lifelines import KaplanMeierFitter
 from scipy.interpolate import interp1d
-from sklearn.base import clone
+from sklearn.base import BaseEstimator, clone
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.utils.validation import check_is_fitted
 
 from .utils import check_y_survival
 
 
-class KaplanMeierIPCW:
+class KaplanMeierIPCW(BaseEstimator):
     """Estimate the Inverse Probability of Censoring Weight (IPCW).
 
     This class estimates the inverse probability of 'survival' to censoring using the
