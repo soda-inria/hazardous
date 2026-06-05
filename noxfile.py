@@ -9,7 +9,7 @@ def _common_test_steps(session):
         session.run("pytest", "-v", "--cov", "--pyargs", "hazardous")
 
 
-@nox.session(python=["3.10", "3.11", "3.12"])
+@nox.session(python=["3.9", "3.10", "3.11", "3.12"])
 def test_latest_from_pypi(session):
     # Test the newest versions of the dependencies.
     session.install(".[test]")
@@ -35,7 +35,7 @@ def test_latest_from_conda_forge(session):
     _common_test_steps(session)
 
 
-@nox.session(python=["3.10"])
+@nox.session(python=["3.9"])
 def test_oldest_from_pypi(session):
     # Test the oldest supported version of the dependencies.
     session.install(".[test,oldest_deps]")
