@@ -1,39 +1,3 @@
-r"""AJ-Calibration: marginal calibration for competing risks models.
-
-This module implements the AJ-Calibration metric, which generalises
-KM-Calibration to competing risks by comparing the mean predicted cumulative
-incidence functions (CIFs) against the Aalen-Johansen marginal estimator.
-
-For each cause of event :math:`k \in \{1, \ldots, K\}` the score is:
-
-.. math::
-
-    \text{AJ-Cal}_k = \frac{1}{t_{\max}} \int_0^{t_{\max}}
-    \left(\bar{F}_k(t) - \hat{F}^{AJ}_k(t)\right)^\alpha \, dt
-
-where:
-
-- :math:`\bar{F}_k(t) = \frac{1}{n} \sum_{i=1}^n
-  \hat{F}_k(t \mid \mathbf{x}_i)` is the mean of the predicted CIFs across
-  the calibration cohort.
-
-- :math:`\hat{F}^{AJ}_k(t)` is the marginal Aalen-Johansen CIF for event
-  :math:`k`, fitted on the same calibration cohort.
-
-- :math:`\alpha \geq 1` controls sensitivity to large deviations (default
-  :math:`\alpha = 2`, giving a squared L2 calibration score).
-
-The survival calibration (event 0) is handled by the KM-Calibration metric
-from :mod:`hazardous.metrics._km_calibration`.
-
-References
-----------
-.. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,
-    J. Abecassis,  "On the calibration of survival models with competing risks",
-    arXiv:2602.00194, 2026.
-    https://arxiv.org/pdf/2602.00194
-"""
-
 import numpy as np
 
 from .._km_sampler import _AalenJohansenSampler

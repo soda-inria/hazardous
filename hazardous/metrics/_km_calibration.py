@@ -1,37 +1,3 @@
-r"""KM-Calibration: marginal calibration for survival models.
-
-This module implements the KM-Calibration metric, which measures how closely
-the mean predicted survival probability tracks the marginal Kaplan-Meier
-estimate over time. The metric is defined as:
-
-.. math::
-
-    \text{KM-Cal} = \frac{1}{t_{\max}} \int_0^{t_{\max}}
-    \left(\bar{S}(t) - \hat{S}_{KM}(t)\right)^\alpha \, dt
-
-where:
-
-- :math:`\bar{S}(t) = \frac{1}{n} \sum_{i=1}^n \hat{S}(t \mid \mathbf{x}_i)`
-  is the mean of the predicted survival probabilities across the calibration
-  cohort.
-
-- :math:`\hat{S}_{KM}(t)` is the marginal Kaplan-Meier survival estimate
-  fitted on the same calibration cohort.
-
-- :math:`\alpha \geq 1` controls the sensitivity to large deviations.
-  The default :math:`\alpha = 2` gives a squared L2 calibration score.
-
-A value of zero means the model is marginally calibrated: the average
-predicted survival probability matches the empirical population survival.
-
-References
-----------
-.. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,
-   J. Abecassis,  "On the calibration of survival models with competing risks",
-   arXiv:2602.00194, 2026.
-   https://arxiv.org/pdf/2602.00194
-"""
-
 import numpy as np
 from scipy.interpolate import interp1d
 
