@@ -32,6 +32,19 @@ Metrics
     metrics.integrated_brier_score_incidence
     metrics.concordance_index_incidence
     metrics.accuracy_in_time
+    metrics.km_calibration
+    metrics.aj_calibration
+
+Calibration
+-----------
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+    :nosignatures:
+
+    metrics.KMCalibration
+    metrics.AJCalibration
 
 Datasets
 --------
