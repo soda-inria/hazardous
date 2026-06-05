@@ -94,10 +94,7 @@ class KMCalibration:
     >>> times = np.linspace(0, 20, 30)
     >>> # Perfect calibration: predictions equal KM estimate
     >>> from lifelines import KaplanMeierFitter
-    >>> km = KaplanMeierFitter().fit(
-            durations=duration,
-            event_observed=event,
-        )
+    >>> km = KaplanMeierFitter().fit(durations=duration,event_observed=event)
     >>> surv_pred = np.tile(km.survival_func_(times), (n, 1))
     >>> cal = KMCalibration().fit(y)
     >>> score = cal.score(times, surv_pred)
