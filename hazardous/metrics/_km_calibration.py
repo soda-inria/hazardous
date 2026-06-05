@@ -98,7 +98,7 @@ class KMCalibration:
     >>> times = km.survival_function_.index
     >>> cal = KMCalibration().fit(y)
     >>> score = cal.score(times, surv_pred)
-    >>> score < 1e-10
+    >>> bool(score < 1e-10)
     True
     """
 
