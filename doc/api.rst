@@ -33,6 +33,8 @@ Metrics
     metrics.concordance_index_incidence
     metrics.accuracy_in_time
     metrics.km_calibration
+    metrics.aj_calibration_at_t
+    metrics.aj_calibration_per_event
     metrics.aj_calibration
 
 Calibration
@@ -44,7 +46,7 @@ Calibration
     :nosignatures:
 
     metrics.KMCalibration
-    metrics.AJCalibration
+
 
 Datasets
 --------

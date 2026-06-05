@@ -1,5 +1,9 @@
 from ._accuracy_in_time import accuracy_in_time
-from ._aj_calibration import AJCalibration, aj_calibration
+from ._aj_calibration import (
+    aj_calibration,
+    aj_calibration_at_t,
+    aj_calibration_per_event,
+)
 from ._brier_score import (
     brier_score_incidence,
     brier_score_survival,
@@ -18,6 +22,7 @@ __all__ = [
     "accuracy_in_time",
     "km_calibration",
     "KMCalibration",
+    "aj_calibration_at_t",
+    "aj_calibration_per_event",
     "aj_calibration",
-    "AJCalibration",
 ]

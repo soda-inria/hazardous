@@ -1,184 +1,69 @@
+r"""AJ-Calibration: marginal calibration for competing risks models.
+
+This module provides three functions to assess calibration at different
+levels of granularity:
+
+1. :func:`aj_calibration_at_t` — pointwise calibration error at each time
+   point for each event:
+
+   .. math::
+
+       \delta_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)
+
+2. :func:`aj_calibration_per_event` — calibration score integrated over time
+   for each event:
+
+   .. math::
+
+       \text{AJ-Cal}_k = \frac{1}{t_{\max}}
+       \int_0^{t_{\max}} \delta_k(t)^\alpha \, dt
+
+3. :func:`aj_calibration` — single score aggregated across all events
+   (mean, sum or max of the per-event scores).
+
+In all three functions:
+
+- :math:`\bar{F}_k(t) = \frac{1}{n} \sum_{i=1}^n \hat{F}_k(t \mid
+  \mathbf{x}_i)` is the mean predicted cumulative incidence for event
+  :math:`k` across the calibration cohort.
+
+- :math:`\hat{F}^{AJ}_k(t)` is the marginal Aalen-Johansen CIF for event
+  :math:`k` fitted on the calibration cohort.
+
+- The survival probability (event 0) is handled by the KM-Calibration
+  metric from :mod:`hazardous.metrics._km_calibration`.
+
+References
+----------
+.. [Alberge2026] J. Alberge, T. Haugomat, G. Varoquaux, J. Abecassis,
+   "On the calibration of survival models with competing risks",
+   arXiv:2602.00194, 2026. https://arxiv.org/pdf/2602.00194
+"""
+
 import numpy as np
 
 from .._km_sampler import _AalenJohansenSampler
-from ..metrics._km_calibration import KMCalibration
 from ..utils import check_y_survival
+from ._km_calibration import km_calibration
+
+# np.trapezoid was introduced in NumPy 2.0; np.trapz is deprecated there but
+# still present. Using getattr keeps the code working on both 1.x and 2.x.
+_trapz = getattr(np, "trapezoid", np.trapz)
 
 
-class AJCalibration:
-    r"""Marginal calibration of a competing risks model via Aalen-Johansen.
+def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None):
+    r"""Pointwise AJ calibration error at each time point.
 
-    Measures how closely the mean predicted cumulative incidence functions
-    (CIFs) track the marginal Aalen-Johansen estimates over a given time
-    grid. For each cause of event :math:`k` the calibration score is:
-
-    .. math::
-
-        \text{AJ-Cal}_k = \frac{1}{t_{\max}} \int_0^{t_{\max}}
-        \left(\bar{F}_k(t) - \hat{F}^{AJ}_k(t)\right)^\alpha \, dt
-
-    where :math:`\bar{F}_k(t)` is the mean predicted CIF across the
-    calibration cohort and :math:`\hat{F}^{AJ}_k(t)` is the
-    Aalen-Johansen CIF for event :math:`k`.
-
-    The calibration for the survival probability (event 0, key ``0`` in
-    the output) is computed via :class:`~hazardous.metrics.KMCalibration`.
-
-    Parameters
-    ----------
-    alpha : int, default=2
-        Exponent applied to the pointwise difference before integration.
-        When ``alpha=2``, the score is an L2 (squared) calibration score.
-
-    Attributes
-    ----------
-    aalen_johansen_sampler_ : _AalenJohansenSampler
-        Fitted Aalen-Johansen sampler used to estimate the marginal CIFs.
-
-    km_calibration_ : KMCalibration
-        Fitted KM-Calibration object used to score the survival probability
-        (event 0).
-
-    event_ids_ : ndarray
-        Sorted array of unique event identifiers observed during fitting,
-        including 0 for censoring.
-
-    See Also
-    --------
-    aj_calibration : Functional API for this class.
-    KMCalibration : KM-based calibration for single-event survival.
-
-    References
-    ----------
-    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,
-        J. Abecassis,  "On the calibration of survival models with competing risks",
-        arXiv:2602.00194, 2026.
-        https://arxiv.org/pdf/2602.00194
-    """
-
-    def __init__(self, alpha=2):
-        self.alpha = alpha
-
-    def fit(self, y_conf):
-        """Fit the Aalen-Johansen estimator on the calibration cohort.
-
-        Parameters
-        ----------
-        y_conf : array-like of shape (n_samples, 2)
-            Survival outcomes of the calibration cohort, with columns
-            ``"event"`` (0 for censoring, positive integers for each cause
-            of event) and ``"duration"`` (observed time).
-
-        Returns
-        -------
-        self : object
-            Fitted estimator.
-        """
-        event, _ = check_y_survival(y_conf)
-        self.event_ids_ = np.array(sorted(set([0]) | set(event)))
-
-        self.aalen_johansen_sampler_ = _AalenJohansenSampler().fit(y_conf)
-        self.km_calibration_ = KMCalibration(alpha=self.alpha).fit(y_conf)
-        return self
-
-    def score(self, times, inc_prob_at_conf):
-        """Compute AJ-Calibration scores for all causes of event.
-
-        Parameters
-        ----------
-        times : array-like of shape (n_times,)
-            Time points at which the CIFs were predicted. Need not be
-            sorted; the last axis of ``inc_prob_at_conf`` must correspond
-            to the same ordering as ``times``.
-
-        inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
-            Predicted incidence probabilities at ``times`` for the
-            calibration cohort. The second axis indexes event identifiers in
-            sorted order: axis 0 holds the survival probability (event 0),
-            and axes 1, 2, … hold cause-specific CIFs.
-
-        Returns
-        -------
-        scores : dict of {int: float}
-            AJ-Calibration score for each event identifier. Key ``0``
-            corresponds to the survival KM-Calibration score.
-        """
-        times, inc_prob_at_conf = self._sort_by_time(times, inc_prob_at_conf)
-        t_max = times[-1]
-
-        scores = {}
-        scores[0] = self.km_calibration_.score(times, inc_prob_at_conf[:, 0, :])
-
-        for event_id in self.event_ids_[1:]:
-            inc_func_aj = self.aalen_johansen_sampler_.incidence_func_[event_id]
-            inc_probs_aj = inc_func_aj(times)
-            inc_probs_mean = inc_prob_at_conf[:, event_id, :].mean(axis=0)
-            diff_at_t = inc_probs_mean - inc_probs_aj
-            scores[event_id] = np.trapezoid(diff_at_t**self.alpha, times) / t_max
-
-        return scores
-
-    def difference_at_t(self, times, inc_prob_at_conf):
-        """Compute the pointwise difference between mean predictions and AJ.
-
-        Parameters
-        ----------
-        times : array-like of shape (n_times,)
-            Time points at which the CIFs were predicted.
-
-        inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
-            Predicted incidence probabilities at ``times`` for the
-            calibration cohort.
-
-        Returns
-        -------
-        differences : dict of {int: ndarray of shape (n_times,)}
-            Pointwise difference :math:`\\bar{F}_k(t) - \\hat{F}^{AJ}_k(t)`
-            for each event identifier, in ascending time order. Key ``0``
-            holds the survival difference against the KM estimate.
-        """
-        times, inc_prob_at_conf = self._sort_by_time(times, inc_prob_at_conf)
-
-        differences = {}
-        differences[0] = self.km_calibration_.difference_at_t(
-            times, inc_prob_at_conf[:, 0, :]
-        )
-
-        for event_id in self.event_ids_[1:]:
-            inc_func_aj = self.aalen_johansen_sampler_.incidence_func_[event_id]
-            inc_probs_aj = inc_func_aj(times)
-            inc_probs_mean = inc_prob_at_conf[:, event_id, :].mean(axis=0)
-            differences[event_id] = inc_probs_mean - inc_probs_aj
-
-        return differences
-
-    @staticmethod
-    def _sort_by_time(times, preds_3d):
-        """Return (sorted_times, preds_reordered) with ascending time order."""
-        times = np.asarray(times)
-        preds_3d = np.asarray(preds_3d)
-        order = np.argsort(times)
-        return times[order], preds_3d[:, :, order]
-
-
-def aj_calibration(y_conf, times, inc_prob_at_conf, return_diff_at_t=False, alpha=2):
-    r"""AJ-Calibration: marginal calibration score for competing risks models.
-
-    Measures how closely the mean predicted cumulative incidence functions
-    (CIFs) track the marginal Aalen-Johansen estimates. For each cause of
-    event :math:`k` the score is:
+    For each event :math:`k`, computes the difference between the mean
+    predicted CIF and the marginal Aalen-Johansen CIF at every time in
+    ``times``:
 
     .. math::
 
-        \text{AJ-Cal}_k = \frac{1}{t_{\max}} \int_0^{t_{\max}}
-        \left(\bar{F}_k(t) - \hat{F}^{AJ}_k(t)\right)^\alpha \, dt
+        \delta_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)
 
-    where :math:`\bar{F}_k(t) = \frac{1}{n} \sum_{i=1}^n
-    \hat{F}_k(t \mid \mathbf{x}_i)` is the mean predicted CIF and
-    :math:`\hat{F}^{AJ}_k(t)` is the Aalen-Johansen CIF for event :math:`k`.
-
-    The survival probability (event 0) is scored with
-    :func:`~hazardous.metrics.km_calibration`.
+    The survival probability (event 0) is compared against the
+    Kaplan-Meier estimate.
 
     Parameters
     ----------
@@ -188,43 +73,202 @@ def aj_calibration(y_conf, times, inc_prob_at_conf, return_diff_at_t=False, alph
         event) and ``"duration"`` (observed time).
 
     times : array-like of shape (n_times,)
+        Time points at which the CIFs were predicted. Need not be sorted;
+        the last axis of ``inc_prob_at_conf`` must share the same ordering.
+
+    inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
+        Predicted incidence probabilities at ``times`` for the calibration
+        cohort. The second axis is indexed by event identifier in sorted
+        order: index 0 holds the survival probability, indices 1, 2, …
+        hold cause-specific CIFs.
+
+    event_of_interest : int or None, default=None
+        If provided, return only the difference array for that event.
+        If ``None``, return a dict with one array per event.
+
+    Returns
+    -------
+    differences : dict of {int: ndarray of shape (n_times,)}
+        Pointwise difference :math:`\delta_k(t)` for each event identifier,
+        in ascending time order.  Only the entry for ``event_of_interest``
+        is returned when that parameter is set.
+
+    See Also
+    --------
+    aj_calibration_per_event : Integrate these differences into a scalar
+        score per event.
+    km_calibration : KM-based calibration used for event 0.
+
+    References
+    ----------
+    .. [Alberge2026] J. Alberge, T. Haugomat, G. Varoquaux, J. Abecassis,
+       "On the calibration of survival models with competing risks",
+       arXiv:2602.00194, 2026. https://arxiv.org/pdf/2602.00194
+    """
+    times = np.asarray(times)
+    inc_prob_at_conf = np.asarray(inc_prob_at_conf)
+
+    order = np.argsort(times)
+    times = times[order]
+    inc_prob_at_conf = inc_prob_at_conf[:, :, order]
+
+    event, _ = check_y_survival(y_conf)
+    event_ids = np.array(sorted(set([0]) | set(event)))
+
+    # Event 0: compare mean survival prediction against Kaplan-Meier
+    _, diff_km = km_calibration(
+        y_conf, times, inc_prob_at_conf[:, 0, :], return_diff_at_t=True
+    )
+    differences = {0: diff_km}
+
+    # Events 1..K: compare mean CIF prediction against Aalen-Johansen
+    aalen_sampler = _AalenJohansenSampler().fit(y_conf)
+    for event_id in event_ids[1:]:
+        inc_probs_aj = aalen_sampler.incidence_func_[event_id](times)
+        inc_probs_mean = inc_prob_at_conf[:, event_id, :].mean(axis=0)
+        differences[event_id] = inc_probs_mean - inc_probs_aj
+
+    if event_of_interest is not None:
+        return differences[event_of_interest]
+    return differences
+
+
+def aj_calibration_per_event(
+    y_conf, times, inc_prob_at_conf, event_of_interest=None, alpha=2
+):
+    r"""AJ calibration score per event, integrated over time.
+
+    Integrates the squared (or :math:`\alpha`-th power) pointwise
+    calibration error over time for each event:
+
+    .. math::
+
+        \text{AJ-Cal}_k = \frac{1}{t_{\max}}
+        \int_0^{t_{\max}} \delta_k(t)^\alpha \, dt
+
+    where :math:`\delta_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)` is
+    computed by :func:`aj_calibration_at_t`.
+
+    A score of zero indicates perfect marginal calibration for event
+    :math:`k`. With the default ``alpha=2`` the score is always
+    non-negative; with ``alpha=1`` it is a signed bias measure.
+
+    Parameters
+    ----------
+    y_conf : array-like of shape (n_samples, 2)
+        Survival outcomes of the calibration cohort, with columns
+        ``"event"`` and ``"duration"``.
+
+    times : array-like of shape (n_times,)
         Time points at which the CIFs were predicted.
 
     inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
         Predicted incidence probabilities at ``times`` for the calibration
-        cohort. The second axis indexes event identifiers in sorted order.
+        cohort.
 
-    return_diff_at_t : bool, default=False
-        If ``True``, also return pointwise differences
-        :math:`\bar{F}_k(t) - \hat{F}^{AJ}_k(t)` for each event.
+    event_of_interest : int or None, default=None
+        If provided, return only the score for that event.
+        If ``None``, return a dict with one score per event.
+
+    alpha : int, default=2
+        Exponent applied to :math:`\delta_k(t)` before integration.
+        ``alpha=2`` gives a squared L2 calibration score; ``alpha=1``
+        gives a signed L1 score.
+
+    Returns
+    -------
+    scores : dict of {int: float} or float
+        Integrated calibration score for each event. Returns a single
+        float when ``event_of_interest`` is set.
+
+    See Also
+    --------
+    aj_calibration_at_t : Pointwise differences used in the integration.
+    aj_calibration : Aggregate all per-event scores into one number.
+
+    References
+    ----------
+    .. [Alberge2026] J. Alberge, T. Haugomat, G. Varoquaux, J. Abecassis,
+       "On the calibration of survival models with competing risks",
+       arXiv:2602.00194, 2026. https://arxiv.org/pdf/2602.00194
+    """
+    times = np.asarray(times)
+    order = np.argsort(times)
+    times_sorted = times[order]
+    inc_sorted = np.asarray(inc_prob_at_conf)[:, :, order]
+
+    t_max = times_sorted[-1]
+    differences = aj_calibration_at_t(y_conf, times_sorted, inc_sorted)
+
+    scores = {
+        event_id: _trapz(diff**alpha, times_sorted) / t_max
+        for event_id, diff in differences.items()
+    }
+
+    if event_of_interest is not None:
+        return scores[event_of_interest]
+    return scores
+
+
+def aj_calibration(y_conf, times, inc_prob_at_conf, alpha=2, reduction="mean"):
+    r"""Overall AJ calibration score aggregated across all events.
+
+    Computes the per-event AJ calibration scores via
+    :func:`aj_calibration_per_event`, then reduces them to a single number:
+
+    .. math::
+
+        \text{AJ-Cal} = \frac{1}{K} \sum_{k=1}^{K} \text{AJ-Cal}_k
+        \quad \text{(reduction='mean')}
+
+    or the sum when ``reduction='sum'``.
+
+    Parameters
+    ----------
+    y_conf : array-like of shape (n_samples, 2)
+        Survival outcomes of the calibration cohort, with columns
+        ``"event"`` and ``"duration"``.
+
+    times : array-like of shape (n_times,)
+        Time points at which the CIFs were predicted.
+
+    inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
+        Predicted incidence probabilities at ``times`` for the calibration
+        cohort.
 
     alpha : int, default=2
         Exponent applied to the pointwise difference before integration.
 
+    reduction : {"mean", "sum"}, default="mean"
+        How to aggregate per-event scores into a single value.
+
     Returns
     -------
-    aj_calibrations : dict of {int: float}
-        AJ-Calibration score for each event identifier.
-
-    differences_at_t : dict of {int: ndarray of shape (n_times,)}, optional
-        Pointwise differences for each event identifier.
-        Only returned when ``return_diff_at_t=True``.
+    score : float
+        Aggregated AJ calibration score.
 
     See Also
     --------
-    AJCalibration : Class-based API.
+    aj_calibration_per_event : Per-event scores before aggregation.
+    aj_calibration_at_t : Pointwise calibration error at each time point.
     km_calibration : KM-Calibration for single-event survival.
 
     References
     ----------
-    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,
-        J. Abecassis,  "On the calibration of survival models with competing risks",
-        arXiv:2602.00194, 2026.
-        https://arxiv.org/pdf/2602.00194
+    .. [Alberge2026] J. Alberge, T. Haugomat, G. Varoquaux, J. Abecassis,
+       "On the calibration of survival models with competing risks",
+       arXiv:2602.00194, 2026. https://arxiv.org/pdf/2602.00194
     """
-    cal = AJCalibration(alpha=alpha).fit(y_conf)
-    scores = cal.score(times, inc_prob_at_conf)
-    if return_diff_at_t:
-        differences = cal.difference_at_t(times, inc_prob_at_conf)
-        return scores, differences
-    return scores
+    if reduction not in ("mean", "sum", "max"):
+        raise ValueError(
+            f"reduction must be 'max', 'mean' or 'sum', got {reduction!r}."
+        )
+
+    scores = aj_calibration_per_event(y_conf, times, inc_prob_at_conf, alpha=alpha)
+    values = np.array(list(scores.values()))
+
+    if reduction == "mean":
+        return float(np.mean(values))
+    elif reduction == "max":
+        return float(np.max(values))
+    return float(np.sum(values))
