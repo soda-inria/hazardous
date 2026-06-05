@@ -35,7 +35,7 @@ def test_latest_from_conda_forge(session):
     _common_test_steps(session)
 
 
-@nox.session(python=["3.9"])
+@nox.session(python=["3.10"])
 def test_oldest_from_pypi(session):
     # Test the oldest supported version of the dependencies.
     session.install(".[test,oldest_deps]")

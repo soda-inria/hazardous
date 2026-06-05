@@ -9,7 +9,7 @@ authors = [
     { name = "Gael Varoquaux", email = "gael.varoquaux@inria.fr" },
 ]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -67,7 +67,7 @@ requires = ["flit_core"]
 
 [tool.black]
 line-length = 88
-target_version = ['py39', 'py310', 'py311']
+target_version = ['py310', 'py311']
 preview = true
 exclude = '''
 /(
