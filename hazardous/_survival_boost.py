@@ -376,7 +376,7 @@ class SurvivalBoost(BaseEstimator, ClassifierMixin):
             Returns an instance of self.
         """
 
-        X = check_array(X, force_all_finite="allow-nan")
+        X = check_array(X, ensure_all_finite="allow-nan")
         event, duration = check_y_survival(y)
 
         # Add 0 as a special event id for the survival function.
