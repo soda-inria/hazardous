@@ -145,7 +145,7 @@ def predict_aalen_johansen(y_train, time_grid, n_sample_test):
 y_pred_aj = predict_aalen_johansen(y_train, time_grid, n_sample_test=X_test.shape[0])
 
 accuracy, taus = accuracy_in_time(y_test, y_pred_aj, time_grid, quantiles=quantiles)
-results.append(dict(model_name="Aalan-Johansen", accuracy=accuracy, taus=taus))
+results.append(dict(model_name="Aalen-Johansen", accuracy=accuracy, taus=taus))
 
 # %%
 # Results
