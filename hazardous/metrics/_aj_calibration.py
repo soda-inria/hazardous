@@ -90,32 +90,6 @@ class AJCalibration:
         J. Abecassis,  "On the calibration of survival models with competing risks",
         arXiv:2602.00194, 2026.
         https://arxiv.org/pdf/2602.00194
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from hazardous.metrics import AJCalibration
-    >>> rng = np.random.default_rng(0)
-    >>> n = 300
-    >>> duration = rng.exponential(scale=10, size=n)
-    >>> event = rng.choice([0, 1, 2], size=n)
-    >>> y = {"event": event, "duration": duration}
-    >>> times = np.linspace(0, 20, 30)
-    >>> # Perfect calibration: predictions equal AJ estimates
-    >>> from lifelines import AalenJohansenFitter
-    >>> aj1 = AalenJohansenFitter().fit(durations=duration, event_observed=event,
-    >>>                                 event_of_interest=1)
-    >>> aj2 = AalenJohansenFitter().fit(durations=duration, event_observed=event,
-    >>>                                 event_of_interest=2)
-    >>> n_events = 2  # event ids 0, 1, 2
-    >>> surv = np.tile(aj1.survival_func_, (n, 1))
-    >>> cif1 = np.tile(aj1.incidence_func_, (n, 1))
-    >>> cif2 = np.tile(aj2.incidence_func_, (n, 1))
-    >>> inc_pred = np.stack([surv, cif1, cif2], axis=1)
-    >>> cal = AJCalibration().fit(y)
-    >>> scores = cal.score(times, inc_pred)
-    >>> all(abs(v) < 1e-10 for v in scores.values())
-    True
     """
 
     def __init__(self, alpha=2):

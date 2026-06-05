@@ -91,11 +91,11 @@ class KMCalibration:
     >>> duration = rng.exponential(scale=10, size=n)
     >>> event = rng.binomial(1, p=0.7, size=n)
     >>> y = {"event": event, "duration": duration}
-    >>> times = np.linspace(0, 20, 30)
     >>> # Perfect calibration: predictions equal KM estimate
     >>> from lifelines import KaplanMeierFitter
     >>> km = KaplanMeierFitter().fit(durations=duration,event_observed=event)
-    >>> surv_pred = np.tile(km.survival_func_(times), (n, 1))
+    >>> surv_pred = np.tile(km.survival_function_.values[:, 0], (n, 1))
+    >>> times = km.survival_function_.index
     >>> cal = KMCalibration().fit(y)
     >>> score = cal.score(times, surv_pred)
     >>> score < 1e-10
