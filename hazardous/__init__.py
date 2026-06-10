@@ -8,6 +8,5 @@ with open(Path(__file__).parent / "VERSION.txt") as _fh:
 
 __all__ = [
     "metrics",
-    "calibration",
     "SurvivalBoost",
 ]

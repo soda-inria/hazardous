@@ -93,8 +93,8 @@ class _KaplanMeierSampler:
         )
 
         self.inverse_surv_func_ = interp1d(
-            x=self.survival_probs_,
-            y=self.unique_times_,
+            x=self.survival_probs_[::-1],
+            y=self.unique_times_[::-1],
             kind="previous",
             bounds_error=False,
             fill_value="extrapolate",

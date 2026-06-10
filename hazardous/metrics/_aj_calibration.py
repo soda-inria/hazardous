@@ -217,7 +217,7 @@ def aj_calibration(y_conf, times, inc_prob_at_conf, alpha=2, reduction="mean"):
         \text{AJ-Cal} = \frac{1}{K} \sum_{k=1}^{K} \text{AJ-Cal}_k
         \quad \text{(reduction='mean')}
 
-    or the sum when ``reduction='sum'``.
+    or the sum (resp. max) when ``reduction='sum'`` (resp. ``reduction='max'``).
 
     Parameters
     ----------
@@ -235,7 +235,7 @@ def aj_calibration(y_conf, times, inc_prob_at_conf, alpha=2, reduction="mean"):
     alpha : int, default=2
         Exponent applied to the pointwise difference before integration.
 
-    reduction : {"mean", "sum"}, default="mean"
+    reduction : {"mean", "sum", "max"}, default="mean"
         How to aggregate per-event scores into a single value.
 
     Returns

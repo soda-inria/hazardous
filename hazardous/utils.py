@@ -74,14 +74,14 @@ def make_time_grid(event, duration, n_time_grid_steps):
     """
 
     any_event_mask = event > 0
-    observed_times = duration[any_event_mask]
+    observed_times = np.unique(duration[any_event_mask])
 
     if observed_times.shape[0] > n_time_grid_steps:
         time_grid = np.quantile(
             observed_times, np.linspace(0, 1, num=n_time_grid_steps)
         )
+        time_grid = np.unique(time_grid)
     else:
         time_grid = observed_times.copy()
-        time_grid.sort()
 
     return time_grid

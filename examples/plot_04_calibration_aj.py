@@ -31,7 +31,7 @@ from hazardous.utils import make_time_grid
 from hazardous._km_sampler import _AalenJohansenSampler
 from hazardous._survival_boost import SurvivalBoost
 from hazardous.data._competing_weibull import make_synthetic_competing_weibull
-from hazardous.metrics._aj_calibration import (
+from hazardous.metrics import (
     aj_calibration,
     aj_calibration_at_t,
     aj_calibration_per_event,
@@ -41,7 +41,7 @@ from hazardous.metrics._aj_calibration import (
 # Generation of one synthetic dataset with 3 competing events,
 # and display of the distribution of the target.
 
-n_samples = 50_000
+n_samples = 10_000
 n_events = 3
 
 X, y = make_synthetic_competing_weibull(
@@ -145,7 +145,7 @@ plt.show()
 # prediction can deviate from the marginal AJ reference, reflecting whether
 # the model's is well-calibrated marginally.
 
-survivalboost = SurvivalBoost(n_iter=100, show_progressbar=True, random_state=0)
+survivalboost = SurvivalBoost(n_iter=50, show_progressbar=False, random_state=0)
 survivalboost.fit(X_train, y_train)
 
 # Predictions on the calibration cohort — shape (n_test, n_events+1, n_times)
