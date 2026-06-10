@@ -28,7 +28,7 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None):
     - :math:`y_{i,\zeta} = \delta_i ~ I\{t_i \leq \zeta \}` is the observed event
       for individual :math:`i` at :math:`\zeta`.
 
-    The accuracy in time is a metric introduced in [Alberge2024]_ which evaluates
+    The accuracy in time is a metric introduced in [Alberge2025]_ which evaluates
     whether observed events are predicted as the most likely at given times.
     This metric measures if the highest predicted event (one of the event of interest
     or the survival one) corresponds to the one observed at :math:`\zeta` for each
@@ -78,9 +78,9 @@ def accuracy_in_time(y_test, y_pred, time_grid, quantiles=None):
 
     References
     ----------
-    .. [Alberge2024] J. Alberge, V. Maladiere,  O. Grisel, J. Abécassis, G. Varoquaux,
+    .. [Alberge2025] J. Alberge, V. Maladiere,  O. Grisel, J. Abécassis, G. Varoquaux,
         `"Survival Models: Proper Scoring Rule and Stochastic Optimization with
-        Competing Risks", 2024 <https://hal.science/hal-04617672>`_
+        Competing Risks", 2025 <https://hal.science/hal-04617672v5>`_
     """
     event_true, _ = check_y_survival(y_test)
 

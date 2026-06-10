@@ -8,7 +8,7 @@ levels of granularity:
 
    .. math::
 
-       \delta_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)
+       AJ_k(t) = | \bar{F}_k(t) - \hat{F}^{AJ}_k(t)|
 
 2. :func:`aj_calibration_per_event` — calibration score integrated over time
    for each event:
@@ -16,7 +16,7 @@ levels of granularity:
    .. math::
 
        \text{AJ-Cal}_k = \frac{1}{t_{\max}}
-       \int_0^{t_{\max}} \delta_k(t)^\alpha \, dt
+       \int_0^{t_{\max}} AJ_k(t)^\alpha \, dt
 
 3. :func:`aj_calibration` — single score aggregated across all events
    (mean, sum or max of the per-event scores).
@@ -60,7 +60,7 @@ def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None)
 
     .. math::
 
-        \delta_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)
+        AJ_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)
 
     The survival probability (event 0) is compared against the
     Kaplan-Meier estimate.
@@ -89,7 +89,7 @@ def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None)
     Returns
     -------
     differences : dict of {int: ndarray of shape (n_times,)}
-        Pointwise difference :math:`\delta_k(t)` for each event identifier,
+        Pointwise difference :math:`AJ_k(t)` for each event identifier,
         in ascending time order.  Only the entry for ``event_of_interest``
         is returned when that parameter is set.
 
@@ -119,14 +119,14 @@ def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None)
     _, diff_km = km_calibration(
         y_conf, times, inc_prob_at_conf[:, 0, :], return_diff_at_t=True
     )
-    differences = {0: diff_km}
+    differences = {0: np.abs(diff_km)}
 
     # Events 1..K: compare mean CIF prediction against Aalen-Johansen
     aalen_sampler = _AalenJohansenSampler().fit(y_conf)
     for event_id in event_ids[1:]:
         inc_probs_aj = aalen_sampler.incidence_func_[event_id](times)
         inc_probs_mean = inc_prob_at_conf[:, event_id, :].mean(axis=0)
-        differences[event_id] = inc_probs_mean - inc_probs_aj
+        differences[event_id] = np.abs(inc_probs_mean - inc_probs_aj)
 
     if event_of_interest is not None:
         return differences[event_of_interest]
@@ -144,9 +144,9 @@ def aj_calibration_per_event(
     .. math::
 
         \text{AJ-Cal}_k = \frac{1}{t_{\max}}
-        \int_0^{t_{\max}} \delta_k(t)^\alpha \, dt
+        \int_0^{t_{\max}} AJ_k(t)^\alpha \, dt
 
-    where :math:`\delta_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)` is
+    where :math:`AJ_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)` is
     computed by :func:`aj_calibration_at_t`.
 
     A score of zero indicates perfect marginal calibration for event
@@ -171,7 +171,7 @@ def aj_calibration_per_event(
         If ``None``, return a dict with one score per event.
 
     alpha : int, default=2
-        Exponent applied to :math:`\delta_k(t)` before integration.
+        Exponent applied to :math:`AJ_k(t)` before integration.
         ``alpha=2`` gives a squared L2 calibration score; ``alpha=1``
         gives a signed L1 score.
 

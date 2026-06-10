@@ -215,7 +215,7 @@ def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False, alp
         https://arxiv.org/pdf/2602.00194
     """
     cal = KMCalibration(alpha=alpha).fit(y_conf)
-    km_cal = cal.score(times, surv_prob_at_conf)
+    km_cal = np.abs(cal.score(times, surv_prob_at_conf))
     if return_diff_at_t:
         diff_at_t = cal.difference_at_t(times, surv_prob_at_conf)
         return km_cal, diff_at_t
