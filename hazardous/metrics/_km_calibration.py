@@ -3,10 +3,6 @@ from scipy.interpolate import interp1d
 
 from .._km_sampler import _KaplanMeierSampler
 
-# np.trapezoid was introduced in NumPy 2.0; np.trapz is deprecated there but
-# still present. Using getattr keeps the code working on both 1.x and 2.x.
-_trapz = getattr(np, "trapezoid", np.trapz)
-
 
 class KMCalibration:
     r"""Marginal calibration of a survival model using the Kaplan-Meier estimator.
@@ -120,7 +116,7 @@ class KMCalibration:
         surv_probs_mean = surv_prob_at_conf.mean(axis=0)
 
         diff_at_t = surv_probs_mean - surv_probs_km
-        return _trapz(diff_at_t**self.alpha, times) / t_max
+        return np.trapezoid(diff_at_t**self.alpha, times) / t_max
 
     def difference_at_t(self, times, surv_prob_at_conf):
         """Compute the pointwise difference between mean predictions and KM.

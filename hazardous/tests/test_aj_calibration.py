@@ -150,7 +150,7 @@ class TestAJCalibrationPerEvent:
 
         t_max = times_sorted[-1]
         for event_id, diff in diffs.items():
-            expected = np.trapz(diff**2, times_sorted) / t_max
+            expected = np.trapezoid(diff**2, times_sorted) / t_max
             assert scores[event_id] == pytest.approx(expected, rel=1e-10)
 
     def test_invariant_to_time_ordering(self, y):

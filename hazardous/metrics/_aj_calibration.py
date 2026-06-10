@@ -46,10 +46,6 @@ from .._km_sampler import _AalenJohansenSampler
 from ..utils import check_y_survival
 from ._km_calibration import km_calibration
 
-# np.trapezoid was introduced in NumPy 2.0; np.trapz is deprecated there but
-# still present. Using getattr keeps the code working on both 1.x and 2.x.
-_trapz = getattr(np, "trapezoid", np.trapz)
-
 
 def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None):
     r"""Pointwise AJ calibration error at each time point.
@@ -201,7 +197,7 @@ def aj_calibration_per_event(
     differences = aj_calibration_at_t(y_conf, times_sorted, inc_sorted)
 
     scores = {
-        event_id: _trapz(diff**alpha, times_sorted) / t_max
+        event_id: np.trapezoid(diff**alpha, times_sorted) / t_max
         for event_id, diff in differences.items()
     }
 
