@@ -40,14 +40,14 @@ class IncidenceScoreComputer:
         ipcw_estimator=None,
     ):
         self.y_train = y_train
-        self.event_train, self.duration_train = check_y_survival(y_train)
-        self.event_ids_ = np.unique(self.event_train)
-        self.any_event_train = self.event_train > 0
+        event_train, duration_train = check_y_survival(y_train)
+        self.event_ids_ = np.unique(event_train)
+        any_event_train = event_train > 0
         self.event_of_interest = event_of_interest
 
         y = dict(
-            event=self.any_event_train,
-            duration=self.duration_train,
+            event=any_event_train,
+            duration=duration_train,
         )
         # Estimate the censoring distribution from the training set.
         if ipcw_estimator is None:
@@ -130,10 +130,7 @@ class IncidenceScoreComputer:
         check_event_of_interest(self.event_of_interest)
 
         if self.event_of_interest == "any":
-            if y_true is self.y_train:
-                event_true = self.any_event_train
-            else:
-                event_true = event_true > 0
+            event_true = event_true > 0
 
         if y_pred.ndim != 2:
             raise ValueError(
