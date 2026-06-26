@@ -1,50 +1,22 @@
-r"""AJ-Calibration: marginal calibration for competing risks models.
-
-This module provides three functions to assess calibration at different
-levels of granularity:
-
-1. :func:`aj_calibration_at_t` — pointwise calibration error at each time
-   point for each event:
-
-   .. math::
-
-       AJ_k(t) = | \bar{F}_k(t) - \hat{F}^{AJ}_k(t)|
-
-2. :func:`aj_calibration_per_event` — calibration score integrated over time
-   for each event:
-
-   .. math::
-
-       \text{AJ-Cal}_k = \frac{1}{t_{\max}}
-       \int_0^{t_{\max}} AJ_k(t)^\alpha \, dt
-
-3. :func:`aj_calibration` — single score aggregated across all events
-   (mean, sum or max of the per-event scores).
-
-In all three functions:
-
-- :math:`\bar{F}_k(t) = \frac{1}{n} \sum_{i=1}^n \hat{F}_k(t \mid
-  \mathbf{x}_i)` is the mean predicted cumulative incidence for event
-  :math:`k` across the calibration cohort.
-
-- :math:`\hat{F}^{AJ}_k(t)` is the marginal Aalen-Johansen CIF for event
-  :math:`k` fitted on the calibration cohort.
-
-- The survival probability (event 0) is handled by the KM-Calibration
-  metric from :mod:`hazardous.metrics._km_calibration`.
-
-References
-----------
-.. [Alberge2026] J. Alberge, T. Haugomat, G. Varoquaux, J. Abecassis,
-   "On the calibration of survival models with competing risks",
-   arXiv:2602.00194, 2026. https://arxiv.org/pdf/2602.00194
-"""
-
 import numpy as np
 
 from .._km_sampler import _AalenJohansenSampler
 from ..utils import check_y_survival
 from ._km_calibration import km_calibration
+
+
+def _truncation_mask(duration, times, min_prop_at_risk):
+    """Boolean mask of times to keep for the calibration integral.
+
+    Keeps the timepoints where the proportion of the set still at risk
+    (i.e. with ``duration >= t``) is at least ``min_prop_at_risk``. This
+    discards the noisy tail of the time grid where only a handful of
+    subjects remain.
+    """
+    prop_at_risk = (np.asarray(duration)[:, None] >= np.asarray(times)[None, :]).mean(
+        axis=0
+    )
+    return prop_at_risk >= min_prop_at_risk
 
 
 def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None):
@@ -58,13 +30,17 @@ def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None)
 
         AJ_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)
 
-    The survival probability (event 0) is compared against the
-    Kaplan-Meier estimate.
+    where :math:`\bar{F}_k(t) = \frac{1}{n} \sum_{i=1}^n \hat{F}_k(t \mid
+    \mathbf{x}_i)` is the mean predicted cumulative incidence for event
+    :math:`k` across the calibration set, and :math:`\hat{F}^{AJ}_k(t)`
+    is the marginal Aalen-Johansen CIF for event :math:`k` fitted on the
+    same set. The survival probability (event 0) is compared against the
+    Kaplan-Meier estimate via :func:`km_calibration`.
 
     Parameters
     ----------
     y_conf : array-like of shape (n_samples, 2)
-        Survival outcomes of the calibration cohort, with columns
+        Survival outcomes of the calibration set, with columns
         ``"event"`` (0 for censoring, positive integers for each cause of
         event) and ``"duration"`` (observed time).
 
@@ -74,7 +50,7 @@ def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None)
 
     inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
         Predicted incidence probabilities at ``times`` for the calibration
-        cohort. The second axis is indexed by event identifier in sorted
+        set. The second axis is indexed by event identifier in sorted
         order: index 0 holds the survival probability, indices 1, 2, …
         hold cause-specific CIFs.
 
@@ -130,7 +106,12 @@ def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None)
 
 
 def aj_calibration_per_event(
-    y_conf, times, inc_prob_at_conf, event_of_interest=None, alpha=2
+    y_conf,
+    times,
+    inc_prob_at_conf,
+    event_of_interest=None,
+    alpha=2,
+    min_prop_at_risk=0.05,
 ):
     r"""AJ calibration score per event, integrated over time.
 
@@ -142,8 +123,13 @@ def aj_calibration_per_event(
         \text{AJ-Cal}_k = \frac{1}{t_{\max}}
         \int_0^{t_{\max}} AJ_k(t)^\alpha \, dt
 
-    where :math:`AJ_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)` is
-    computed by :func:`aj_calibration_at_t`.
+    where :math:`AJ_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)` is computed by
+    :func:`aj_calibration_at_t`. Here :math:`\bar{F}_k(t) = \frac{1}{n}
+    \sum_{i=1}^n \hat{F}_k(t \mid \mathbf{x}_i)` is the mean predicted
+    cumulative incidence for event :math:`k` across the calibration set,
+    :math:`\hat{F}^{AJ}_k(t)` is the marginal Aalen-Johansen CIF fitted on
+    the same set, and the survival probability (event 0) is compared
+    against the Kaplan-Meier estimate via :func:`km_calibration`.
 
     A score of zero indicates perfect marginal calibration for event
     :math:`k`. With the default ``alpha=2`` the score is always
@@ -152,7 +138,7 @@ def aj_calibration_per_event(
     Parameters
     ----------
     y_conf : array-like of shape (n_samples, 2)
-        Survival outcomes of the calibration cohort, with columns
+        Survival outcomes of the calibration set, with columns
         ``"event"`` and ``"duration"``.
 
     times : array-like of shape (n_times,)
@@ -160,7 +146,7 @@ def aj_calibration_per_event(
 
     inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
         Predicted incidence probabilities at ``times`` for the calibration
-        cohort.
+        set.
 
     event_of_interest : int or None, default=None
         If provided, return only the score for that event.
@@ -169,7 +155,15 @@ def aj_calibration_per_event(
     alpha : int, default=2
         Exponent applied to :math:`AJ_k(t)` before integration.
         ``alpha=2`` gives a squared L2 calibration score; ``alpha=1``
-        gives a signed L1 score.
+        gives the L1 score.
+
+    min_prop_at_risk : float, default=0.05
+        Lower bound on the proportion of the set still at risk required
+        to include a timepoint in the integral. The integration stops once
+        fewer than this fraction of subjects remain at risk, which avoids
+        measuring noise in the tail of the time grid where the
+        Aalen-Johansen reference is unreliable. Set to ``0`` to integrate
+        over the full time grid.
 
     Returns
     -------
@@ -193,6 +187,16 @@ def aj_calibration_per_event(
     times_sorted = times[order]
     inc_sorted = np.asarray(inc_prob_at_conf)[:, :, order]
 
+    event, duration = check_y_survival(y_conf)
+    mask = _truncation_mask(duration[event], times_sorted, min_prop_at_risk)
+    if not mask.any():
+        raise ValueError(
+            f"min_prop_at_risk={min_prop_at_risk} leaves no timepoints; "
+            "lower it or pass 0."
+        )
+    times_sorted = times_sorted[mask]
+    inc_sorted = inc_sorted[:, :, mask]
+
     t_max = times_sorted[-1]
     differences = aj_calibration_at_t(y_conf, times_sorted, inc_sorted)
 
@@ -206,7 +210,14 @@ def aj_calibration_per_event(
     return scores
 
 
-def aj_calibration(y_conf, times, inc_prob_at_conf, alpha=2, reduction="mean"):
+def aj_calibration(
+    y_conf,
+    times,
+    inc_prob_at_conf,
+    alpha=2,
+    reduction="mean",
+    min_prop_at_risk=0.05,
+):
     r"""Overall AJ calibration score aggregated across all events.
 
     Computes the per-event AJ calibration scores via
@@ -219,10 +230,18 @@ def aj_calibration(y_conf, times, inc_prob_at_conf, alpha=2, reduction="mean"):
 
     or the sum (resp. max) when ``reduction='sum'`` (resp. ``reduction='max'``).
 
+    Each per-event score integrates the pointwise error
+    :math:`AJ_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)` between the mean
+    predicted cumulative incidence :math:`\bar{F}_k(t) = \frac{1}{n}
+    \sum_{i=1}^n \hat{F}_k(t \mid \mathbf{x}_i)` across the calibration
+    set and the marginal Aalen-Johansen reference
+    :math:`\hat{F}^{AJ}_k(t)` fitted on the same set (Kaplan-Meier via
+    :func:`km_calibration` for event 0).
+
     Parameters
     ----------
     y_conf : array-like of shape (n_samples, 2)
-        Survival outcomes of the calibration cohort, with columns
+        Survival outcomes of the calibration set, with columns
         ``"event"`` and ``"duration"``.
 
     times : array-like of shape (n_times,)
@@ -230,13 +249,19 @@ def aj_calibration(y_conf, times, inc_prob_at_conf, alpha=2, reduction="mean"):
 
     inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
         Predicted incidence probabilities at ``times`` for the calibration
-        cohort.
+        set.
 
     alpha : int, default=2
         Exponent applied to the pointwise difference before integration.
 
     reduction : {"mean", "sum", "max"}, default="mean"
         How to aggregate per-event scores into a single value.
+
+    min_prop_at_risk : float, default=0.05
+        Lower bound on the proportion of the set still at risk required
+        to include a timepoint in the integral. Stops the integration once
+        fewer than this fraction of subjects remain at risk. Set to ``0``
+        to integrate over the full time grid.
 
     Returns
     -------
@@ -260,7 +285,13 @@ def aj_calibration(y_conf, times, inc_prob_at_conf, alpha=2, reduction="mean"):
             f"reduction must be 'max', 'mean' or 'sum', got {reduction!r}."
         )
 
-    scores = aj_calibration_per_event(y_conf, times, inc_prob_at_conf, alpha=alpha)
+    scores = aj_calibration_per_event(
+        y_conf,
+        times,
+        inc_prob_at_conf,
+        alpha=alpha,
+        min_prop_at_risk=min_prop_at_risk,
+    )
     values = np.array(list(scores.values()))
 
     if reduction == "mean":

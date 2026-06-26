@@ -37,16 +37,6 @@ Metrics
     metrics.aj_calibration_per_event
     metrics.aj_calibration
 
-Calibration
------------
-
-.. autosummary::
-    :toctree: generated/
-    :template: class.rst
-    :nosignatures:
-
-    metrics.KMCalibration
-
 
 Datasets
 --------

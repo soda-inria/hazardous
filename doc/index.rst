@@ -21,12 +21,65 @@ Gradient-boosting Survival Analysis and Competing Risks
 and **competing risks** settings. It introduces **SurvivalBoost**, a **scalable**
 gradient-boosting model designed for this task.
 
-With a **scikit-learn-compatible API**, the library also offers various metrics
-for model evaluation adapted for the competing risks setting: 
+With a **scikit-learn-compatible API**, the library also ships a suite of
+evaluation metrics specifically adapted to the **competing risks** setting.
 
-- **Integrated Brier Score** 
-- **C-index**
-- **Accuracy in Time**: the ability to predict the observed event at a given time horizon.
+Evaluating competing-risks models
+---------------------------------
+
+A trustworthy model has to get three different things right: **rank** patients
+by risk, **predict the right probabilities**, and stay **calibrated** across the
+whole follow-up. ``hazardous`` provides one family of metrics for each question.
+
+.. grid:: 1 1 3 3
+   :gutter: 3
+
+   .. grid-item-card:: Discrimination
+
+      **C-index for competing risks**
+
+      *Does the model rank individuals in the right order* — higher predicted
+      incidence for those who experience the event sooner? The cause-specific
+      concordance index extends Harrell's C-index to competing risks, handling
+      censoring and competing events.
+
+      +++
+      See :func:`~hazardous.metrics.concordance_index_incidence`.
+
+   .. grid-item-card:: Accuracy
+
+      **Integrated Brier Score (IBS)**
+
+      *Are the predicted probabilities close to the observed outcomes?* The IBS
+      is a strictly proper scoring rule that averages the squared error of the
+      predicted cumulative incidence over all horizons — lower is better.
+      
+      +++
+      See :func:`~hazardous.metrics.integrated_brier_score_incidence` and
+      :func:`~hazardous.metrics.brier_score_incidence`.
+
+      *Is the current predicted class correct?* The Accuracy in Time metric reports 
+      the ability to predict the *observed* event at a given time horizon — a single, 
+      intuitive number to follow predictive performance through time.
+
+      +++
+      See :func:`~hazardous.metrics.accuracy_in_time`.
+
+
+
+   .. grid-item-card:: ⚖️ Calibration
+
+      **AJ & KM calibration**
+
+      *Are the predicted probabilities trustworthy on average?* Calibration
+      compares the mean predicted incidence against the non-parametric
+      Aalen-Johansen (competing risks) and Kaplan-Meier (survival) estimators.
+      A score of zero means perfectly calibrated.
+
+      +++
+      See :func:`~hazardous.metrics.aj_calibration` and
+      :func:`~hazardous.metrics.km_calibration`.
+
 
 What is the difference between Survival Analysis and the Competing risks setting?
 ---------------------------------------------------------------------------------

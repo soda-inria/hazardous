@@ -3,6 +3,22 @@
 Calibration of survival models with competing risks
 ===========================
 
+A model is *calibrated* when its predicted probabilities match the observed
+frequencies of events: among individuals predicted to have a 20% risk, about
+20% should actually experience the event. *Marginal* calibration is the weakest
+form of this property, checking that predictions are correct on average across
+the whole cohort rather than for each individual.
+
+In a competing risks setting, an individual can experience one of several
+mutually exclusive events (e.g. dying from different causes), and the quantity
+of interest is the cumulative incidence function (CIF) of each event over time.
+The Aalen-Johansen (AJ) estimator is the standard non-parametric estimator of
+these CIFs. AJ calibration uses it as a ground-truth reference: a model is
+marginally calibrated if its mean predicted CIF matches the AJ estimate fitted
+on the same cohort. The AJ calibration metric quantifies the gap between the
+two, with a score of zero indicating perfect marginal calibration. See [Alberge2026]_
+for details.
+
 In this example, we illustrate how the Aalen-Johansen calibration metric works.
 The Aalen-Johansen (AJ) calibration metric measures marginal calibration of a
 survival model in the presence of competing risks. It compares the mean predicted
@@ -19,6 +35,10 @@ We demonstrate:
    :func:`~hazardous.metrics.aj_calibration`,
    :func:`~hazardous.metrics.aj_calibration_per_event`, and
    :func:`~hazardous.metrics.aj_calibration_at_t`.
+
+.. [Alberge2026] J. Alberge, T. Haugomat, G. Varoquaux, J. Abécassis,
+   "On the calibration of survival models with competing risks", arXiv:2602.00194,
+   2026. https://arxiv.org/pdf/2602.00194
 """
 
 # %%
@@ -26,6 +46,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
+import warnings
+
+from lifelines import KaplanMeierFitter
+from lifelines.plotting import add_at_risk_counts
 
 from hazardous.utils import make_time_grid
 from hazardous._km_sampler import _AalenJohansenSampler
@@ -36,6 +60,10 @@ from hazardous.metrics import (
     aj_calibration_at_t,
     aj_calibration_per_event,
 )
+
+# lifelines' AalenJohansenFitter warns and randomly jitters whenever it finds
+# tied event times. Silence that specific warning to keep the output clean.
+warnings.filterwarnings("ignore", message="Tied event times were detected")
 
 # %%
 # Generation of one synthetic dataset with 3 competing events,
@@ -52,7 +80,7 @@ X, y = make_synthetic_competing_weibull(
     random_state=0,
 )
 
-sns.histplot(data=y, x="duration", hue="event", bins=50, kde=True)
+sns.histplot(y, x="duration", hue="event", bins=50, kde=True)
 plt.title("Distribution of the target")
 plt.show()
 
@@ -67,8 +95,18 @@ times = make_time_grid(
     event=y_train["event"], duration=y_train["duration"], n_time_grid_steps=100
 )
 
+# In the tail of the time grid only a handful of subjects are still at risk, so
+# the Aalen-Johansen reference - and therefore the calibration error - becomes
+# pure noise there. The AJ-calibration metric integrates only up to the time
+# where fewer than ``min_prop_at_risk`` of the cohort remains at risk (5% by
+# default). We compute that cutoff time here to highlight it in the plots below.
+min_prop_at_risk = 0.05
+prop_at_risk = (np.asarray(y_test["duration"])[:, None] >= times[None, :]).mean(axis=0)
+t_cut = times[prop_at_risk >= min_prop_at_risk][-1]
+
 # %%
 # AJ estimator as a calibrated baseline.
+# --------------------------------------
 # The AJ estimator is a marginal model: it predicts the same CIF for every
 # individual. Fitting on the training set and evaluating on the test set gives a
 # calibration score close (but not exactly equal) to zero.
@@ -80,7 +118,10 @@ incidence_funcs_aj[0] = aalen_sampler.survival_func_
 
 
 def _aj_predictions(sampler_funcs, n_samples, n_events, times):
-    """Broadcast marginal AJ predictions to shape (n_samples, n_events+1, n_times)."""
+    """
+    Broadcast marginal AJ predictions to shape
+    (n_samples, n_events+1, n_times).
+    """
     preds = np.array(
         [np.tile(sampler_funcs[i](times), (n_samples, 1)) for i in range(n_events + 1)]
     )
@@ -95,7 +136,7 @@ print(f"AJ calibration score (test set): {aj_cal_test:.6f}")
 
 # %%
 # Why does the AJ estimator have a non-zero calibration score?
-#
+# ------------------------------------------------------------
 # The AJ calibration metric compares the *mean predicted CIF* against the
 # AJ estimator on the test set.
 # When the model is itself the AJ fitted on the training set, its predictions
@@ -140,7 +181,6 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# Fitting SurvivalBoost on the training set.
 # SurvivalBoost produces *individual-level* CIF predictions, so its mean
 # prediction can deviate from the marginal AJ reference, reflecting whether
 # the model's is well-calibrated marginally.
@@ -153,6 +193,7 @@ inc_probs_sb = survivalboost.predict_cumulative_incidence(X_test, times=times)
 
 # %%
 # Comparing mean SurvivalBoost predictions against the AJ reference.
+# ------------------------------------------------------------------
 # A well-calibrated model has its mean CIF close to the non-parametric AJ.
 
 aj_ref = {
@@ -181,7 +222,9 @@ plt.show()
 
 # %%
 # AJ calibration at three levels of granularity.
+# ----------------------------------------------
 #
+# The AJ calibration metric can be computed at three levels of granularity:
 # 1. ``aj_calibration``: single scalar score aggregated across all events.
 # 2. ``aj_calibration_per_event``: one scalar score per event, before aggregation.
 # 3. ``aj_calibration_at_t``: pointwise difference δ_k(t) at each time, and
@@ -195,10 +238,24 @@ score_sum = aj_calibration(y_test, times, inc_probs_sb, reduction="sum")
 print(f"[aj_calibration] overall score (sum):  {score_sum:.6f}")
 
 # 2 — Per-event scores
-scores_per_event = aj_calibration_per_event(y_test, times, inc_probs_sb)
-print("\n[aj_calibration_per_event] scores:")
-for event_id, score in scores_per_event.items():
-    print(f"  Event {event_id}: {score:.6f}")
+# By default the score integrates only up to the time where 5% of the cohort is
+# still at risk. Because the time grid is quantile-spaced, the few tail points
+# span most of the time axis and carry large weight in the integral. For events
+# whose error is concentrated in that tail (e.g. event 3), integrating over the
+# full grid (``min_prop_at_risk=0``) lets small-sample noise dominate and
+# inflates the score; truncation removes that contribution. Where the model is
+# genuinely miscalibrated in the data-rich region (e.g. event 0), truncation
+# does not hide it.
+scores_per_event = aj_calibration_per_event(y_test, times, inc_probs_sb)  # default 5%
+scores_full_grid = aj_calibration_per_event(
+    y_test, times, inc_probs_sb, min_prop_at_risk=0
+)
+print("\n[aj_calibration_per_event] scores (truncated at 5% at risk vs full grid):")
+for event_id in scores_per_event:
+    print(
+        f"  Event {event_id}: {scores_per_event[event_id]:.6f} "
+        f"(full grid: {scores_full_grid[event_id]:.6f})"
+    )
 
 # Score for event 1 only
 score_event1 = aj_calibration_per_event(
@@ -229,15 +286,33 @@ for event_id, diff in diffs_all.items():
 
 # %%
 # Visualizing the pointwise calibration error for SurvivalBoost.
+# --------------------------------------------------------------
 # Values close to zero indicate good marginal calibration at that time point.
+#
+# For events 1 and 3 the error grows in the shaded tail: the "number at risk"
+# row below each panel (drawn with lifelines' ``add_at_risk_counts``) shows that
+# only a handful of subjects remain there, so the comparison is dominated by
+# sampling noise rather than genuine miscalibration. This is exactly the region
+# excluded by ``min_prop_at_risk`` when computing the integrated score. Event 0,
+# in contrast, is off even where data is plentiful, so its error is a real
+# calibration problem that truncation does not remove.
 
-fig, axes = plt.subplots(ncols=n_events + 1, figsize=(18, 4))
+# Kaplan-Meier on the test set, used only to render the at-risk counts.
+kmf = KaplanMeierFitter(label="test cohort").fit(
+    np.asarray(y_test["duration"]), np.asarray(y_test["event"]) > 0
+)
+
+fig, axes = plt.subplots(ncols=n_events + 1, figsize=(18, 5))
 fig.suptitle("Pointwise AJ calibration error AJ_k(t) — SurvivalBoost")
 
 for event_id, diff in diffs_all.items():
     ax = axes[event_id]
     ax.plot(times, diff, color="C0")
     ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
+    ax.axvspan(
+        t_cut, times[-1], color="grey", alpha=0.15, label="tail: <5% at risk (excluded)"
+    )
+    ax.axvline(t_cut, color="grey", linewidth=0.8, linestyle="-")
     ax.axvline(
         t_star, color="C2", linewidth=0.8, linestyle=":", label=f"t*={t_star:.1f}"
     )
@@ -246,6 +321,7 @@ for event_id, diff in diffs_all.items():
     ax.set_xlabel("Time")
     ax.set_ylabel("AJ_k(t)")
     ax.legend(fontsize=8)
+    add_at_risk_counts(kmf, ax=ax, rows_to_show=["At risk"])
 
 plt.tight_layout()
 plt.show()

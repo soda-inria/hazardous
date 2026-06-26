@@ -6,6 +6,7 @@ from numpy.testing import assert_allclose
 
 from hazardous._km_sampler import _AalenJohansenSampler, _KaplanMeierSampler
 from hazardous.metrics._aj_calibration import (
+    _truncation_mask,
     aj_calibration,
     aj_calibration_at_t,
     aj_calibration_per_event,
@@ -141,7 +142,9 @@ class TestAJCalibrationPerEvent:
         rng = np.random.default_rng(3)
         inc_pred = rng.random((n, 3, len(times)))
 
-        scores = aj_calibration_per_event(y, times, inc_pred, alpha=2)
+        scores = aj_calibration_per_event(
+            y, times, inc_pred, alpha=2, min_prop_at_risk=0
+        )
 
         order = np.argsort(times)
         times_sorted = times[order]
@@ -253,3 +256,66 @@ class TestAJCalibrationSingleEvent:
 
         scores = aj_calibration_per_event(y, times, inc_pred)
         assert set(scores.keys()) == {0, 1}
+
+
+# ---------------------------------------------------------------------------
+# Time truncation via min_prop_at_risk
+# ---------------------------------------------------------------------------
+
+
+class TestAJCalibrationTruncation:
+    def test_min_prop_zero_uses_full_grid(self, y, times):
+        """min_prop_at_risk=0 integrates over the whole time grid."""
+        n = len(y["event"])
+        rng = np.random.default_rng(0)
+        inc_pred = rng.random((n, 3, len(times)))
+
+        scores = aj_calibration_per_event(y, times, inc_pred, min_prop_at_risk=0)
+
+        order = np.argsort(times)
+        times_sorted = times[order]
+        diffs = aj_calibration_at_t(y, times_sorted, inc_pred[:, :, order])
+        t_max = times_sorted[-1]
+        for event_id, diff in diffs.items():
+            expected = np.trapezoid(diff**2, times_sorted) / t_max
+            assert scores[event_id] == pytest.approx(expected, rel=1e-10)
+
+    def test_truncation_excludes_tail(self, y, times):
+        """A higher threshold integrates only over the retained timepoints."""
+        n = len(y["event"])
+        rng = np.random.default_rng(1)
+        inc_pred = rng.random((n, 3, len(times)))
+
+        min_prop = 0.2
+        scores = aj_calibration_per_event(y, times, inc_pred, min_prop_at_risk=min_prop)
+
+        order = np.argsort(times)
+        times_sorted = times[order]
+        mask = _truncation_mask(y["duration"], times_sorted, min_prop)
+        assert not mask.all()  # the tail is actually dropped
+
+        times_kept = times_sorted[mask]
+        diffs = aj_calibration_at_t(y, times_kept, inc_pred[:, :, order][:, :, mask])
+        t_max = times_kept[-1]
+        for event_id, diff in diffs.items():
+            expected = np.trapezoid(diff**2, times_kept) / t_max
+            assert scores[event_id] == pytest.approx(expected, rel=1e-10)
+
+    def test_truncation_changes_score(self, y, times):
+        n = len(y["event"])
+        inc_pred = np.full((n, 3, len(times)), fill_value=0.5)
+        full = aj_calibration_per_event(y, times, inc_pred, min_prop_at_risk=0)
+        trunc = aj_calibration_per_event(y, times, inc_pred, min_prop_at_risk=0.2)
+        for event_id in [1, 2]:
+            assert full[event_id] != pytest.approx(trunc[event_id])
+
+    def test_perfect_calibration_still_zero(self, y, times):
+        inc_pred = _perfect_inc_predictions(y, times)
+        scores = aj_calibration_per_event(y, times, inc_pred)  # default 0.05
+        for score in scores.values():
+            assert score == pytest.approx(0.0, abs=1e-10)
+
+    def test_empty_mask_raises(self, y, times):
+        inc_pred = _perfect_inc_predictions(y, times)
+        with pytest.raises(ValueError, match="leaves no timepoints"):
+            aj_calibration_per_event(y, times, inc_pred, min_prop_at_risk=1.0)

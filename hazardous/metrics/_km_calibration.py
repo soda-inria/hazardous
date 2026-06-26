@@ -4,7 +4,7 @@ from scipy.interpolate import interp1d
 from .._km_sampler import _KaplanMeierSampler
 
 
-class KMCalibration:
+class _KMCalibration:
     r"""Marginal calibration of a survival model using the Kaplan-Meier estimator.
 
     This class measures how closely the mean predicted survival function
@@ -17,8 +17,8 @@ class KMCalibration:
         \left(\bar{S}(t) - \hat{S}_{KM}(t)\right)^\alpha \, dt
 
     where :math:`\bar{S}(t)` is the mean predicted survival probability across
-    the calibration cohort and :math:`\hat{S}_{KM}(t)` is the Kaplan-Meier
-    estimate fitted on that same cohort.
+    the calibration set and :math:`\hat{S}_{KM}(t)` is the Kaplan-Meier
+    estimate fitted on that same set.
 
     A score of zero indicates perfect marginal calibration. Positive values
     indicate systematic over- or under-prediction of survival.
@@ -38,7 +38,7 @@ class KMCalibration:
     ----------
     kaplan_meier_sampler_ : _KaplanMeierSampler
         The fitted Kaplan-Meier sampler used to estimate the marginal survival
-        function on the calibration cohort.
+        function on the calibration set.
 
     See Also
     --------
@@ -61,12 +61,12 @@ class KMCalibration:
         self.alpha = alpha
 
     def fit(self, y_conf):
-        """Fit the Kaplan-Meier estimator on the calibration cohort.
+        """Fit the Kaplan-Meier estimator on the calibration set.
 
         Parameters
         ----------
         y_conf : array-like of shape (n_samples, 2)
-            Survival outcomes of the calibration cohort, with columns
+            Survival outcomes of the calibration set, with columns
             ``"event"`` (0 for censoring, 1 for the event) and
             ``"duration"`` (observed time).
 
@@ -90,7 +90,7 @@ class KMCalibration:
 
         surv_prob_at_conf : array-like of shape (n_samples, n_times)
             Predicted survival probabilities at ``times`` for the calibration
-            cohort.
+            set.
 
         Returns
         -------
@@ -117,7 +117,7 @@ class KMCalibration:
 
         surv_prob_at_conf : array-like of shape (n_samples, n_times)
             Predicted survival probabilities at ``times`` for the calibration
-            cohort.
+            set.
 
         Returns
         -------
@@ -153,12 +153,12 @@ def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False, alp
     where :math:`\bar{S}(t) = \frac{1}{n} \sum_{i=1}^n
     \hat{S}(t \mid \mathbf{x}_i)` is the mean predicted survival probability
     and :math:`\hat{S}_{KM}(t)` is the Kaplan-Meier estimate fitted on the
-    calibration cohort.
+    calibration set.
 
     Parameters
     ----------
     y_conf : array-like of shape (n_samples, 2)
-        Survival outcomes of the calibration cohort, with columns
+        Survival outcomes of the calibration set, with columns
         ``"event"`` (0 for censoring, 1 for the event) and
         ``"duration"`` (observed time).
 
@@ -167,7 +167,7 @@ def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False, alp
 
     surv_prob_at_conf : array-like of shape (n_samples, n_times)
         Predicted survival probabilities at ``times`` for the calibration
-        cohort.
+        set.
 
     return_diff_at_t : bool, default=False
         If ``True``, also return the pointwise difference
@@ -199,7 +199,7 @@ def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False, alp
         arXiv:2602.00194, 2026.
         https://arxiv.org/pdf/2602.00194
     """
-    cal = KMCalibration(alpha=alpha).fit(y_conf)
+    cal = _KMCalibration(alpha=alpha).fit(y_conf)
     km_cal = cal.score(times, surv_prob_at_conf)
     if return_diff_at_t:
         diff_at_t = cal.difference_at_t(times, surv_prob_at_conf)
@@ -229,7 +229,7 @@ def recalibrate_survival_function(
         \hat{S}(t \mid \mathbf{x}_i) - \Delta(t)
 
     where :math:`\Delta(t) = \bar{S}(t) - \hat{S}_{KM}(t)` is the
-    calibration error estimated on the calibration cohort.
+    calibration error estimated on the calibration set.
 
     Either ``estimator`` or both ``surv_probs`` and ``surv_probs_conf`` must
     be provided.
@@ -237,10 +237,10 @@ def recalibrate_survival_function(
     Parameters
     ----------
     X_conf : array-like of shape (n_conf, n_features)
-        Feature matrix for the calibration cohort.
+        Feature matrix for the calibration set.
 
     y_conf : array-like of shape (n_conf, 2)
-        Survival outcomes of the calibration cohort, with columns
+        Survival outcomes of the calibration set, with columns
         ``"event"`` and ``"duration"``.
 
     times : array-like of shape (n_times,)
@@ -261,7 +261,7 @@ def recalibrate_survival_function(
 
     surv_probs_conf : array-like of shape (n_conf, n_times), default=None
         Pre-computed survival probability predictions for the calibration
-        cohort at ``times``.
+        set at ``times``.
 
     return_function : bool, default=False
         If ``True``, return a step-function interpolator instead of an
@@ -329,7 +329,7 @@ def recalibrate_survival_function_predictions(
         \hat{S}(t \mid \mathbf{x}_i) - \Delta(t)
 
     where :math:`\Delta(t) = \bar{S}(t) - \hat{S}_{KM}(t)` is the
-    calibration error estimated on the calibration cohort.
+    calibration error estimated on the calibration set.
 
     Parameters
     ----------
@@ -339,10 +339,10 @@ def recalibrate_survival_function_predictions(
 
     surv_probs_conf : array-like of shape (n_conf, n_times)
         Pre-computed survival probability predictions for the calibration
-        cohort at ``times``.
+        set at ``times``.
 
     y_conf : array-like of shape (n_conf, 2)
-        Survival outcomes of the calibration cohort, with columns
+        Survival outcomes of the calibration set, with columns
         ``"event"`` and ``"duration"``.
 
     times : array-like of shape (n_times,)
