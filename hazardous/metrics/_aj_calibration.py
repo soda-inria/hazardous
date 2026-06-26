@@ -187,8 +187,8 @@ def aj_calibration_per_event(
     times_sorted = times[order]
     inc_sorted = np.asarray(inc_prob_at_conf)[:, :, order]
 
-    event, duration = check_y_survival(y_conf)
-    mask = _truncation_mask(duration[event], times_sorted, min_prop_at_risk)
+    _, duration = check_y_survival(y_conf)
+    mask = _truncation_mask(duration, times_sorted, min_prop_at_risk)
     if not mask.any():
         raise ValueError(
             f"min_prop_at_risk={min_prop_at_risk} leaves no timepoints; "
