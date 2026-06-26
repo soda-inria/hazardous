@@ -189,7 +189,7 @@ def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False, alp
 
     See Also
     --------
-    KMCalibration : Class-based API.
+    _KMCalibration : Class-based API.
     aj_calibration : Extends to competing risks via Aalen-Johansen.
 
     References
