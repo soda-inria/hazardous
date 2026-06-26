@@ -54,6 +54,7 @@ whole follow-up. ``hazardous`` provides one family of metrics for each question.
       is a strictly proper scoring rule that averages the squared error of the
       predicted cumulative incidence over all horizons — lower is better.
 
+      **Accuracy in Time**
       *Is the current predicted class correct?* The Accuracy in Time metric reports 
       the ability to predict the *observed* event at a given time horizon — a single, 
       intuitive number to follow predictive performance through time.
