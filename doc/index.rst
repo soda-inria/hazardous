@@ -44,7 +44,7 @@ whole follow-up. ``hazardous`` provides one family of metrics for each question.
       censoring and competing events.
 
       +++
-      See :func:`~hazardous.metrics.concordance_index_incidence`.
+      See :func:`~hazardous.metrics.concordance_index_incidence`
 
    .. grid-item-card:: Accuracy
 
@@ -53,21 +53,19 @@ whole follow-up. ``hazardous`` provides one family of metrics for each question.
       *Are the predicted probabilities close to the observed outcomes?* The IBS
       is a strictly proper scoring rule that averages the squared error of the
       predicted cumulative incidence over all horizons — lower is better.
-      
-      +++
-      See :func:`~hazardous.metrics.integrated_brier_score_incidence` and
-      :func:`~hazardous.metrics.brier_score_incidence`.
 
       *Is the current predicted class correct?* The Accuracy in Time metric reports 
       the ability to predict the *observed* event at a given time horizon — a single, 
       intuitive number to follow predictive performance through time.
 
       +++
-      See :func:`~hazardous.metrics.accuracy_in_time`.
+      See :func:`~hazardous.metrics.integrated_brier_score_incidence`, 
+      :func:`~hazardous.metrics.brier_score_incidence` and 
+      :func:`~hazardous.metrics.accuracy_in_time`
 
 
 
-   .. grid-item-card:: ⚖️ Calibration
+   .. grid-item-card:: Calibration
 
       **AJ & KM calibration**
 
@@ -78,7 +76,7 @@ whole follow-up. ``hazardous`` provides one family of metrics for each question.
 
       +++
       See :func:`~hazardous.metrics.aj_calibration` and
-      :func:`~hazardous.metrics.km_calibration`.
+      :func:`~hazardous.metrics.km_calibration`
 
 
 What is the difference between Survival Analysis and the Competing risks setting?

@@ -212,6 +212,10 @@ for event_id in range(n_events + 1):
     mean_sb = inc_probs_sb[:, event_id, :].mean(axis=0)
     ax.plot(times, mean_sb, label="SurvivalBoost (mean)", color="C0")
     ax.plot(times, aj_ref[event_id], label="AJ reference", linestyle="--", color="C1")
+    ax.axvspan(
+        t_cut, times[-1], color="grey", alpha=0.15, label="tail: <5% at risk (excluded)"
+    )
+    ax.axvline(t_cut, color="grey", linewidth=0.8, linestyle="-")
     ax.set_title(f"{'Survival (event 0)' if event_id == 0 else f'Event {event_id}'}")
     ax.set_xlabel("Time")
     ax.set_ylabel("Probability")
