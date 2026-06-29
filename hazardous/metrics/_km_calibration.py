@@ -25,8 +25,8 @@ class _KMCalibration:
 
     The KM-Calibration score is a special case of the Aalen-Johansen calibration
     score for a single event type. The implementation of this metric is also
-    available in SurvivalEval[Qi2024], a python library for survival analysis evaluation
-    metrics.
+    available in SurvivalEval [Qi2024]_, a python library for survival analysis
+    evaluation metrics.
     Parameters
     ----------
     alpha : int, default=2
@@ -53,8 +53,9 @@ class _KMCalibration:
         https://arxiv.org/pdf/2602.00194
 
     .. [Qi2024] S. Qi, W. Sun, R. Greiner.
-    "{SurvivalEVAL}: A Comprehensive Open-Source Python Package
-    for Evaluating Individual Survival Distributions." 10.1609/aaaiss.v2i1.27713 (2024).
+        "{SurvivalEVAL}: A Comprehensive Open-Source Python Package
+        for Evaluating Individual Survival Distributions."
+        10.1609/aaaiss.v2i1.27713 (2024).
     """
 
     def __init__(self, alpha=2):
