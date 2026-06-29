@@ -14,7 +14,7 @@ class _KMCalibration:
     .. math::
 
         \text{KM-Cal} = \frac{1}{t_{\max}} \int_0^{t_{\max}}
-        \left(\bar{S}(t) - \hat{S}_{KM}(t)\right)^\alpha \, dt
+        \left|\bar{S}(t) - \hat{S}_{KM}(t)\right|^\alpha \, dt
 
     where :math:`\bar{S}(t)` is the mean predicted survival probability across
     the calibration set and :math:`\hat{S}_{KM}(t)` is the Kaplan-Meier
@@ -31,8 +31,8 @@ class _KMCalibration:
     ----------
     alpha : int, default=2
         Exponent applied to the pointwise difference before integration.
-        When ``alpha=2``, the score is an L2 (squared) calibration score.
-        When ``alpha=1``, it is an L1 (signed absolute) calibration score.
+        When ``alpha=2``, the score is an L2 calibration score.
+        When ``alpha=1``, it is an L1 calibration score.
 
     Attributes
     ----------
@@ -60,12 +60,12 @@ class _KMCalibration:
     def __init__(self, alpha=2):
         self.alpha = alpha
 
-    def fit(self, y_conf):
+    def fit(self, y_calibration):
         """Fit the Kaplan-Meier estimator on the calibration set.
 
         Parameters
         ----------
-        y_conf : array-like of shape (n_samples, 2)
+        y_calibration : array-like of shape (n_samples, 2)
             Survival outcomes of the calibration set, with columns
             ``"event"`` (0 for censoring, 1 for the event) and
             ``"duration"`` (observed time).
@@ -75,20 +75,20 @@ class _KMCalibration:
         self : object
             Fitted estimator.
         """
-        self.kaplan_meier_sampler_ = _KaplanMeierSampler().fit(y_conf)
+        self.kaplan_meier_sampler_ = _KaplanMeierSampler().fit(y_calibration)
         return self
 
-    def score(self, times, surv_prob_at_conf):
+    def score(self, times, pred_calibration):
         """Compute the KM-Calibration score.
 
         Parameters
         ----------
         times : array-like of shape (n_times,)
             Time points at which the survival probability was predicted.
-            Need not be sorted; columns of ``surv_prob_at_conf`` must
+            Need not be sorted; columns of ``pred_calibration`` must
             correspond to the same ordering as ``times``.
 
-        surv_prob_at_conf : array-like of shape (n_samples, n_times)
+        pred_calibration : array-like of shape (n_samples, n_times)
             Predicted survival probabilities at ``times`` for the calibration
             set.
 
@@ -98,16 +98,16 @@ class _KMCalibration:
             KM-Calibration score. A value of 0 indicates perfect marginal
             calibration.
         """
-        times, surv_prob_at_conf = self._sort_by_time(times, surv_prob_at_conf)
+        times, pred_calibration = self._sort_by_time(times, pred_calibration)
         t_max = times[-1]
 
-        surv_probs_km = self.kaplan_meier_sampler_.survival_func_(times)
-        surv_probs_mean = surv_prob_at_conf.mean(axis=0)
+        pred_km = self.kaplan_meier_sampler_.survival_func_(times)
+        mean_predictions = pred_calibration.mean(axis=0)
 
-        diff_at_t = surv_probs_mean - surv_probs_km
+        diff_at_t = mean_predictions - pred_km
         return np.trapezoid(np.abs(diff_at_t) ** self.alpha, times) / t_max
 
-    def difference_at_t(self, times, surv_prob_at_conf):
+    def difference_at_t(self, times, pred_calibration):
         """Compute the pointwise difference between mean predictions and KM.
 
         Parameters
@@ -115,20 +115,20 @@ class _KMCalibration:
         times : array-like of shape (n_times,)
             Time points at which the survival probability was predicted.
 
-        surv_prob_at_conf : array-like of shape (n_samples, n_times)
+        pred_calibration : array-like of shape (n_samples, n_times)
             Predicted survival probabilities at ``times`` for the calibration
             set.
 
         Returns
         -------
         diff_at_t : ndarray of shape (n_times,)
-            Pointwise difference :math:`\\bar{S}(t) - \\hat{S}_{KM}(t)`,
+            Pointwise difference :math:`|\\bar{S}(t) - \\hat{S}_{KM}(t)|`,
             returned in ascending time order.
         """
-        times, surv_prob_at_conf = self._sort_by_time(times, surv_prob_at_conf)
-        surv_probs_km = self.kaplan_meier_sampler_.survival_func_(times)
-        surv_probs_mean = surv_prob_at_conf.mean(axis=0)
-        return surv_probs_mean - surv_probs_km
+        times, pred_calibration = self._sort_by_time(times, pred_calibration)
+        pred_km = self.kaplan_meier_sampler_.survival_func_(times)
+        mean_predictions = pred_calibration.mean(axis=0)
+        return np.abs(mean_predictions - pred_km)
 
     @staticmethod
     def _sort_by_time(times, preds_2d):
@@ -139,7 +139,9 @@ class _KMCalibration:
         return times[order], preds_2d[:, order]
 
 
-def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False, alpha=2):
+def km_calibration(
+    y_calibration, times, pred_calibration, return_diff_at_t=False, alpha=2
+):
     r"""KM-Calibration: marginal calibration score for survival models.
 
     Measures how closely the mean predicted survival probability tracks the
@@ -148,7 +150,7 @@ def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False, alp
     .. math::
 
         \text{KM-Cal} = \frac{1}{t_{\max}} \int_0^{t_{\max}}
-        \left(\bar{S}(t) - \hat{S}_{KM}(t)\right)^\alpha \, dt
+        \left|\bar{S}(t) - \hat{S}_{KM}(t)\right|^\alpha \, dt
 
     where :math:`\bar{S}(t) = \frac{1}{n} \sum_{i=1}^n
     \hat{S}(t \mid \mathbf{x}_i)` is the mean predicted survival probability
@@ -157,7 +159,7 @@ def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False, alp
 
     Parameters
     ----------
-    y_conf : array-like of shape (n_samples, 2)
+    y_calibration : array-like of shape (n_samples, 2)
         Survival outcomes of the calibration set, with columns
         ``"event"`` (0 for censoring, 1 for the event) and
         ``"duration"`` (observed time).
@@ -165,7 +167,7 @@ def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False, alp
     times : array-like of shape (n_times,)
         Time points at which the survival probability was predicted.
 
-    surv_prob_at_conf : array-like of shape (n_samples, n_times)
+    pred_calibration : array-like of shape (n_samples, n_times)
         Predicted survival probabilities at ``times`` for the calibration
         set.
 
@@ -199,22 +201,22 @@ def km_calibration(y_conf, times, surv_prob_at_conf, return_diff_at_t=False, alp
         arXiv:2602.00194, 2026.
         https://arxiv.org/pdf/2602.00194
     """
-    cal = _KMCalibration(alpha=alpha).fit(y_conf)
-    km_cal = cal.score(times, surv_prob_at_conf)
+    cal = _KMCalibration(alpha=alpha).fit(y_calibration)
+    km_cal = cal.score(times, pred_calibration)
     if return_diff_at_t:
-        diff_at_t = cal.difference_at_t(times, surv_prob_at_conf)
+        diff_at_t = cal.difference_at_t(times, pred_calibration)
         return km_cal, diff_at_t
     return km_cal
 
 
 def recalibrate_survival_function(
     X_conf,
-    y_conf,
+    y_calibration,
     times,
     estimator=None,
     X=None,
-    surv_probs=None,
-    surv_probs_conf=None,
+    pred_test=None,
+    pred_calibration=None,
     return_function=False,
 ):
     r"""Post-hoc recalibration of a survival function using KM-Calibration.
@@ -231,7 +233,7 @@ def recalibrate_survival_function(
     where :math:`\Delta(t) = \bar{S}(t) - \hat{S}_{KM}(t)` is the
     calibration error estimated on the calibration set.
 
-    Either ``estimator`` or both ``surv_probs`` and ``surv_probs_conf`` must
+    Either ``estimator`` or both ``pred_test`` and ``pred_calibration`` must
     be provided.
 
     Parameters
@@ -239,7 +241,7 @@ def recalibrate_survival_function(
     X_conf : array-like of shape (n_conf, n_features)
         Feature matrix for the calibration set.
 
-    y_conf : array-like of shape (n_conf, 2)
+    y_calibration : array-like of shape (n_conf, 2)
         Survival outcomes of the calibration set, with columns
         ``"event"`` and ``"duration"``.
 
@@ -248,18 +250,18 @@ def recalibrate_survival_function(
 
     estimator : estimator object, default=None
         A fitted survival estimator with a ``predict_survival_function``
-        method. Used to generate predictions when ``surv_probs`` is
+        method. Used to generate predictions when ``pred_test`` is
         ``None``.
 
     X : array-like of shape (n_samples, n_features), default=None
         Feature matrix for the test set. Required when ``estimator`` is
         provided.
 
-    surv_probs : array-like of shape (n_samples, n_times), default=None
+    pred_test : array-like of shape (n_samples, n_times), default=None
         Pre-computed survival probability predictions for the test set at
         ``times``.
 
-    surv_probs_conf : array-like of shape (n_conf, n_times), default=None
+    pred_calibration : array-like of shape (n_conf, n_times), default=None
         Pre-computed survival probability predictions for the calibration
         set at ``times``.
 
@@ -285,19 +287,21 @@ def recalibrate_survival_function(
         arXiv:2602.00194, 2026.
         https://arxiv.org/pdf/2602.00194
     """
-    if estimator is None and (surv_probs is None or surv_probs_conf is None):
+    if estimator is None and (pred_test is None or pred_calibration is None):
         raise ValueError(
-            "Either estimator or (surv_probs and surv_probs_conf) must be provided."
+            "Either estimator or (pred_test and pred_calibration) must be provided."
         )
 
-    if surv_probs is None:
+    if pred_test is None:
         if not hasattr(estimator, "predict_survival_function"):
             raise ValueError("estimator must have a predict_survival_function method.")
-        surv_probs = estimator.predict_survival_function(X, times)
-        surv_probs_conf = estimator.predict_survival_function(X_conf, times)
+        pred_test = estimator.predict_survival_function(X, times)
+        pred_calibration = estimator.predict_survival_function(X_conf, times)
 
-    _, diff_at_t = km_calibration(y_conf, times, surv_probs_conf, return_diff_at_t=True)
-    surv_probs_calibrated = np.asarray(surv_probs) - diff_at_t
+    _, diff_at_t = km_calibration(
+        y_calibration, times, pred_calibration, return_diff_at_t=True
+    )
+    surv_probs_calibrated = np.asarray(pred_test) - diff_at_t
 
     if return_function:
         return interp1d(
@@ -311,9 +315,9 @@ def recalibrate_survival_function(
 
 
 def recalibrate_survival_function_predictions(
-    surv_probs,
-    surv_probs_conf,
-    y_conf,
+    pred_test,
+    pred_calibration,
+    y_calibration,
     times,
     return_function=False,
 ):
@@ -333,15 +337,15 @@ def recalibrate_survival_function_predictions(
 
     Parameters
     ----------
-    surv_probs : array-like of shape (n_samples, n_times)
+    pred_test : array-like of shape (n_samples, n_times)
         Pre-computed survival probability predictions for the test set at
         ``times``.
 
-    surv_probs_conf : array-like of shape (n_conf, n_times)
+    pred_calibration : array-like of shape (n_conf, n_times)
         Pre-computed survival probability predictions for the calibration
         set at ``times``.
 
-    y_conf : array-like of shape (n_conf, 2)
+    y_calibration : array-like of shape (n_conf, 2)
         Survival outcomes of the calibration set, with columns
         ``"event"`` and ``"duration"``.
 
@@ -370,8 +374,10 @@ def recalibrate_survival_function_predictions(
         arXiv:2602.00194, 2026.
         https://arxiv.org/pdf/2602.00194
     """
-    _, diff_at_t = km_calibration(y_conf, times, surv_probs_conf, return_diff_at_t=True)
-    surv_probs_calibrated = np.asarray(surv_probs) - diff_at_t
+    _, diff_at_t = km_calibration(
+        y_calibration, times, pred_calibration, return_diff_at_t=True
+    )
+    surv_probs_calibrated = np.asarray(pred_test) - diff_at_t
 
     if return_function:
         return interp1d(

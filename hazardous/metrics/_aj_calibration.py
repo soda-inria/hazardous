@@ -19,7 +19,7 @@ def _truncation_mask(duration, times, min_prop_at_risk):
     return prop_at_risk >= min_prop_at_risk
 
 
-def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None):
+def aj_calibration_at_t(y_calibration, times, pred_calibration, event_of_interest=None):
     r"""Pointwise AJ calibration error at each time point.
 
     For each event :math:`k`, computes the difference between the mean
@@ -28,7 +28,7 @@ def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None)
 
     .. math::
 
-        AJ_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)
+        AJ_k(t) = |\bar{F}_k(t) - \hat{F}^{AJ}_k(t)|
 
     where :math:`\bar{F}_k(t) = \frac{1}{n} \sum_{i=1}^n \hat{F}_k(t \mid
     \mathbf{x}_i)` is the mean predicted cumulative incidence for event
@@ -39,16 +39,16 @@ def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None)
 
     Parameters
     ----------
-    y_conf : array-like of shape (n_samples, 2)
+    y_calibration : array-like of shape (n_samples, 2)
         Survival outcomes of the calibration set, with columns
         ``"event"`` (0 for censoring, positive integers for each cause of
         event) and ``"duration"`` (observed time).
 
     times : array-like of shape (n_times,)
         Time points at which the CIFs were predicted. Need not be sorted;
-        the last axis of ``inc_prob_at_conf`` must share the same ordering.
+        the last axis of ``pred_calibration`` must share the same ordering.
 
-    inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
+    pred_calibration : array-like of shape (n_samples, n_events+1, n_times)
         Predicted incidence probabilities at ``times`` for the calibration
         set. The second axis is indexed by event identifier in sorted
         order: index 0 holds the survival probability, indices 1, 2, …
@@ -78,26 +78,26 @@ def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None)
        arXiv:2602.00194, 2026. https://arxiv.org/pdf/2602.00194
     """
     times = np.asarray(times)
-    inc_prob_at_conf = np.asarray(inc_prob_at_conf)
+    pred_calibration = np.asarray(pred_calibration)
 
     order = np.argsort(times)
     times = times[order]
-    inc_prob_at_conf = inc_prob_at_conf[:, :, order]
+    pred_calibration = pred_calibration[:, :, order]
 
-    event, _ = check_y_survival(y_conf)
+    event, _ = check_y_survival(y_calibration)
     event_ids = np.array(sorted(set([0]) | set(event)))
 
     # Event 0: compare mean survival prediction against Kaplan-Meier
     _, diff_km = km_calibration(
-        y_conf, times, inc_prob_at_conf[:, 0, :], return_diff_at_t=True
+        y_calibration, times, pred_calibration[:, 0, :], return_diff_at_t=True
     )
     differences = {0: np.abs(diff_km)}
 
     # Events 1..K: compare mean CIF prediction against Aalen-Johansen
-    aalen_sampler = _AalenJohansenSampler().fit(y_conf)
+    aalen_sampler = _AalenJohansenSampler().fit(y_calibration)
     for event_id in event_ids[1:]:
         inc_probs_aj = aalen_sampler.incidence_func_[event_id](times)
-        inc_probs_mean = inc_prob_at_conf[:, event_id, :].mean(axis=0)
+        inc_probs_mean = pred_calibration[:, event_id, :].mean(axis=0)
         differences[event_id] = np.abs(inc_probs_mean - inc_probs_aj)
 
     if event_of_interest is not None:
@@ -106,9 +106,9 @@ def aj_calibration_at_t(y_conf, times, inc_prob_at_conf, event_of_interest=None)
 
 
 def aj_calibration_per_event(
-    y_conf,
+    y_calibration,
     times,
-    inc_prob_at_conf,
+    pred_calibration,
     event_of_interest=None,
     alpha=2,
     min_prop_at_risk=0.05,
@@ -123,7 +123,7 @@ def aj_calibration_per_event(
         \text{AJ-Cal}_k = \frac{1}{t_{\max}}
         \int_0^{t_{\max}} AJ_k(t)^\alpha \, dt
 
-    where :math:`AJ_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)` is computed by
+    where :math:`AJ_k(t) = |\bar{F}_k(t) - \hat{F}^{AJ}_k(t)|` is computed by
     :func:`aj_calibration_at_t`. Here :math:`\bar{F}_k(t) = \frac{1}{n}
     \sum_{i=1}^n \hat{F}_k(t \mid \mathbf{x}_i)` is the mean predicted
     cumulative incidence for event :math:`k` across the calibration set,
@@ -132,19 +132,18 @@ def aj_calibration_per_event(
     against the Kaplan-Meier estimate via :func:`km_calibration`.
 
     A score of zero indicates perfect marginal calibration for event
-    :math:`k`. With the default ``alpha=2`` the score is always
-    non-negative; with ``alpha=1`` it is a signed bias measure.
+    :math:`k`.
 
     Parameters
     ----------
-    y_conf : array-like of shape (n_samples, 2)
+    y_calibration : array-like of shape (n_samples, 2)
         Survival outcomes of the calibration set, with columns
         ``"event"`` and ``"duration"``.
 
     times : array-like of shape (n_times,)
         Time points at which the CIFs were predicted.
 
-    inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
+    pred_calibration : array-like of shape (n_samples, n_events+1, n_times)
         Predicted incidence probabilities at ``times`` for the calibration
         set.
 
@@ -185,9 +184,9 @@ def aj_calibration_per_event(
     times = np.asarray(times)
     order = np.argsort(times)
     times_sorted = times[order]
-    inc_sorted = np.asarray(inc_prob_at_conf)[:, :, order]
+    inc_sorted = np.asarray(pred_calibration)[:, :, order]
 
-    _, duration = check_y_survival(y_conf)
+    _, duration = check_y_survival(y_calibration)
     mask = _truncation_mask(duration, times_sorted, min_prop_at_risk)
     if not mask.any():
         raise ValueError(
@@ -198,7 +197,7 @@ def aj_calibration_per_event(
     inc_sorted = inc_sorted[:, :, mask]
 
     t_max = times_sorted[-1]
-    differences = aj_calibration_at_t(y_conf, times_sorted, inc_sorted)
+    differences = aj_calibration_at_t(y_calibration, times_sorted, inc_sorted)
 
     scores = {
         event_id: np.trapezoid(diff**alpha, times_sorted) / t_max
@@ -211,9 +210,9 @@ def aj_calibration_per_event(
 
 
 def aj_calibration(
-    y_conf,
+    y_calibration,
     times,
-    inc_prob_at_conf,
+    pred_calibration,
     alpha=2,
     reduction="mean",
     min_prop_at_risk=0.05,
@@ -231,7 +230,7 @@ def aj_calibration(
     or the sum (resp. max) when ``reduction='sum'`` (resp. ``reduction='max'``).
 
     Each per-event score integrates the pointwise error
-    :math:`AJ_k(t) = \bar{F}_k(t) - \hat{F}^{AJ}_k(t)` between the mean
+    :math:`AJ_k(t) = |\bar{F}_k(t) - \hat{F}^{AJ}_k(t)|` between the mean
     predicted cumulative incidence :math:`\bar{F}_k(t) = \frac{1}{n}
     \sum_{i=1}^n \hat{F}_k(t \mid \mathbf{x}_i)` across the calibration
     set and the marginal Aalen-Johansen reference
@@ -240,14 +239,14 @@ def aj_calibration(
 
     Parameters
     ----------
-    y_conf : array-like of shape (n_samples, 2)
+    y_calibration : array-like of shape (n_samples, 2)
         Survival outcomes of the calibration set, with columns
         ``"event"`` and ``"duration"``.
 
     times : array-like of shape (n_times,)
         Time points at which the CIFs were predicted.
 
-    inc_prob_at_conf : array-like of shape (n_samples, n_events+1, n_times)
+    pred_calibration : array-like of shape (n_samples, n_events+1, n_times)
         Predicted incidence probabilities at ``times`` for the calibration
         set.
 
@@ -286,9 +285,9 @@ def aj_calibration(
         )
 
     scores = aj_calibration_per_event(
-        y_conf,
+        y_calibration,
         times,
-        inc_prob_at_conf,
+        pred_calibration,
         alpha=alpha,
         min_prop_at_risk=min_prop_at_risk,
     )

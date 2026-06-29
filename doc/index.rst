@@ -6,7 +6,7 @@
 HΛZΛRDOUS
 =========
 
-Gradient-boosting Survival Analysis and Competing Risks
+Survival Analysis with Competing Risks
 -------------------------------------------------------
 
 .. container:: index-features
@@ -23,6 +23,34 @@ gradient-boosting model designed for this task.
 
 With a **scikit-learn-compatible API**, the library also ships a suite of
 evaluation metrics specifically adapted to the **competing risks** setting.
+
+What is the difference between Survival Analysis and the Competing risks setting?
+---------------------------------------------------------------------------------
+In contrast to the Survival Analysis setting, the Competing Risks setting accounts
+for the possibility that multiple event of interest may occur,
+not just a single event.
+
+It focuses on predicting which event will occur first and when, based on data where
+some events have not yet been observed.
+
+.. image:: competing_risk_diagram.svg
+
+
+What is SurvivalBoost?
+----------------------
+**SurvivalBoost** is **a gradient-boosting variant**, that offers prediction for
+survival and competing risks settings, fully compatible with
+`scikit-learn <https://scikit-learn.org>`_. It can be used with
+scikit-learn tools such as pipelines, column transformers,
+cross-validation, hyper-parameter search tools, etc.
+Using a novel strictly proper scoring rule, the model is trained to predict the
+cumulative incidence function and the survival function at any horizon.
+SurvivalBoost puts a focus on predictive the accuracy -defined as the ability to predict 
+the observed event- rather than on inference. 
+
+Additional theoretical details about the model can be found in `Survival Models:
+Proper Scoring Rule and Stochastic Optimization with Competing Risks
+<https://hal.science/hal-04617672v5/document>`_.
 
 Evaluating competing-risks models
 ---------------------------------
@@ -79,33 +107,6 @@ whole follow-up. ``hazardous`` provides one family of metrics for each question.
       See :func:`~hazardous.metrics.aj_calibration` and
       :func:`~hazardous.metrics.km_calibration`
 
-
-What is the difference between Survival Analysis and the Competing risks setting?
----------------------------------------------------------------------------------
-In contrast to the Survival Analysis setting, the Competing Risks setting accounts
-for the possibility that multiple event of interest may occur,
-not just a single event.
-
-It focuses on predicting which event will occur first and when, based on data where
-some events have not yet been observed.
-
-.. image:: competing_risk_diagram.svg
-
-What is SurvivalBoost?
-----------------------
-**SurvivalBoost** is **a gradient-boosting variant**, that offers prediction for
-survival and competing risks settings, fully compatible with
-`scikit-learn <https://scikit-learn.org>`_. It can be used with
-scikit-learn tools such as pipelines, column transformers,
-cross-validation, hyper-parameter search tools, etc.
-Using a novel strictly proper scoring rule, the model is trained to predict the
-cumulative incidence function and the survival function at any horizon.
-SurvivalBoost puts a focus on predictive the accuracy -defined as the ability to predict 
-the observed event- rather than on inference. 
-
-Additional theoretical details about the model can be found in `Survival Models:
-Proper Scoring Rule and Stochastic Optimization with Competing Risks
-<https://arxiv.org/pdf/2410.16765>`_.
 
 .. seealso::
 
