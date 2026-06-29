@@ -49,7 +49,7 @@ class _KMCalibration:
     .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
         "On the calibration of survival models with competing risks",
         AISTATS 2026.
-        https://arxiv.org/pdf/2602.00194
+        <https://arxiv.org/pdf/2602.00194>
 
     .. [Qi2024] S. Qi, W. Sun, R. Greiner.
         "{SurvivalEVAL}: A Comprehensive Open-Source Python Package
@@ -199,7 +199,7 @@ def km_calibration(
     .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
         "On the calibration of survival models with competing risks",
         AISTATS 2026.
-        https://arxiv.org/pdf/2602.00194
+        <https://arxiv.org/pdf/2602.00194>
     """
     cal = _KMCalibration(alpha=alpha).fit(y_calibration)
     km_cal = cal.score(times, pred_calibration)
@@ -285,7 +285,7 @@ def recalibrate_survival_function(
     .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
         "On the calibration of survival models with competing risks",
         AISTATS 2026.
-        https://arxiv.org/pdf/2602.00194
+        <https://arxiv.org/pdf/2602.00194>
     """
     if estimator is None and (pred_test is None or pred_calibration is None):
         raise ValueError(
@@ -372,7 +372,7 @@ def recalibrate_survival_function_predictions(
     .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
         "On the calibration of survival models with competing risks",
         AISTATS 2026.
-        https://arxiv.org/pdf/2602.00194
+        <https://arxiv.org/pdf/2602.00194>
     """
     _, diff_at_t = km_calibration(
         y_calibration, times, pred_calibration, return_diff_at_t=True
