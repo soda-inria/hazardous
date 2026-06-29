@@ -36,9 +36,10 @@ We demonstrate:
    :func:`~hazardous.metrics.aj_calibration_per_event`, and
    :func:`~hazardous.metrics.aj_calibration_at_t`.
 
-.. [Alberge2026] J. Alberge, T. Haugomat, G. Varoquaux, J. Abécassis,
-   "On the calibration of survival models with competing risks", arXiv:2602.00194,
-   2026. https://arxiv.org/pdf/2602.00194
+.. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
+    "On the calibration of survival models with competing risks",
+    AISTATS 2026.
+    https://arxiv.org/pdf/2602.00194
 """
 
 # %%

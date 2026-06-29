@@ -73,9 +73,10 @@ def aj_calibration_at_t(y_calibration, times, pred_calibration, event_of_interes
 
     References
     ----------
-    .. [Alberge2026] J. Alberge, T. Haugomat, G. Varoquaux, J. Abecassis,
-       "On the calibration of survival models with competing risks",
-       arXiv:2602.00194, 2026. https://arxiv.org/pdf/2602.00194
+    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
+        "On the calibration of survival models with competing risks",
+        AISTATS 2026.
+        https://arxiv.org/pdf/2602.00194
     """
     times = np.asarray(times)
     pred_calibration = np.asarray(pred_calibration)
@@ -177,9 +178,10 @@ def aj_calibration_per_event(
 
     References
     ----------
-    .. [Alberge2026] J. Alberge, T. Haugomat, G. Varoquaux, J. Abecassis,
-       "On the calibration of survival models with competing risks",
-       arXiv:2602.00194, 2026. https://arxiv.org/pdf/2602.00194
+    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
+        "On the calibration of survival models with competing risks",
+        AISTATS 2026.
+        https://arxiv.org/pdf/2602.00194
     """
     times = np.asarray(times)
     order = np.argsort(times)
@@ -275,9 +277,10 @@ def aj_calibration(
 
     References
     ----------
-    .. [Alberge2026] J. Alberge, T. Haugomat, G. Varoquaux, J. Abecassis,
-       "On the calibration of survival models with competing risks",
-       arXiv:2602.00194, 2026. https://arxiv.org/pdf/2602.00194
+    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
+        "On the calibration of survival models with competing risks",
+        AISTATS 2026.
+        https://arxiv.org/pdf/2602.00194
     """
     if reduction not in ("mean", "sum", "max"):
         raise ValueError(

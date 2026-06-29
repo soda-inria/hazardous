@@ -42,14 +42,13 @@ class _KMCalibration:
 
     See Also
     --------
-    km_calibration : Functional API for this class.
     AJCalibration : Extends calibration to competing risks via Aalen-Johansen.
 
     References
     ----------
-    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,
-        J. Abecassis,  "On the calibration of survival models with competing risks",
-        arXiv:2602.00194, 2026.
+    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
+        "On the calibration of survival models with competing risks",
+        AISTATS 2026.
         https://arxiv.org/pdf/2602.00194
 
     .. [Qi2024] S. Qi, W. Sun, R. Greiner.
@@ -197,9 +196,9 @@ def km_calibration(
 
     References
     ----------
-    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,
-        J. Abecassis,  "On the calibration of survival models with competing risks",
-        arXiv:2602.00194, 2026.
+    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
+        "On the calibration of survival models with competing risks",
+        AISTATS 2026.
         https://arxiv.org/pdf/2602.00194
     """
     cal = _KMCalibration(alpha=alpha).fit(y_calibration)
@@ -283,9 +282,9 @@ def recalibrate_survival_function(
 
     References
     ----------
-    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,
-        J. Abecassis,  "On the calibration of survival models with competing risks",
-        arXiv:2602.00194, 2026.
+    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
+        "On the calibration of survival models with competing risks",
+        AISTATS 2026.
         https://arxiv.org/pdf/2602.00194
     """
     if estimator is None and (pred_test is None or pred_calibration is None):
@@ -370,9 +369,9 @@ def recalibrate_survival_function_predictions(
 
     References
     ----------
-    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,
-        J. Abecassis,  "On the calibration of survival models with competing risks",
-        arXiv:2602.00194, 2026.
+    .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
+        "On the calibration of survival models with competing risks",
+        AISTATS 2026.
         https://arxiv.org/pdf/2602.00194
     """
     _, diff_at_t = km_calibration(
