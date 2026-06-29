@@ -157,6 +157,11 @@ def km_calibration(
     and :math:`\hat{S}_{KM}(t)` is the Kaplan-Meier estimate fitted on the
     calibration set.
 
+    The KM-Calibration score is a special case of the Aalen-Johansen calibration
+    score for a single event type. The implementation of this metric is also
+    available in SurvivalEval [Qi2024]_, a python library for survival analysis
+    evaluation metrics.
+
     Parameters
     ----------
     y_calibration : array-like of shape (n_samples, 2)
@@ -191,7 +196,6 @@ def km_calibration(
 
     See Also
     --------
-    _KMCalibration : Class-based API.
     aj_calibration : Extends to competing risks via Aalen-Johansen.
 
     References
@@ -200,6 +204,11 @@ def km_calibration(
         "On the calibration of survival models with competing risks",
         AISTATS 2026.
         <https://arxiv.org/pdf/2602.00194>
+
+    .. [Qi2024] S. Qi, W. Sun, R. Greiner.
+        "{SurvivalEVAL}: A Comprehensive Open-Source Python Package
+        for Evaluating Individual Survival Distributions."
+        10.1609/aaaiss.v2i1.27713 (2024).
     """
     cal = _KMCalibration(alpha=alpha).fit(y_calibration)
     km_cal = cal.score(times, pred_calibration)
