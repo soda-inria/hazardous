@@ -65,27 +65,20 @@ whole follow-up. ``hazardous`` provides one family of metrics for each question.
    .. grid-item-card:: Discrimination
 
       **C-index for competing risks**
-
-      *Does the model rank individuals in the right order* — higher predicted
-      incidence for those who experience the event sooner? The cause-specific
-      concordance index extends Harrell's C-index to competing risks, handling
-      censoring and competing events.
-
+      This metric can be used to answer the question:
+      *Does the model rank individuals in the right order*
       +++
       See :func:`~hazardous.metrics.concordance_index_incidence`
 
    .. grid-item-card:: Accuracy
 
       **Integrated Brier Score (IBS)**
-
-      *Are the predicted probabilities close to the observed outcomes?* The IBS
-      is a strictly proper scoring rule that averages the squared error of the
-      predicted cumulative incidence over all horizons — lower is better.
-
+      This metric can be used to answer the question:
+      *Are the predicted probabilities close to the observed outcomes?*
+      
       **Accuracy in Time**
-      *Is the current predicted class correct?* The Accuracy in Time metric reports 
-      the ability to predict the *observed* event at a given time horizon — a single, 
-      intuitive number to follow predictive performance through time.
+      This metric can be used to answer the question:
+      *Is the current predicted class correct?* 
 
       +++
       See :func:`~hazardous.metrics.integrated_brier_score_incidence`, 
@@ -98,11 +91,7 @@ whole follow-up. ``hazardous`` provides one family of metrics for each question.
 
       **AJ & KM calibration**
 
-      *Are the predicted probabilities trustworthy on average?* Calibration
-      compares the mean predicted incidence against the non-parametric
-      Aalen-Johansen (competing risks) and Kaplan-Meier (survival) estimators.
-      A score of zero means perfectly calibrated.
-
+      *Are the predicted probabilities trustworthy on average?* 
       +++
       See :func:`~hazardous.metrics.aj_calibration` and
       :func:`~hazardous.metrics.km_calibration`

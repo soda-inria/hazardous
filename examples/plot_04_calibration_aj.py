@@ -39,7 +39,7 @@ We demonstrate:
 .. [Alberge2026] J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
     "On the calibration of survival models with competing risks",
     AISTATS 2026.
-    https://arxiv.org/pdf/2602.00194
+    <https://arxiv.org/pdf/2602.00194>
 """
 
 # %%
@@ -152,13 +152,15 @@ print(f"AJ calibration score (test set): {aj_cal_test:.6f}")
 
 aj_test_sampler = _AalenJohansenSampler().fit(y_test)
 
-fig, axes = plt.subplots(ncols=n_events, figsize=(15, 4), sharey=False)
+fig, axes = plt.subplots(
+    ncols=(n_events + 1) // 2, nrows=2, figsize=(15, 4), sharey=False
+)
 fig.suptitle(
     "AJ CIFs on different splits\n(small differences explain why AJ calibration ≠ 0)"
 )
 
 for event_id in range(1, n_events + 1):
-    ax = axes[event_id - 1]
+    ax = axes[event_id // 2, event_id % 2]
     ax.plot(
         times,
         incidence_funcs_aj[event_id](times),
@@ -202,14 +204,14 @@ aj_ref = {
     **{k: aj_test_sampler.incidence_func_[k](times) for k in range(1, n_events + 1)},
 }
 
-fig, axes = plt.subplots(ncols=n_events + 1, figsize=(18, 4))
+fig, axes = plt.subplots(ncols=(n_events + 1) // 2, nrows=2, figsize=(18, 4))
 fig.suptitle(
     "Mean SurvivalBoost CIFs vs AJ reference on the calibration set\n"
     "(good calibration: curves should overlap)"
 )
 
 for event_id in range(n_events + 1):
-    ax = axes[event_id]
+    ax = axes[event_id // 2, event_id % 2]
     mean_sb = inc_probs_sb[:, event_id, :].mean(axis=0)
     ax.plot(times, mean_sb, label="SurvivalBoost (mean)", color="C0")
     ax.plot(times, aj_ref[event_id], label="AJ reference", linestyle="--", color="C1")
@@ -307,11 +309,11 @@ kmf = KaplanMeierFitter(label="test cohort").fit(
     np.asarray(y_test["duration"]), np.asarray(y_test["event"]) > 0
 )
 
-fig, axes = plt.subplots(ncols=n_events + 1, figsize=(18, 5))
+fig, axes = plt.subplots(ncols=(n_events + 1) // 2, nrows=2, figsize=(18, 5))
 fig.suptitle("Pointwise AJ calibration error AJ_k(t) — SurvivalBoost")
 
 for event_id, diff in diffs_all.items():
-    ax = axes[event_id]
+    ax = axes[event_id // 2, event_id % 2]
     ax.plot(times, diff, color="C0")
     ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
     ax.axvspan(
