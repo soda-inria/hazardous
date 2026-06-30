@@ -153,7 +153,7 @@ print(f"AJ calibration score (test set): {aj_cal_test:.6f}")
 aj_test_sampler = _AalenJohansenSampler().fit(y_test)
 
 fig, axes = plt.subplots(
-    ncols=(n_events + 1) // 2, nrows=2, figsize=(15, 4), sharey=False
+    ncols=(n_events + 1) // 2, nrows=2, figsize=(10, 5), sharey=False
 )
 fig.suptitle(
     "AJ CIFs on different splits\n(small differences explain why AJ calibration ≠ 0)"
@@ -204,7 +204,7 @@ aj_ref = {
     **{k: aj_test_sampler.incidence_func_[k](times) for k in range(1, n_events + 1)},
 }
 
-fig, axes = plt.subplots(ncols=(n_events + 1) // 2, nrows=2, figsize=(18, 4))
+fig, axes = plt.subplots(ncols=(n_events + 1) // 2, nrows=2, figsize=(10, 5))
 fig.suptitle(
     "Mean SurvivalBoost CIFs vs AJ reference on the calibration set\n"
     "(good calibration: curves should overlap)"
@@ -309,7 +309,7 @@ kmf = KaplanMeierFitter(label="test cohort").fit(
     np.asarray(y_test["duration"]), np.asarray(y_test["event"]) > 0
 )
 
-fig, axes = plt.subplots(ncols=(n_events + 1) // 2, nrows=2, figsize=(18, 5))
+fig, axes = plt.subplots(ncols=(n_events + 1) // 2, nrows=2, figsize=(10, 5))
 fig.suptitle("Pointwise AJ calibration error AJ_k(t) — SurvivalBoost")
 
 for event_id, diff in diffs_all.items():
