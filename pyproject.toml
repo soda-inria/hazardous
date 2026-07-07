@@ -2,11 +2,11 @@
 name = "hazardous"
 description = "Predictive Competing Risks and Survival Analysis."
 authors = [
-    { name = "Olivier Grisel", email = "olivier.grisel@ensta.org" },
-    { name = "Vincent Maladière", email = "vincent.maladiere@inria.fr" },
-    { name = "Julie Alberge", email = "julie.alberge@inria.fr" },
-    { name = "Judith Abecassis", email = "judith.abecassis@inria.fr" },
-    { name = "Gael Varoquaux", email = "gael.varoquaux@inria.fr" },
+    { name = "Olivier Grisel" },
+    { name = "Vincent Maladière" },
+    { name = "Julie Alberge" },
+    { name = "Judith Abecassis" },
+    { name = "Gael Varoquaux" },
 ]
 readme = "README.md"
 requires-python = ">=3.10"

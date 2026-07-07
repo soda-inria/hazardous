@@ -1,42 +1,16 @@
 import numpy as np
 from lifelines import AalenJohansenFitter, KaplanMeierFitter
 from scipy.interpolate import interp1d
+from sklearn.base import BaseEstimator
 
 from .utils import check_y_survival
 
 
-class _KaplanMeierSampler:
-    # TODO docstring
-    """Estimate the Inverse Probability of Censoring Weight (IPCW).
+class _KaplanMeierSampler(BaseEstimator):
+    """Wrapper around the Kaplan-Meier estimator to estimate the
+    censoring survival function
+    and the inverse of the survival function.
 
-    This class estimates the inverse probability of 'survival' to censoring using the
-    Kaplan-Meier estimator applied to a binary indicator for censoring, defined as the
-    negation of the binary indicator for any event occurrence. This estimator assumes
-    that the censoring distribution is independent of the covariates X. If this
-    assumption is violated, the estimator may be biased, and a conditional estimator
-    might be more appropriate.
-
-    This approach is useful for correcting the bias introduced by right censoring in
-    survival analysis, particularly when computing model evaluation metrics such as
-    the Brier score or the concordance index.
-
-    Note that the term 'IPCW' can be somewhat misleading: IPCW values represent the
-    inverse of the probability of remaining censor-free (or uncensored) at a given time.
-    For instance, at t=0, the probability of being censored is 0, so the probability of
-    being uncensored is 1.0, and its inverse is also 1.0.
-
-    By construction, IPCW values are always greater than or equal to 1.0 and can only
-    increase over time. If no observations are censored, the IPCW values remain
-    uniformly at 1.0.
-
-    Note: This estimator extrapolates by maintaining a constant value equal to the last
-    observed IPCW value beyond the last recorded time point.
-
-    Parameters
-    ----------
-    epsilon_censoring_prob : float, default=0.05
-        Lower limit of the predicted censoring probabilities. It helps avoiding
-        instabilities during the division to obtain IPCW.
 
     Attributes
     ----------
@@ -108,7 +82,7 @@ class _KaplanMeierSampler:
         return self
 
 
-class _AalenJohansenSampler:
+class _AalenJohansenSampler(BaseEstimator):
     def fit(self, y):
         event, duration = check_y_survival(y)
         self.event_ids_ = np.array(sorted(list(set([0]) | set(event))))
