@@ -295,7 +295,7 @@ for event_id, diff in diffs_all.items():
 # Visualizing the pointwise calibration error for SurvivalBoost.
 # --------------------------------------------------------------
 # Values close to zero indicate good marginal calibration at that time point.
-# One cway to understand if the calibration scores are close enough to zero
+# One way to understand if the calibration errors are close enough to zero
 # may be to compare them to the AJ calibration error of the AJ estimator itself,
 # which is a marginally calibrated model by construction.
 #
