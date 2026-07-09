@@ -96,21 +96,28 @@ times = make_time_grid(
     event=y_train["event"], duration=y_train["duration"], n_time_grid_steps=100
 )
 
-# In the tail of the time grid only a handful of subjects are still at risk, so
-# the Aalen-Johansen reference - and therefore the calibration error - becomes
-# pure noise there. The AJ-calibration metric integrates only up to the time
-# where fewer than ``min_prop_at_risk`` of the cohort remains at risk (5% by
-# default). We compute that cutoff time here to highlight it in the plots below.
+"""
+
+In the tail of the time grid only a handful of subjects are still at risk, so
+the Aalen-Johansen reference - and therefore the calibration error - becomes
+pure noise there. The AJ-calibration metric integrates only up to the time
+where fewer than ``min_prop_at_risk`` of the cohort remains at risk (5% by
+default). We compute that cutoff time here to highlight it in the plots below.
+
+"""
+
 min_prop_at_risk = 0.05
 prop_at_risk = (np.asarray(y_test["duration"])[:, None] >= times[None, :]).mean(axis=0)
 t_cut = times[prop_at_risk >= min_prop_at_risk][-1]
 
 # %%
-# AJ estimator as a calibrated baseline.
-# --------------------------------------
-# The AJ estimator is a marginal model: it predicts the same CIF for every
-# individual. Fitting on the training set and evaluating on the test set gives a
-# calibration score close (but not exactly equal) to zero.
+"""
+AJ estimator as a calibrated baseline.
+--------------------------------------
+The AJ estimator is a marginal model: it predicts the same CIF for every
+individual. Fitting on the training set and evaluating on the test set gives a
+calibration score close (but not exactly equal) to zero.
+"""
 
 aalen_sampler = _AalenJohansenSampler().fit(y_train)
 
@@ -136,19 +143,22 @@ aj_cal_test = aj_calibration(y_test, times, inc_probs_aj_test)
 print(f"AJ calibration score (test set): {aj_cal_test:.6f}")
 
 # %%
-# Why does the AJ estimator have a non-zero calibration score?
-# ------------------------------------------------------------
-# The AJ calibration metric compares the *mean predicted CIF* against the
-# AJ estimator on the test set.
-# When the model is itself the AJ fitted on the training set, its predictions
-# are the AJ CIFs from y_train. The reference inside the metric is the AJ
-# fitted on y_test. These two AJ estimates are obtained on different
-# random splits and therefore differ slightly due to sampling variability.
-# This produces a small but non-zero calibration error, even though the model is
-# theoretically marginally calibrated.
-#
-# The plot below shows the AJ CIF on the three splits for each event:
-# they are close but not identical, which explains the residual score.
+"""
+Why does the AJ estimator have a non-zero calibration score?
+------------------------------------------------------------
+The AJ calibration metric compares the *mean predicted CIF* against the
+AJ estimator on the test set.
+When the model is itself the AJ fitted on the training set, its predictions
+are the AJ CIFs from y_train. The reference inside the metric is the AJ
+fitted on y_test. These two AJ estimates are obtained on different
+random splits and therefore differ slightly due to sampling variability.
+This produces a small but non-zero calibration error, even though the model is
+theoretically marginally calibrated.
+
+The plot below shows the AJ CIF on the three splits for each event:
+they are close but not identical, which explains the residual score.
+"""
+
 
 aj_test_sampler = _AalenJohansenSampler().fit(y_test)
 
@@ -184,9 +194,11 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# SurvivalBoost produces *individual-level* CIF predictions, so its mean
-# prediction can deviate from the marginal AJ reference, reflecting whether
-# the model's is well-calibrated marginally.
+"""
+SurvivalBoost produces *individual-level* CIF predictions, so its mean
+prediction can deviate from the marginal AJ reference, reflecting whether
+the model's is well-calibrated marginally.
+"""
 
 survivalboost = SurvivalBoost(n_iter=50, show_progressbar=False, random_state=0)
 survivalboost.fit(X_train, y_train)
@@ -195,9 +207,11 @@ survivalboost.fit(X_train, y_train)
 inc_probs_sb = survivalboost.predict_cumulative_incidence(X_test, times=times)
 
 # %%
-# Comparing mean SurvivalBoost predictions against the AJ reference.
-# ------------------------------------------------------------------
-# A well-calibrated model has its mean CIF close to the non-parametric AJ.
+"""
+Comparing mean SurvivalBoost predictions against the AJ reference.
+------------------------------------------------------------------
+A well-calibrated model has its mean CIF close to the non-parametric AJ.
+"""
 
 aj_ref = {
     0: aj_test_sampler.survival_func_(times),
@@ -228,14 +242,25 @@ plt.tight_layout()
 plt.show()
 
 # %%
-# AJ calibration at three levels of granularity.
-# ----------------------------------------------
-#
-# The AJ calibration metric can be computed at three levels of granularity:
-# 1. ``aj_calibration``: single scalar score aggregated across all events.
-# 2. ``aj_calibration_per_event``: one scalar score per event, before aggregation.
-# 3. ``aj_calibration_at_t``: pointwise difference δ_k(t) at each time, and
-#    an example of reading it at a single chosen time point.
+"""
+AJ calibration at three levels of granularity.
+----------------------------------------------
+
+The AJ calibration metric can be computed at three levels of granularity:
+1. ``aj_calibration``: single scalar score aggregated across all events.
+2. ``aj_calibration_per_event``: one scalar score per event, before aggregation.
+3. ``aj_calibration_at_t``: pointwise difference :math:`δ_k(t)` at each time, and
+   an example of reading it at a single chosen time point.
+
+By default the score integrates only up to the time where 5% of the cohort is
+still at risk. Because the time grid is quantile-spaced, the few tail points
+span most of the time axis and carry large weight in the integral. For events
+whose error is concentrated in that tail (e.g. event 3), integrating over the
+full grid (``min_prop_at_risk=0``) lets small-sample noise dominate and
+inflates the score; truncation removes that contribution. Where the model is
+genuinely miscalibrated in the data-rich region (e.g. event 0), truncation
+does not hide it.
+"""
 
 # 1 — Overall score (mean across events by default)
 score_overall = aj_calibration(y_test, times, inc_probs_sb)
@@ -245,14 +270,7 @@ score_sum = aj_calibration(y_test, times, inc_probs_sb, reduction="sum")
 print(f"[aj_calibration] overall score (sum):  {score_sum:.6f}")
 
 # 2 — Per-event scores
-# By default the score integrates only up to the time where 5% of the cohort is
-# still at risk. Because the time grid is quantile-spaced, the few tail points
-# span most of the time axis and carry large weight in the integral. For events
-# whose error is concentrated in that tail (e.g. event 3), integrating over the
-# full grid (``min_prop_at_risk=0``) lets small-sample noise dominate and
-# inflates the score; truncation removes that contribution. Where the model is
-# genuinely miscalibrated in the data-rich region (e.g. event 0), truncation
-# does not hide it.
+
 scores_per_event = aj_calibration_per_event(y_test, times, inc_probs_sb)  # default 5%
 scores_full_grid = aj_calibration_per_event(
     y_test, times, inc_probs_sb, min_prop_at_risk=0
@@ -292,20 +310,22 @@ for event_id, diff in diffs_all.items():
     print(f"  Event {event_id} at t={t_star:.2f}: {diff[t_star_idx]:.4f}")
 
 # %%
-# Visualizing the pointwise calibration error for SurvivalBoost.
-# --------------------------------------------------------------
-# Values close to zero indicate good marginal calibration at that time point.
-# One way to understand if the calibration errors are close enough to zero
-# may be to compare them to the AJ calibration error of the AJ estimator itself,
-# which is a marginally calibrated model by construction.
-#
-# For events 1 and 3 the error grows in the shaded tail: the "number at risk"
-# row below each panel (drawn with lifelines' ``add_at_risk_counts``) shows that
-# only a handful of subjects remain there, so the comparison is dominated by
-# sampling noise rather than genuine miscalibration. This is exactly the region
-# excluded by ``min_prop_at_risk`` when computing the integrated score. Event 0,
-# in contrast, is off even where data is plentiful, so its error is a real
-# calibration problem that truncation does not remove.
+"""
+Visualizing the pointwise calibration error for SurvivalBoost.
+--------------------------------------------------------------
+Values close to zero indicate good marginal calibration at that time point.
+One way to understand if the calibration errors are close enough to zero
+may be to compare them to the AJ calibration error of the AJ estimator itself,
+which is a marginally calibrated model by construction.
+
+For events 1 and 2 the error grows in the shaded tail: the "number at risk"
+row below each panel (drawn with lifelines' ``add_at_risk_counts``) shows that
+only a handful of subjects remain there, so the comparison is dominated by
+sampling noise rather than genuine miscalibration. This is exactly the region
+excluded by ``min_prop_at_risk`` when computing the integrated score. Event 0,
+in contrast, is off even where data is plentiful, so its error is a real
+calibration problem that truncation does not remove.
+"""
 
 # Kaplan-Meier on the test set, used only to render the at-risk counts.
 kmf = KaplanMeierFitter(label="test cohort").fit(

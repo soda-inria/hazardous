@@ -66,7 +66,7 @@ whole follow-up. ``hazardous`` provides one family of metrics for each question.
 
       **C-index for competing risks**
       This metric can be used to answer the question:
-      *Does the model rank individuals in the right order*
+      *Does the model rank individuals in the right order?*
       +++
       See :func:`~hazardous.metrics.concordance_index_incidence`
 
