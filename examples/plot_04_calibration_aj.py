@@ -152,15 +152,13 @@ print(f"AJ calibration score (test set): {aj_cal_test:.6f}")
 
 aj_test_sampler = _AalenJohansenSampler().fit(y_test)
 
-fig, axes = plt.subplots(
-    ncols=(n_events + 1) // 2, nrows=2, figsize=(10, 5), sharey=False
-)
+fig, axes = plt.subplots(ncols=n_events, nrows=1, figsize=(10, 5), sharey=False)
 fig.suptitle(
     "AJ CIFs on different splits\n(small differences explain why AJ calibration ≠ 0)"
 )
 
-for event_id in range(n_events + 1):
-    ax = axes[event_id // 2, event_id % 2]
+for event_id in range(1, n_events + 1):
+    ax = axes[event_id]
     ax.plot(
         times,
         incidence_funcs_aj[event_id](times),
