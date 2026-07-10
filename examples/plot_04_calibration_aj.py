@@ -236,7 +236,7 @@ plt.show()
 # The AJ calibration metric can be computed at three levels of granularity:
 # 1. ``aj_calibration``: single scalar score aggregated across all events.
 # 2. ``aj_calibration_per_event``: one scalar score per event, before aggregation.
-# 3. ``aj_calibration_at_t``: pointwise difference -:math:`\delta_k(t)`` at each time,
+# 3. ``aj_calibration_at_t``: pointwise difference :math:`\delta_k(t)` at each time,
 #   and an example of reading it at a single chosen time point.
 #
 # By default the score integrates only up to the time where 5% of the cohort is
