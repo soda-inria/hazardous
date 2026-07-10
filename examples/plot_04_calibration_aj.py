@@ -221,6 +221,8 @@ for event_id in range(n_events + 1):
     ax.axvline(t_cut, color="grey", linewidth=0.8, linestyle="-")
     ax.set_title(f"{'Survival (event 0)' if event_id == 0 else f'Event {event_id}'}")
     ax.set_xlabel("Time")
+    if event_id == 0:
+        ax.set_ylim(0, 0.4)
     ax.set_ylabel("Probability")
     ax.legend(fontsize=8)
 
@@ -235,16 +237,8 @@ plt.show()
 # 1. ``aj_calibration``: single scalar score aggregated across all events.
 # 2. ``aj_calibration_per_event``: one scalar score per event, before aggregation.
 # 3. ``aj_calibration_at_t``: pointwise difference -:math:`\delta_k(t)`` at each time,
-#    and an example of reading it at a single chosen time point.
-
-# 1 — Overall score (mean across events by default)
-score_overall = aj_calibration(y_test, times, inc_probs_sb)
-print(f"\n[aj_calibration] overall score (mean): {score_overall:.6f}")
-
-score_sum = aj_calibration(y_test, times, inc_probs_sb, reduction="sum")
-print(f"[aj_calibration] overall score (sum):  {score_sum:.6f}")
-
-# 2 — Per-event scores
+#   and an example of reading it at a single chosen time point.
+#
 # By default the score integrates only up to the time where 5% of the cohort is
 # still at risk. Because the time grid is quantile-spaced, the few tail points
 # span most of the time axis and carry large weight in the integral. For events
@@ -253,6 +247,18 @@ print(f"[aj_calibration] overall score (sum):  {score_sum:.6f}")
 # inflates the score; truncation removes that contribution. Where the model is
 # genuinely miscalibrated in the data-rich region (e.g. event 0), truncation
 # does not hide it.
+#
+# 1 — Overall score (mean across events by default)
+
+score_overall = aj_calibration(y_test, times, inc_probs_sb)
+print(f"\n[aj_calibration] overall score (mean): {score_overall:.6f}")
+
+score_sum = aj_calibration(y_test, times, inc_probs_sb, reduction="sum")
+print(f"[aj_calibration] overall score (sum):  {score_sum:.6f}")
+
+# %%
+# 2 — Per-event scores
+
 scores_per_event = aj_calibration_per_event(y_test, times, inc_probs_sb)  # default 5%
 scores_full_grid = aj_calibration_per_event(
     y_test, times, inc_probs_sb, min_prop_at_risk=0
@@ -330,6 +336,7 @@ for event_id, diff in diffs_all.items():
     ax.set_title(f"{'Survival (event 0)' if event_id == 0 else f'Event {event_id}'}")
     ax.set_xlabel("Time")
     ax.set_ylabel("AJ_k(t)")
+    ax.set_ylim(-0.05, 0.2)
     ax.legend(fontsize=8)
     add_at_risk_counts(kmf, ax=ax, rows_to_show=["At risk"])
 
