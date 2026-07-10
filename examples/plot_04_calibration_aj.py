@@ -221,7 +221,7 @@ for event_id in range(n_events + 1):
     ax.axvline(t_cut, color="grey", linewidth=0.8, linestyle="-")
     ax.set_title(f"{'Survival (event 0)' if event_id == 0 else f'Event {event_id}'}")
     ax.set_xlabel("Time")
-    if event_id == 0:
+    if event_id != 0:
         ax.set_ylim(0, 0.4)
     ax.set_ylabel("Probability")
     ax.legend(fontsize=8)
@@ -234,6 +234,7 @@ plt.show()
 # ----------------------------------------------
 #
 # The AJ calibration metric can be computed at three levels of granularity:
+#
 # 1. ``aj_calibration``: single scalar score aggregated across all events.
 # 2. ``aj_calibration_per_event``: one scalar score per event, before aggregation.
 # 3. ``aj_calibration_at_t``: pointwise difference :math:`\delta_k(t)` at each time,
