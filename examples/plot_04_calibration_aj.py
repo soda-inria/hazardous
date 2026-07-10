@@ -158,7 +158,7 @@ fig.suptitle(
 )
 
 for event_id in range(1, n_events + 1):
-    ax = axes[event_id]
+    ax = axes[event_id - 1]
     ax.plot(
         times,
         incidence_funcs_aj[event_id](times),
