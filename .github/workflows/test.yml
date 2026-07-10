@@ -39,6 +39,10 @@ jobs:
             nox-session: test_latest_from_pypi
           - python-version: "3.12"
             nox-session: test_latest_from_pypi
+          - python-version: "3.13"
+            nox-session: test_latest_from_pypi
+          - python-version: "3.14"
+            nox-session: test_latest_from_pypi
 
       fail-fast: false
 
@@ -64,7 +68,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - python-version: "3.12"
+          - python-version: "3.14"
             nox-session: test_latest_from_conda_forge
 
       fail-fast: false
