@@ -159,7 +159,7 @@ fig.suptitle(
     "AJ CIFs on different splits\n(small differences explain why AJ calibration ≠ 0)"
 )
 
-for event_id in range(1, n_events + 1):
+for event_id in range(n_events + 1):
     ax = axes[event_id // 2, event_id % 2]
     ax.plot(
         times,
@@ -175,9 +175,9 @@ for event_id in range(1, n_events + 1):
         linestyle=":",
         color="C2",
     )
-    ax.set_title(f"Event {event_id}")
+    ax.set_title(f"Event {event_id}" if event_id != 0 else "Survival (event 0)")
     ax.set_xlabel("Time")
-    ax.set_ylabel("Cumulative incidence")
+    ax.set_ylabel("Cumulative incidence" if event_id != 0 else "Survival probability")
     ax.legend(fontsize=7)
 
 plt.tight_layout()
@@ -222,7 +222,7 @@ for event_id in range(n_events + 1):
     ax.set_title(f"{'Survival (event 0)' if event_id == 0 else f'Event {event_id}'}")
     ax.set_xlabel("Time")
     if event_id != 0:
-        ax.set_ylim(0, 0.4)
+        ax.set_ylim(0, 0.5)
     ax.set_ylabel("Probability")
     ax.legend(fontsize=8)
 
@@ -237,8 +237,8 @@ plt.show()
 #
 # 1. ``aj_calibration``: single scalar score aggregated across all events.
 # 2. ``aj_calibration_per_event``: one scalar score per event, before aggregation.
-# 3. ``aj_calibration_at_t``: pointwise difference :math:`\delta_k(t)` at each time,
-#   and an example of reading it at a single chosen time point.
+# 3. ``aj_calibration_at_t``: pointwise difference :math:`\delta_k(t)` at a single
+# time point.
 #
 # By default the score integrates only up to the time where 5% of the cohort is
 # still at risk. Because the time grid is quantile-spaced, the few tail points
