@@ -53,3 +53,35 @@ def check_event_of_interest(k):
             f"got: event_of_interest={k}"
         )
     return
+
+
+def make_time_grid(event, duration, n_time_grid_steps):
+    """Compute a time grid on observed events.
+
+    The time grid size is the minimum between ``n_time_grid_steps`` and
+    the number of unique observed durations.
+
+    Parameters
+    ----------
+    event : array of shape (n_samples,)
+    duration : array of shape (n_samples,)
+    n_time_grid_steps : int
+
+    Returns
+    -------
+    time_grid : array of shape (n_time_steps,)
+        Note that n_time_steps <= n_time_grid_steps
+    """
+
+    any_event_mask = event > 0
+    observed_times = np.unique(duration[any_event_mask])
+
+    if observed_times.shape[0] > n_time_grid_steps:
+        time_grid = np.quantile(
+            observed_times, np.linspace(0, 1, num=n_time_grid_steps)
+        )
+        time_grid = np.unique(time_grid)
+    else:
+        time_grid = observed_times.copy()
+
+    return time_grid

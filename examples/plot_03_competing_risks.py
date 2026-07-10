@@ -11,7 +11,7 @@ how to interpret it.
 # Definition of the Accuracy in Time
 # ==================================
 # Here is a little bit of context about this metric introduced in
-# `Alberge et al. (2024) <https://hal.science/hal-04617672v4>`_:
+# `Alberge et al. (2025) <https://hal.science/hal-04617672v5>`_:
 #
 # - The accuracy in time is a generalization of the accuracy metric in the survival
 #   and the competing risks setting, representing the proportion of correctly

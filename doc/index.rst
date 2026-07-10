@@ -6,7 +6,7 @@
 HΛZΛRDOUS
 =========
 
-Gradient-boosting Survival Analysis and Competing Risks
+Survival Analysis with Competing Risks
 -------------------------------------------------------
 
 .. container:: index-features
@@ -21,12 +21,8 @@ Gradient-boosting Survival Analysis and Competing Risks
 and **competing risks** settings. It introduces **SurvivalBoost**, a **scalable**
 gradient-boosting model designed for this task.
 
-With a **scikit-learn-compatible API**, the library also offers various metrics
-for model evaluation adapted for the competing risks setting: 
-
-- **Integrated Brier Score** 
-- **C-index**
-- **Accuracy in Time**: the ability to predict the observed event at a given time horizon.
+With a **scikit-learn-compatible API**, the library also ships a suite of
+evaluation metrics specifically adapted to the **competing risks** setting.
 
 What is the difference between Survival Analysis and the Competing risks setting?
 ---------------------------------------------------------------------------------
@@ -38,6 +34,7 @@ It focuses on predicting which event will occur first and when, based on data wh
 some events have not yet been observed.
 
 .. image:: competing_risk_diagram.svg
+
 
 What is SurvivalBoost?
 ----------------------
@@ -53,7 +50,52 @@ the observed event- rather than on inference.
 
 Additional theoretical details about the model can be found in `Survival Models:
 Proper Scoring Rule and Stochastic Optimization with Competing Risks
-<https://arxiv.org/pdf/2410.16765>`_.
+<https://hal.science/hal-04617672v5/document>`_.
+
+Evaluating competing-risks models
+---------------------------------
+
+A trustworthy model has to get three different things right: **rank** patients
+by risk, **predict the right probabilities**, and stay **calibrated** across the
+whole follow-up. ``hazardous`` provides one family of metrics for each question.
+
+.. grid:: 1 1 3 3
+   :gutter: 3
+
+   .. grid-item-card:: Discrimination
+
+      **C-index for competing risks**
+      This metric can be used to answer the question:
+      *Does the model rank individuals in the right order?*
+      +++
+      See :func:`~hazardous.metrics.concordance_index_incidence`
+
+   .. grid-item-card:: Accuracy
+
+      **Integrated Brier Score (IBS)**
+      This metric can be used to answer the question:
+      *Are the predicted probabilities close to the observed outcomes?*
+      
+      **Accuracy in Time**
+      This metric can be used to answer the question:
+      *Is the current predicted class correct?* 
+
+      +++
+      See :func:`~hazardous.metrics.integrated_brier_score_incidence`, 
+      :func:`~hazardous.metrics.brier_score_incidence` and 
+      :func:`~hazardous.metrics.accuracy_in_time`
+
+
+
+   .. grid-item-card:: Calibration
+
+      **AJ & KM calibration**
+
+      *Are the predicted probabilities trustworthy on average?* 
+      +++
+      See :func:`~hazardous.metrics.aj_calibration` and
+      :func:`~hazardous.metrics.km_calibration`
+
 
 .. seealso::
 

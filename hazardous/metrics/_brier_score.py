@@ -194,7 +194,7 @@ class IncidenceScoreComputer:
         sorted_times = times[ordering]
         sorted_scores = scores[ordering]
         time_span = sorted_times[-1] - sorted_times[0]
-        return np.trapz(sorted_scores, sorted_times) / time_span
+        return np.trapezoid(sorted_scores, sorted_times) / time_span
 
     def _weighted_binary_targets(
         self,
