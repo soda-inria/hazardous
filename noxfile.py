@@ -19,7 +19,7 @@ def test_latest_from_pypi(session):
 @nox.session(python=["3.14"], venv_backend="mamba")
 def test_latest_from_conda_forge(session):
     # Test the newest versions of the dependencies from conda-forge.
-    # XXX: hown to do the same with a single mamba install command?
+    # XXX: how to do the same with a single mamba install command?
     for package_name in [
         "pytest",
         "pytest-cov",
