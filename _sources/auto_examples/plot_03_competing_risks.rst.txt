@@ -30,7 +30,7 @@ how to interpret it.
 Definition of the Accuracy in Time
 ==================================
 Here is a little bit of context about this metric introduced in
-`Alberge et al. (2024) <https://hal.science/hal-04617672v4>`_:
+`Alberge et al. (2025) <https://hal.science/hal-04617672v5>`_:
 
 - The accuracy in time is a generalization of the accuracy metric in the survival
   and the competing risks setting, representing the proportion of correctly
@@ -167,13 +167,6 @@ formula above.
 
 
 
-
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-    /opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/sklearn/utils/deprecation.py:132: FutureWarning: 'force_all_finite' was renamed to 'ensure_all_finite' in 1.6 and will be removed in 1.8.
-      warnings.warn(
 
 
 
@@ -441,7 +434,7 @@ the accuracy-over-time figure for the Aalen-Johansen model.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 30.780 seconds)
+   **Total running time of the script:** (0 minutes 33.516 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_03_competing_risks.py:

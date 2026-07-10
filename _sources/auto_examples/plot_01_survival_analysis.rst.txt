@@ -63,7 +63,11 @@ is the processed data set used in the
  .. code-block:: none
 
     Dataset 'metabric' not locally available. Downloading...
+    /opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/pandas/io/feather_format.py:65: FutureWarning: pyarrow.feather.write_feather is deprecated as of 24.0.0. Use pyarrow.ipc.new_file() / RecordBatchFileWriter instead. Feather V2 is the Arrow IPC file format.
+      feather.write_feather(df, handles.handle, **kwargs)
     Done
+    /opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/pandas/io/feather_format.py:123: FutureWarning: pyarrow.feather.read_feather is deprecated as of 24.0.0. Use pyarrow.ipc.open_file() / RecordBatchFileReader instead. Feather V2 is the Arrow IPC file format.
+      return feather.read_feather(
 
 
 .. raw:: html
@@ -238,13 +242,6 @@ SurvivalBoost is a scikit-learn compatible model which expects a covariates data
 
 
 
-
-.. rst-class:: sphx-glr-script-out
-
- .. code-block:: none
-
-    /opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/sklearn/utils/deprecation.py:132: FutureWarning: 'force_all_finite' was renamed to 'ensure_all_finite' in 1.6 and will be removed in 1.8.
-      warnings.warn(
 
 
 .. raw:: html
@@ -1319,7 +1316,7 @@ doesn't depend on the patient features.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 9.989 seconds)
+   **Total running time of the script:** (0 minutes 10.443 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_01_survival_analysis.py:

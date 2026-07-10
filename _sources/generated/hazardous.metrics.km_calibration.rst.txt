@@ -1,0 +1,10 @@
+﻿:mod:`hazardous.metrics`.km_calibration
+====================================================
+
+.. currentmodule:: hazardous.metrics
+
+.. autofunction:: km_calibration
+
+.. raw:: html
+
+    <div class="clearer"></div>

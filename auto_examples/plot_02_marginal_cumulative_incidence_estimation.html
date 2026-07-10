@@ -352,6 +352,7 @@
 <li class="toctree-l1"><a class="reference internal" href="plot_01_survival_analysis.html">Survival analysis with SurvivalBoost</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Estimating marginal cumulative incidence functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plot_03_competing_risks.html">Exploring the accuracy in time</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_04_calibration_aj.html">Calibration of survival models with competing risks</a></li>
 </ul>
 </div>
 </nav></div>
@@ -606,17 +607,15 @@ theoretical CIFs:</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_001.png" srcset="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_001.png" alt="Cause-specific cumulative incidence functions (0.0% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.583 s
-/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/sklearn/utils/deprecation.py:132: FutureWarning: &#39;force_all_finite&#39; was renamed to &#39;ensure_all_finite&#39; in 1.6 and will be removed in 1.8.
-  warnings.warn(
-SurvivalBoost fit: 4.204 s
-SurvivalBoost prediction: 2.940 s
-Integrated theoretical cumulative incidence curve for event 1 in 2.997 s
-Aalen-Johansen for event 1 fit in 5.366 s
-Integrated theoretical cumulative incidence curve for event 2 in 5.462 s
-Aalen-Johansen for event 2 fit in 5.309 s
-Integrated theoretical cumulative incidence curve for event 3 in 5.388 s
-Aalen-Johansen for event 3 fit in 5.247 s
+<img src="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_001.png" srcset="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_001.png" alt="Cause-specific cumulative incidence functions (0.0% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.587 s
+SurvivalBoost fit: 4.544 s
+SurvivalBoost prediction: 3.397 s
+Integrated theoretical cumulative incidence curve for event 1 in 3.455 s
+Aalen-Johansen for event 1 fit in 3.893 s
+Integrated theoretical cumulative incidence curve for event 2 in 3.987 s
+Aalen-Johansen for event 2 fit in 3.933 s
+Integrated theoretical cumulative incidence curve for event 3 in 4.012 s
+Aalen-Johansen for event 3 fit in 3.884 s
 </pre></div>
 </div>
 </section>
@@ -639,17 +638,15 @@ of censoring.</p>
 <span class="n">plot_cumulative_incidence_functions</span><span class="p">(</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="o">=</span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a><span class="p">,</span> <span class="n">aj</span><span class="o">=</span><span class="n">aj</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_censored</span><span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_002.png" srcset="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_002.png" alt="Cause-specific cumulative incidence functions (40.4% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.554 s
-/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/sklearn/utils/deprecation.py:132: FutureWarning: &#39;force_all_finite&#39; was renamed to &#39;ensure_all_finite&#39; in 1.6 and will be removed in 1.8.
-  warnings.warn(
-SurvivalBoost fit: 4.195 s
-SurvivalBoost prediction: 2.969 s
-Integrated theoretical cumulative incidence curve for event 1 in 3.026 s
-Aalen-Johansen for event 1 fit in 5.343 s
-Integrated theoretical cumulative incidence curve for event 2 in 5.437 s
-Aalen-Johansen for event 2 fit in 5.296 s
-Integrated theoretical cumulative incidence curve for event 3 in 5.374 s
-Aalen-Johansen for event 3 fit in 5.265 s
+<img src="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_002.png" srcset="../_images/sphx_glr_plot_02_marginal_cumulative_incidence_estimation_002.png" alt="Cause-specific cumulative incidence functions (40.4% censoring), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Integrated theoretical any event survival curve in 0.532 s
+SurvivalBoost fit: 4.402 s
+SurvivalBoost prediction: 3.403 s
+Integrated theoretical cumulative incidence curve for event 1 in 3.461 s
+Aalen-Johansen for event 1 fit in 3.879 s
+Integrated theoretical cumulative incidence curve for event 2 in 3.970 s
+Aalen-Johansen for event 2 fit in 3.841 s
+Integrated theoretical cumulative incidence curve for event 3 in 3.918 s
+Aalen-Johansen for event 3 fit in 3.847 s
 </pre></div>
 </div>
 <p>Note that the Aalen-Johansen estimator is unbiased and empirically recovers
@@ -664,7 +661,7 @@ introducing some bias). This is left as future work.</p>
 <p>Alternatively, we could try to enable a monotonicity constraint at training
 time, however, in practice this often causes a sever over-estimation bias for
 the large time horizons:</p>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 48.052 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 40.896 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-02-marginal-cumulative-incidence-estimation-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/8da6be5df74b4f584c69dbcd5de4f948/plot_02_marginal_cumulative_incidence_estimation.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_02_marginal_cumulative_incidence_estimation.ipynb</span></code></a></p>

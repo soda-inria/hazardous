@@ -353,6 +353,7 @@
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Survival analysis with SurvivalBoost</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plot_02_marginal_cumulative_incidence_estimation.html">Estimating marginal cumulative incidence functions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plot_03_competing_risks.html">Exploring the accuracy in time</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_04_calibration_aj.html">Calibration of survival models with competing risks</a></li>
 </ul>
 </div>
 </nav></div>
@@ -445,7 +446,11 @@ is the processed data set used in the
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Dataset &#39;metabric&#39; not locally available. Downloading...
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/pandas/io/feather_format.py:65: FutureWarning: pyarrow.feather.write_feather is deprecated as of 24.0.0. Use pyarrow.ipc.new_file() / RecordBatchFileWriter instead. Feather V2 is the Arrow IPC file format.
+  feather.write_feather(df, handles.handle, **kwargs)
 Done
+/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/pandas/io/feather_format.py:123: FutureWarning: pyarrow.feather.read_feather is deprecated as of 24.0.0. Use pyarrow.ipc.open_file() / RecordBatchFileReader instead. Feather V2 is the Arrow IPC file format.
+  return feather.read_feather(
 </pre></div>
 </div>
 <div class="output_subarea output_html rendered_html output_result">
@@ -574,10 +579,6 @@ given the patient features <span class="math notranslate nohighlight">\(x\)</spa
 
 <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a> <span class="o">=</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class"><span class="n">SurvivalBoost</span></a><span class="p">(</span><span class="n">show_progressbar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
 <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survival_boost</span></a>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/sklearn/utils/deprecation.py:132: FutureWarning: &#39;force_all_finite&#39; was renamed to &#39;ensure_all_finite&#39; in 1.6 and will be removed in 1.8.
-  warnings.warn(
 </pre></div>
 </div>
 <div class="output_subarea output_html rendered_html output_result">
@@ -1504,7 +1505,7 @@ doesn’t depend on the patient features.</p>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Concordance index at quantiles [0.25, 0.5, 0.75] for SurvivalBoost: [0.732 0.713 0.667]
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 9.989 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 10.443 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-01-survival-analysis-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/a6916f06450964ef8d10eb5f311100d1/plot_01_survival_analysis.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_01_survival_analysis.ipynb</span></code></a></p>

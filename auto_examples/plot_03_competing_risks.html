@@ -57,7 +57,7 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Getting the SEER dataset" href="../downloading_seer.html" />
+    <link rel="next" title="Calibration of survival models with competing risks" href="plot_04_calibration_aj.html" />
     <link rel="prev" title="Estimating marginal cumulative incidence functions" href="plot_02_marginal_cumulative_incidence_estimation.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -353,6 +353,7 @@
 <li class="toctree-l1"><a class="reference internal" href="plot_01_survival_analysis.html">Survival analysis with SurvivalBoost</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plot_02_marginal_cumulative_incidence_estimation.html">Estimating marginal cumulative incidence functions</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Exploring the accuracy in time</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_04_calibration_aj.html">Calibration of survival models with competing risks</a></li>
 </ul>
 </div>
 </nav></div>
@@ -425,7 +426,7 @@ how to interpret it.</p>
 <section id="definition-of-the-accuracy-in-time">
 <h2>Definition of the Accuracy in Time<a class="headerlink" href="#definition-of-the-accuracy-in-time" title="Link to this heading">#</a></h2>
 <p>Here is a little bit of context about this metric introduced in
-<a class="reference external" href="https://hal.science/hal-04617672v4">Alberge et al. (2024)</a>:</p>
+<a class="reference external" href="https://hal.science/hal-04617672v5">Alberge et al. (2025)</a>:</p>
 <ul class="simple">
 <li><p>The accuracy in time is a generalization of the accuracy metric in the survival
 and the competing risks setting, representing the proportion of correctly
@@ -514,10 +515,6 @@ formula above.</p>
 <span class="n">quantiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.125</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
 <span class="n">accuracy</span><span class="p">,</span> <span class="n">taus</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.accuracy_in_time.html#hazardous.metrics.accuracy_in_time" title="hazardous.metrics.accuracy_in_time" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">accuracy_in_time</span></a><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">time_grid</span><span class="p">,</span> <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">)</span>
 <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;Survival Boost&quot;</span><span class="p">,</span> <span class="n">accuracy</span><span class="o">=</span><span class="n">accuracy</span><span class="p">,</span> <span class="n">taus</span><span class="o">=</span><span class="n">taus</span><span class="p">))</span>
-</pre></div>
-</div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/opt/hostedtoolcache/Python/3.10.20/x64/lib/python3.10/site-packages/sklearn/utils/deprecation.py:132: FutureWarning: &#39;force_all_finite&#39; was renamed to &#39;ensure_all_finite&#39; in 1.6 and will be removed in 1.8.
-  warnings.warn(
 </pre></div>
 </div>
 <p>We also compute the accuracy in time of the Aalen-Johansen estimator, which is
@@ -688,7 +685,7 @@ the accuracy-over-time figure for the Aalen-Johansen model.</p>
 <span class="n">plot_event_in_time</span><span class="p">(</span><span class="n">y_pred_class_aj</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Aalen-Johansen&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<img src="../_images/sphx_glr_plot_03_competing_risks_005.png" srcset="../_images/sphx_glr_plot_03_competing_risks_005.png" alt="Aalen-Johansen" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 30.780 seconds)</p>
+<img src="../_images/sphx_glr_plot_03_competing_risks_005.png" srcset="../_images/sphx_glr_plot_03_competing_risks_005.png" alt="Aalen-Johansen" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 33.516 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-03-competing-risks-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/2bac69c23aafe114787596f06d48dacd/plot_03_competing_risks.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_03_competing_risks.ipynb</span></code></a></p>
@@ -725,11 +722,11 @@ the accuracy-over-time figure for the Aalen-Johansen model.</p>
       </div>
     </a>
     <a class="right-next"
-       href="../downloading_seer.html"
+       href="plot_04_calibration_aj.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Getting the SEER dataset</p>
+        <p class="prev-next-title">Calibration of survival models with competing risks</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

@@ -69,6 +69,23 @@ competive risk analysis problems.
     </div>
 
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="A model is calibrated when its predicted probabilities match the observed frequencies of events: among individuals predicted to have a 20% risk, about 20% should actually experience the event. Marginal calibration is the weakest form of this property, checking that predictions are correct on average across the whole cohort rather than for each individual.">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_04_calibration_aj_thumb.png
+    :alt:
+
+  :doc:`/auto_examples/plot_04_calibration_aj`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Calibration of survival models with competing risks</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html
@@ -82,6 +99,7 @@ competive risk analysis problems.
    /auto_examples/plot_01_survival_analysis
    /auto_examples/plot_02_marginal_cumulative_incidence_estimation
    /auto_examples/plot_03_competing_risks
+   /auto_examples/plot_04_calibration_aj
 
 
 .. only:: html

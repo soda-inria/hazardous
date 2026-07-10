@@ -368,8 +368,8 @@
                   
   <section id="hzrdous">
 <h1>HΛZΛRDOUS<a class="headerlink" href="#hzrdous" title="Link to this heading">#</a></h1>
-<section id="gradient-boosting-survival-analysis-and-competing-risks">
-<h2>Gradient-boosting Survival Analysis and Competing Risks<a class="headerlink" href="#gradient-boosting-survival-analysis-and-competing-risks" title="Link to this heading">#</a></h2>
+<section id="survival-analysis-with-competing-risks">
+<h2>Survival Analysis with Competing Risks<a class="headerlink" href="#survival-analysis-with-competing-risks" title="Link to this heading">#</a></h2>
 <div class="index-features docutils container">
 <ul class="simple">
 <li><p>Survival Analysis, Competing Risks</p></li>
@@ -380,13 +380,8 @@
 <p><strong>hazardous</strong> is a Python library for <strong>survival analysis</strong> -i.e. time-to-event prediction-
 and <strong>competing risks</strong> settings. It introduces <strong>SurvivalBoost</strong>, a <strong>scalable</strong>
 gradient-boosting model designed for this task.</p>
-<p>With a <strong>scikit-learn-compatible API</strong>, the library also offers various metrics
-for model evaluation adapted for the competing risks setting:</p>
-<ul class="simple">
-<li><p><strong>Integrated Brier Score</strong></p></li>
-<li><p><strong>C-index</strong></p></li>
-<li><p><strong>Accuracy in Time</strong>: the ability to predict the observed event at a given time horizon.</p></li>
-</ul>
+<p>With a <strong>scikit-learn-compatible API</strong>, the library also ships a suite of
+evaluation metrics specifically adapted to the <strong>competing risks</strong> setting.</p>
 </section>
 <section id="what-is-the-difference-between-survival-analysis-and-the-competing-risks-setting">
 <h2>What is the difference between Survival Analysis and the Competing risks setting?<a class="headerlink" href="#what-is-the-difference-between-survival-analysis-and-the-competing-risks-setting" title="Link to this heading">#</a></h2>
@@ -408,8 +403,65 @@ Using a novel strictly proper scoring rule, the model is trained to predict the
 cumulative incidence function and the survival function at any horizon.
 SurvivalBoost puts a focus on predictive the accuracy -defined as the ability to predict
 the observed event- rather than on inference.</p>
-<p>Additional theoretical details about the model can be found in <a class="reference external" href="https://arxiv.org/pdf/2410.16765">Survival Models:
+<p>Additional theoretical details about the model can be found in <a class="reference external" href="https://hal.science/hal-04617672v5/document">Survival Models:
 Proper Scoring Rule and Stochastic Optimization with Competing Risks</a>.</p>
+</section>
+<section id="evaluating-competing-risks-models">
+<h2>Evaluating competing-risks models<a class="headerlink" href="#evaluating-competing-risks-models" title="Link to this heading">#</a></h2>
+<p>A trustworthy model has to get three different things right: <strong>rank</strong> patients
+by risk, <strong>predict the right probabilities</strong>, and stay <strong>calibrated</strong> across the
+whole follow-up. <code class="docutils literal notranslate"><span class="pre">hazardous</span></code> provides one family of metrics for each question.</p>
+<div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
+<div class="sd-row sd-row-cols-1 sd-row-cols-xs-1 sd-row-cols-sm-1 sd-row-cols-md-3 sd-row-cols-lg-3 sd-g-3 sd-g-xs-3 sd-g-sm-3 sd-g-md-3 sd-g-lg-3 docutils">
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Discrimination</div>
+<p class="sd-card-text"><strong>C-index for competing risks</strong>
+This metric can be used to answer the question:
+<em>Does the model rank individuals in the right order?</em></p>
+</div>
+<div class="sd-card-footer docutils">
+<p class="sd-card-text">See <a class="reference internal" href="generated/hazardous.metrics.concordance_index_incidence.html#hazardous.metrics.concordance_index_incidence" title="hazardous.metrics.concordance_index_incidence"><code class="xref py py-func docutils literal notranslate"><span class="pre">concordance_index_incidence()</span></code></a></p>
+</div>
+</div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Accuracy</div>
+<p class="sd-card-text"><strong>Integrated Brier Score (IBS)</strong>
+This metric can be used to answer the question:
+<em>Are the predicted probabilities close to the observed outcomes?</em></p>
+<p class="sd-card-text"><strong>Accuracy in Time</strong>
+This metric can be used to answer the question:
+<em>Is the current predicted class correct?</em></p>
+</div>
+<div class="sd-card-footer docutils">
+<p class="sd-card-text">See <a class="reference internal" href="generated/hazardous.metrics.integrated_brier_score_incidence.html#hazardous.metrics.integrated_brier_score_incidence" title="hazardous.metrics.integrated_brier_score_incidence"><code class="xref py py-func docutils literal notranslate"><span class="pre">integrated_brier_score_incidence()</span></code></a>,
+<a class="reference internal" href="generated/hazardous.metrics.brier_score_incidence.html#hazardous.metrics.brier_score_incidence" title="hazardous.metrics.brier_score_incidence"><code class="xref py py-func docutils literal notranslate"><span class="pre">brier_score_incidence()</span></code></a> and
+<a class="reference internal" href="generated/hazardous.metrics.accuracy_in_time.html#hazardous.metrics.accuracy_in_time" title="hazardous.metrics.accuracy_in_time"><code class="xref py py-func docutils literal notranslate"><span class="pre">accuracy_in_time()</span></code></a></p>
+</div>
+</div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Calibration</div>
+<p class="sd-card-text"><strong>AJ &amp; KM calibration</strong></p>
+<p class="sd-card-text"><em>Are the predicted probabilities trustworthy on average?</em></p>
+</div>
+<div class="sd-card-footer docutils">
+<p class="sd-card-text">See <a class="reference internal" href="generated/hazardous.metrics.aj_calibration.html#hazardous.metrics.aj_calibration" title="hazardous.metrics.aj_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">aj_calibration()</span></code></a> and
+<a class="reference internal" href="generated/hazardous.metrics.km_calibration.html#hazardous.metrics.km_calibration" title="hazardous.metrics.km_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">km_calibration()</span></code></a></p>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p>The library relies on <a class="reference external" href="https://lifelines.readthedocs.io/en/latest/">lifelines</a>
@@ -474,9 +526,10 @@ the scope of this library.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gradient-boosting-survival-analysis-and-competing-risks">Gradient-boosting Survival Analysis and Competing Risks</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#survival-analysis-with-competing-risks">Survival Analysis with Competing Risks</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-the-difference-between-survival-analysis-and-the-competing-risks-setting">What is the difference between Survival Analysis and the Competing risks setting?</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-is-survivalboost">What is SurvivalBoost?</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#evaluating-competing-risks-models">Evaluating competing-risks models</a></li>
 </ul>
   </nav></div>
 

@@ -1,0 +1,953 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Calibration of survival models with competing risks &#8212; hazardous</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=fd6457a4" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=932f07db" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'auto_examples/plot_04_calibration_aj';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Getting the SEER dataset" href="../downloading_seer.html" />
+    <link rel="prev" title="Exploring the accuracy in time" href="plot_03_competing_risks.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+  <aside class="bd-header-announcement d-print-none d-none" aria-label="Announcement" data-pst-announcement-url="https://raw.githubusercontent.com/soda-inria/hazardous/main/doc/announcement.html"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">hazardous</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../install.html">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../downloading_seer.html">
+    Getting the SEER dataset
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/soda-inria/hazardous/" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../install.html">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../downloading_seer.html">
+    Getting the SEER dataset
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/soda-inria/hazardous/" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar"><svg class="pst-icon svg-inline--fa" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="plot_01_survival_analysis.html">Survival analysis with SurvivalBoost</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_02_marginal_cumulative_incidence_estimation.html">Estimating marginal cumulative incidence functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot_03_competing_risks.html">Exploring the accuracy in time</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Calibration of survival models with competing risks</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Calibration of survival models with competing risks</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-examples-plot-04-calibration-aj-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="calibration-of-survival-models-with-competing-risks">
+<span id="sphx-glr-auto-examples-plot-04-calibration-aj-py"></span><h1>Calibration of survival models with competing risks<a class="headerlink" href="#calibration-of-survival-models-with-competing-risks" title="Link to this heading">#</a></h1>
+<p>A model is <em>calibrated</em> when its predicted probabilities match the observed
+frequencies of events: among individuals predicted to have a 20% risk, about
+20% should actually experience the event. <em>Marginal</em> calibration is the weakest
+form of this property, checking that predictions are correct on average across
+the whole cohort rather than for each individual.</p>
+<p>In a competing risks setting, an individual can experience one of several
+mutually exclusive events (e.g. dying from different causes), and the quantity
+of interest is the cumulative incidence function (CIF) of each event over time.
+The Aalen-Johansen (AJ) estimator is the standard non-parametric estimator of
+these CIFs. AJ calibration uses it as a ground-truth reference: a model is
+marginally calibrated if its mean predicted CIF matches the AJ estimate fitted
+on the same cohort. The AJ calibration metric quantifies the gap between the
+two, with a score of zero indicating perfect marginal calibration. See <a class="reference internal" href="#alberge2026" id="id1"><span>[Alberge2026]</span></a>
+for details.</p>
+<p>In this example, we illustrate how the Aalen-Johansen calibration metric works.
+The Aalen-Johansen (AJ) calibration metric measures marginal calibration of a
+survival model in the presence of competing risks. It compares the mean predicted
+cumulative incidence function (CIF) against the non-parametric AJ estimator fitted
+on the evaluation cohort.</p>
+<p>We demonstrate:</p>
+<ol class="arabic simple">
+<li><p>The AJ estimator itself as a calibrated baseline.</p></li>
+<li><p>Why the AJ estimator does not achieve exactly zero calibration error when
+evaluated on a different data split.</p></li>
+<li><p>SurvivalBoost as a model with individual-level predictions.</p></li>
+<li><p>The three granularities of the metric:
+<a class="reference internal" href="../generated/hazardous.metrics.aj_calibration.html#hazardous.metrics.aj_calibration" title="hazardous.metrics.aj_calibration"><code class="xref py py-func docutils literal notranslate"><span class="pre">aj_calibration()</span></code></a>,
+<a class="reference internal" href="../generated/hazardous.metrics.aj_calibration_per_event.html#hazardous.metrics.aj_calibration_per_event" title="hazardous.metrics.aj_calibration_per_event"><code class="xref py py-func docutils literal notranslate"><span class="pre">aj_calibration_per_event()</span></code></a>, and
+<a class="reference internal" href="../generated/hazardous.metrics.aj_calibration_at_t.html#hazardous.metrics.aj_calibration_at_t" title="hazardous.metrics.aj_calibration_at_t"><code class="xref py py-func docutils literal notranslate"><span class="pre">aj_calibration_at_t()</span></code></a>.</p></li>
+</ol>
+<div role="list" class="citation-list">
+<div class="citation" id="alberge2026" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">Alberge2026</a><span class="fn-bracket">]</span></span>
+<p>J. Alberge, T. Haugomat, G.Varoquaux,J. Abecassis,
+“On the calibration of survival models with competing risks”,
+AISTATS 2026.
+&lt;<a class="reference external" href="https://arxiv.org/pdf/2602.00194">https://arxiv.org/pdf/2602.00194</a>&gt;</p>
+</div>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.model_selection</span><span class="w"> </span><span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="sklearn.model_selection.train_test_split" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">train_test_split</span></a>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifelines</span><span class="w"> </span><span class="kn">import</span> <span class="n">KaplanMeierFitter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lifelines.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_at_risk_counts</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">hazardous.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_time_grid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hazardous._km_sampler</span><span class="w"> </span><span class="kn">import</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator" title="sklearn.base.BaseEstimator" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-class"><span class="n">_AalenJohansenSampler</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hazardous._survival_boost</span><span class="w"> </span><span class="kn">import</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class"><span class="n">SurvivalBoost</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hazardous.data._competing_weibull</span><span class="w"> </span><span class="kn">import</span> <a href="../generated/hazardous.data.make_synthetic_competing_weibull.html#hazardous.data.make_synthetic_competing_weibull" title="hazardous.data.make_synthetic_competing_weibull" class="sphx-glr-backref-module-hazardous-data sphx-glr-backref-type-py-function"><span class="n">make_synthetic_competing_weibull</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hazardous.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <a href="../generated/hazardous.metrics.aj_calibration.html#hazardous.metrics.aj_calibration" title="hazardous.metrics.aj_calibration" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration</span></a><span class="p">,</span>
+    <a href="../generated/hazardous.metrics.aj_calibration_at_t.html#hazardous.metrics.aj_calibration_at_t" title="hazardous.metrics.aj_calibration_at_t" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration_at_t</span></a><span class="p">,</span>
+    <a href="../generated/hazardous.metrics.aj_calibration_per_event.html#hazardous.metrics.aj_calibration_per_event" title="hazardous.metrics.aj_calibration_per_event" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration_per_event</span></a><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># lifelines&#39; AalenJohansenFitter warns and randomly jitters whenever it finds</span>
+<span class="c1"># tied event times. Silence that specific warning to keep the output clean.</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Tied event times were detected&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Generation of one synthetic dataset with 3 competing events,
+and display of the distribution of the target.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">n_samples</span> <span class="o">=</span> <span class="mi">10_000</span>
+<span class="n">n_events</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <a href="../generated/hazardous.data.make_synthetic_competing_weibull.html#hazardous.data.make_synthetic_competing_weibull" title="hazardous.data.make_synthetic_competing_weibull" class="sphx-glr-backref-module-hazardous-data sphx-glr-backref-type-py-function"><span class="n">make_synthetic_competing_weibull</span></a><span class="p">(</span>
+    <span class="n">n_samples</span><span class="o">=</span><span class="n">n_samples</span><span class="p">,</span>
+    <span class="n">return_X_y</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">n_events</span><span class="o">=</span><span class="n">n_events</span><span class="p">,</span>
+    <span class="n">censoring_relative_scale</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">sns</span><span class="o">.</span><span class="n">histplot</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="s2">&quot;duration&quot;</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s2">&quot;event&quot;</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">kde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Distribution of the target&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_plot_04_calibration_aj_001.png" srcset="../_images/sphx_glr_plot_04_calibration_aj_001.png" alt="Distribution of the target" class = "sphx-glr-single-img"/><p>Data splits: train / test.
+The model is fitted on the train set, and the calibration is measured on the test set.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html#sklearn.model_selection.train_test_split" title="sklearn.model_selection.train_test_split" class="sphx-glr-backref-module-sklearn-model_selection sphx-glr-backref-type-py-function"><span class="n">train_test_split</span></a><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+<span class="c1"># Common time grid used throughout this example.</span>
+<span class="n">times</span> <span class="o">=</span> <span class="n">make_time_grid</span><span class="p">(</span>
+    <span class="n">event</span><span class="o">=</span><span class="n">y_train</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">],</span> <span class="n">duration</span><span class="o">=</span><span class="n">y_train</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">],</span> <span class="n">n_time_grid_steps</span><span class="o">=</span><span class="mi">100</span>
+<span class="p">)</span>
+
+<span class="c1"># In the tail of the time grid only a handful of subjects are still at risk, so</span>
+<span class="c1"># the Aalen-Johansen reference - and therefore the calibration error - becomes</span>
+<span class="c1"># pure noise there. The AJ-calibration metric integrates only up to the time</span>
+<span class="c1"># where fewer than ``min_prop_at_risk`` of the cohort remains at risk (5% by</span>
+<span class="c1"># default). We compute that cutoff time here to highlight it in the plots below.</span>
+<span class="n">min_prop_at_risk</span> <span class="o">=</span> <span class="mf">0.05</span>
+<span class="n">prop_at_risk</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y_test</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">])[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">times</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:])</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">t_cut</span> <span class="o">=</span> <span class="n">times</span><span class="p">[</span><span class="n">prop_at_risk</span> <span class="o">&gt;=</span> <span class="n">min_prop_at_risk</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+<section id="aj-estimator-as-a-calibrated-baseline">
+<h2>AJ estimator as a calibrated baseline.<a class="headerlink" href="#aj-estimator-as-a-calibrated-baseline" title="Link to this heading">#</a></h2>
+<p>The AJ estimator is a marginal model: it predicts the same CIF for every
+individual. Fitting on the training set and evaluating on the test set gives a
+calibration score close (but not exactly equal) to zero.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">aalen_sampler</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator" title="sklearn.base.BaseEstimator" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-class"><span class="n">_AalenJohansenSampler</span></a><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y_train</span><span class="p">)</span>
+
+<span class="n">incidence_funcs_aj</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">aalen_sampler</span><span class="o">.</span><span class="n">incidence_func_</span><span class="p">)</span>
+<span class="n">incidence_funcs_aj</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">aalen_sampler</span><span class="o">.</span><span class="n">survival_func_</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_aj_predictions</span><span class="p">(</span><span class="n">sampler_funcs</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_events</span><span class="p">,</span> <span class="n">times</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Broadcast marginal AJ predictions to shape</span>
+<span class="sd">    (n_samples, n_events+1, n_times).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">sampler_funcs</span><span class="p">[</span><span class="n">i</span><span class="p">](</span><span class="n">times</span><span class="p">),</span> <span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_events</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">preds</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># (n_samples, n_events+1, n_times)</span>
+
+
+<span class="n">inc_probs_aj_test</span> <span class="o">=</span> <span class="n">_aj_predictions</span><span class="p">(</span><span class="n">incidence_funcs_aj</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_test</span><span class="p">),</span> <span class="n">n_events</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
+
+<span class="n">aj_cal_test</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.aj_calibration.html#hazardous.metrics.aj_calibration" title="hazardous.metrics.aj_calibration" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration</span></a><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">inc_probs_aj_test</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;AJ calibration score (test set): </span><span class="si">{</span><span class="n">aj_cal_test</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>AJ calibration score (test set): 0.000055
+</pre></div>
+</div>
+</section>
+<section id="why-does-the-aj-estimator-have-a-non-zero-calibration-score">
+<h2>Why does the AJ estimator have a non-zero calibration score?<a class="headerlink" href="#why-does-the-aj-estimator-have-a-non-zero-calibration-score" title="Link to this heading">#</a></h2>
+<p>The AJ calibration metric compares the <em>mean predicted CIF</em> against the
+AJ estimator on the test set.
+When the model is itself the AJ fitted on the training set, its predictions
+are the AJ CIFs from y_train. The reference inside the metric is the AJ
+fitted on y_test. These two AJ estimates are obtained on different
+random splits and therefore differ slightly due to sampling variability.
+This produces a small but non-zero calibration error, even though the model is
+theoretically marginally calibrated.</p>
+<p>The plot below shows the AJ CIF on the three splits for each event:
+they are close but not identical, which explains the residual score.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">aj_test_sampler</span> <span class="o">=</span> <a href="https://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html#sklearn.base.BaseEstimator" title="sklearn.base.BaseEstimator" class="sphx-glr-backref-module-sklearn-base sphx-glr-backref-type-py-class"><span class="n">_AalenJohansenSampler</span></a><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y_test</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="n">n_events</span><span class="p">,</span> <span class="n">nrows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span>
+    <span class="s2">&quot;AJ CIFs on different splits</span><span class="se">\n</span><span class="s2">(small differences explain why AJ calibration ≠ 0)&quot;</span>
+<span class="p">)</span>
+
+<span class="k">for</span> <span class="n">event_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_events</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">event_id</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">times</span><span class="p">,</span>
+        <span class="n">incidence_funcs_aj</span><span class="p">[</span><span class="n">event_id</span><span class="p">](</span><span class="n">times</span><span class="p">),</span>
+        <span class="n">label</span><span class="o">=</span><span class="s2">&quot;AJ fitted on train&quot;</span><span class="p">,</span>
+        <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C0&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">times</span><span class="p">,</span>
+        <span class="n">aj_test_sampler</span><span class="o">.</span><span class="n">incidence_func_</span><span class="p">[</span><span class="n">event_id</span><span class="p">](</span><span class="n">times</span><span class="p">),</span>
+        <span class="n">label</span><span class="o">=</span><span class="s2">&quot;AJ fitted on test&quot;</span><span class="p">,</span>
+        <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;:&quot;</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C2&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Event </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">event_id</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">&quot;Survival (event 0)&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Cumulative incidence&quot;</span> <span class="k">if</span> <span class="n">event_id</span> <span class="o">!=</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">&quot;Survival probability&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_plot_04_calibration_aj_002.png" srcset="../_images/sphx_glr_plot_04_calibration_aj_002.png" alt="AJ CIFs on different splits (small differences explain why AJ calibration ≠ 0), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><p>SurvivalBoost produces <em>individual-level</em> CIF predictions, so its mean
+prediction can deviate from the marginal AJ reference, reflecting whether
+the model’s is well-calibrated marginally.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">survivalboost</span></a> <span class="o">=</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost" title="hazardous.SurvivalBoost" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-class"><span class="n">SurvivalBoost</span></a><span class="p">(</span><span class="n">n_iter</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">show_progressbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost.fit" title="hazardous.SurvivalBoost.fit" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-method"><span class="n">survivalboost</span><span class="o">.</span><span class="n">fit</span></a><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+
+<span class="c1"># Predictions on the calibration cohort — shape (n_test, n_events+1, n_times)</span>
+<span class="n">inc_probs_sb</span> <span class="o">=</span> <a href="../generated/hazardous.SurvivalBoost.html#hazardous.SurvivalBoost.predict_cumulative_incidence" title="hazardous.SurvivalBoost.predict_cumulative_incidence" class="sphx-glr-backref-module-hazardous sphx-glr-backref-type-py-method"><span class="n">survivalboost</span><span class="o">.</span><span class="n">predict_cumulative_incidence</span></a><span class="p">(</span><span class="n">X_test</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">times</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="comparing-mean-survivalboost-predictions-against-the-aj-reference">
+<h2>Comparing mean SurvivalBoost predictions against the AJ reference.<a class="headerlink" href="#comparing-mean-survivalboost-predictions-against-the-aj-reference" title="Link to this heading">#</a></h2>
+<p>A well-calibrated model has its mean CIF close to the non-parametric AJ.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">aj_ref</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">0</span><span class="p">:</span> <span class="n">aj_test_sampler</span><span class="o">.</span><span class="n">survival_func_</span><span class="p">(</span><span class="n">times</span><span class="p">),</span>
+    <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">aj_test_sampler</span><span class="o">.</span><span class="n">incidence_func_</span><span class="p">[</span><span class="n">k</span><span class="p">](</span><span class="n">times</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_events</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)},</span>
+<span class="p">}</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="p">(</span><span class="n">n_events</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span>
+    <span class="s2">&quot;Mean SurvivalBoost CIFs vs AJ reference on the calibration set</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="s2">&quot;(good calibration: curves should overlap)&quot;</span>
+<span class="p">)</span>
+
+<span class="k">for</span> <span class="n">event_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_events</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">event_id</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">event_id</span> <span class="o">%</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="n">mean_sb</span> <span class="o">=</span> <span class="n">inc_probs_sb</span><span class="p">[:,</span> <span class="n">event_id</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">mean_sb</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;SurvivalBoost (mean)&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C0&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">aj_ref</span><span class="p">[</span><span class="n">event_id</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;AJ reference&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C1&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvspan</span><span class="p">(</span>
+        <span class="n">t_cut</span><span class="p">,</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;tail: &lt;5</span><span class="si">% a</span><span class="s2">t risk (excluded)&quot;</span>
+    <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">t_cut</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Survival (event 0)&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">event_id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;Event </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">event_id</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Probability&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_plot_04_calibration_aj_003.png" srcset="../_images/sphx_glr_plot_04_calibration_aj_003.png" alt="Mean SurvivalBoost CIFs vs AJ reference on the calibration set (good calibration: curves should overlap), Survival (event 0), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/></section>
+<section id="aj-calibration-at-three-levels-of-granularity">
+<h2>AJ calibration at three levels of granularity.<a class="headerlink" href="#aj-calibration-at-three-levels-of-granularity" title="Link to this heading">#</a></h2>
+<p>The AJ calibration metric can be computed at three levels of granularity:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">aj_calibration</span></code>: single scalar score aggregated across all events.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">aj_calibration_per_event</span></code>: one scalar score per event, before aggregation.</p></li>
+</ol>
+<p>3. <code class="docutils literal notranslate"><span class="pre">aj_calibration_at_t</span></code>: pointwise difference <span class="math notranslate nohighlight">\(\delta_k(t)\)</span> at a single
+time point.</p>
+<p>By default the score integrates only up to the time where 5% of the cohort is
+still at risk. Because the time grid is quantile-spaced, the few tail points
+span most of the time axis and carry large weight in the integral. For events
+whose error is concentrated in that tail (e.g. event 3), integrating over the
+full grid (<code class="docutils literal notranslate"><span class="pre">min_prop_at_risk=0</span></code>) lets small-sample noise dominate and
+inflates the score; truncation removes that contribution. Where the model is
+genuinely miscalibrated in the data-rich region (e.g. event 0), truncation
+does not hide it.</p>
+<p>1 — Overall score (mean across events by default)</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">score_overall</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.aj_calibration.html#hazardous.metrics.aj_calibration" title="hazardous.metrics.aj_calibration" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration</span></a><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">inc_probs_sb</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[aj_calibration] overall score (mean): </span><span class="si">{</span><span class="n">score_overall</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">score_sum</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.aj_calibration.html#hazardous.metrics.aj_calibration" title="hazardous.metrics.aj_calibration" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration</span></a><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">inc_probs_sb</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;sum&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[aj_calibration] overall score (sum):  </span><span class="si">{</span><span class="n">score_sum</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[aj_calibration] overall score (mean): 0.007924
+[aj_calibration] overall score (sum):  0.031696
+</pre></div>
+</div>
+<p>2 — Per-event scores</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">scores_per_event</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.aj_calibration_per_event.html#hazardous.metrics.aj_calibration_per_event" title="hazardous.metrics.aj_calibration_per_event" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration_per_event</span></a><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">inc_probs_sb</span><span class="p">)</span>  <span class="c1"># default 5%</span>
+<span class="n">scores_full_grid</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.aj_calibration_per_event.html#hazardous.metrics.aj_calibration_per_event" title="hazardous.metrics.aj_calibration_per_event" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration_per_event</span></a><span class="p">(</span>
+    <span class="n">y_test</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">inc_probs_sb</span><span class="p">,</span> <span class="n">min_prop_at_risk</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[aj_calibration_per_event] scores (truncated at 5</span><span class="si">% a</span><span class="s2">t risk vs full grid):&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">event_id</span> <span class="ow">in</span> <span class="n">scores_per_event</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;  Event </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">scores_per_event</span><span class="p">[</span><span class="n">event_id</span><span class="p">]</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;(full grid: </span><span class="si">{</span><span class="n">scores_full_grid</span><span class="p">[</span><span class="n">event_id</span><span class="p">]</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">)&quot;</span>
+    <span class="p">)</span>
+
+<span class="c1"># Score for event 1 only</span>
+<span class="n">score_event1</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.aj_calibration_per_event.html#hazardous.metrics.aj_calibration_per_event" title="hazardous.metrics.aj_calibration_per_event" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration_per_event</span></a><span class="p">(</span>
+    <span class="n">y_test</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">inc_probs_sb</span><span class="p">,</span> <span class="n">event_of_interest</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[aj_calibration_per_event] event_of_interest=1: </span><span class="si">{</span><span class="n">score_event1</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 3 — Pointwise differences at a single time point</span>
+<span class="n">t_star</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">times</span><span class="p">)</span>  <span class="c1"># example time point</span>
+<span class="n">t_star_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">times</span> <span class="o">-</span> <span class="n">t_star</span><span class="p">)</span>
+<span class="p">)</span>  <span class="c1"># index of closest time point in the array</span>
+
+<span class="n">diffs_at_t_star</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.aj_calibration_at_t.html#hazardous.metrics.aj_calibration_at_t" title="hazardous.metrics.aj_calibration_at_t" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration_at_t</span></a><span class="p">(</span>
+    <span class="n">y_test</span><span class="p">,</span>
+    <span class="n">times</span><span class="p">[[</span><span class="n">t_star_idx</span><span class="p">]],</span>
+    <span class="n">inc_probs_sb</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">t_star_idx</span> <span class="p">:</span> <span class="n">t_star_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[aj_calibration_at_t] pointwise δ_k at t=</span><span class="si">{</span><span class="n">t_star</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">event_id</span><span class="p">,</span> <span class="n">diff</span> <span class="ow">in</span> <span class="n">diffs_at_t_star</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Event </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">diff</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Alternatively, retrieve differences over all times and index manually</span>
+<span class="n">diffs_all</span> <span class="o">=</span> <a href="../generated/hazardous.metrics.aj_calibration_at_t.html#hazardous.metrics.aj_calibration_at_t" title="hazardous.metrics.aj_calibration_at_t" class="sphx-glr-backref-module-hazardous-metrics sphx-glr-backref-type-py-function"><span class="n">aj_calibration_at_t</span></a><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">times</span><span class="p">,</span> <span class="n">inc_probs_sb</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[aj_calibration_at_t] same values via full-time array indexing:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">event_id</span><span class="p">,</span> <span class="n">diff</span> <span class="ow">in</span> <span class="n">diffs_all</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Event </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s2"> at t=</span><span class="si">{</span><span class="n">t_star</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">diff</span><span class="p">[</span><span class="n">t_star_idx</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[aj_calibration_per_event] scores (truncated at 5% at risk vs full grid):
+  Event 0: 0.015210 (full grid: 0.005634)
+  Event 1: 0.015277 (full grid: 0.016545)
+  Event 2: 0.000307 (full grid: 0.000104)
+  Event 3: 0.000825 (full grid: 0.008877)
+
+[aj_calibration_per_event] event_of_interest=1: 0.015354
+
+[aj_calibration_at_t] pointwise δ_k at t=698.29:
+  Event 0: 0.1143
+  Event 1: 0.1072
+  Event 2: 0.0008
+  Event 3: 0.0066
+[aj_calibration_at_t] same values via full-time array indexing:
+  Event 0 at t=698.29: 0.1143
+  Event 1 at t=698.29: 0.1072
+  Event 2 at t=698.29: 0.0008
+  Event 3 at t=698.29: 0.0066
+</pre></div>
+</div>
+</section>
+<section id="visualizing-the-pointwise-calibration-error-for-survivalboost">
+<h2>Visualizing the pointwise calibration error for SurvivalBoost.<a class="headerlink" href="#visualizing-the-pointwise-calibration-error-for-survivalboost" title="Link to this heading">#</a></h2>
+<p>Values close to zero indicate good marginal calibration at that time point.
+One way to understand if the calibration errors are close enough to zero
+may be to compare them to the AJ calibration error of the AJ estimator itself,
+which is a marginally calibrated model by construction.</p>
+<p>For events 1 and 3 the error grows in the shaded tail: the “number at risk”
+row below each panel (drawn with lifelines’ <code class="docutils literal notranslate"><span class="pre">add_at_risk_counts</span></code>) shows that
+only a handful of subjects remain there, so the comparison is dominated by
+sampling noise rather than genuine miscalibration. This is exactly the region
+excluded by <code class="docutils literal notranslate"><span class="pre">min_prop_at_risk</span></code> when computing the integrated score. Event 0,
+in contrast, is off even where data is plentiful, so its error is a real
+calibration problem that truncation does not remove.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Kaplan-Meier on the test set, used only to render the at-risk counts.</span>
+<span class="n">kmf</span> <span class="o">=</span> <span class="n">KaplanMeierFitter</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;test cohort&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y_test</span><span class="p">[</span><span class="s2">&quot;duration&quot;</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y_test</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span>
+<span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="p">(</span><span class="n">n_events</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Pointwise AJ calibration error AJ_k(t) — SurvivalBoost&quot;</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">event_id</span><span class="p">,</span> <span class="n">diff</span> <span class="ow">in</span> <span class="n">diffs_all</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">event_id</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">event_id</span> <span class="o">%</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">diff</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C0&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvspan</span><span class="p">(</span>
+        <span class="n">t_cut</span><span class="p">,</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;tail: &lt;5</span><span class="si">% a</span><span class="s2">t risk (excluded)&quot;</span>
+    <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">t_cut</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span>
+        <span class="n">t_star</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C2&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;t*=</span><span class="si">{</span><span class="n">t_star</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">([</span><span class="n">t_star</span><span class="p">],</span> <span class="p">[</span><span class="n">diff</span><span class="p">[</span><span class="n">t_star_idx</span><span class="p">]],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C2&quot;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;Survival (event 0)&#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">event_id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="sa">f</span><span class="s1">&#39;Event </span><span class="si">{</span><span class="n">event_id</span><span class="si">}</span><span class="s1">&#39;</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;AJ_k(t)&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+    <span class="n">add_at_risk_counts</span><span class="p">(</span><span class="n">kmf</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">rows_to_show</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;At risk&quot;</span><span class="p">])</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_plot_04_calibration_aj_004.png" srcset="../_images/sphx_glr_plot_04_calibration_aj_004.png" alt="Pointwise AJ calibration error AJ_k(t) — SurvivalBoost, Survival (event 0), Event 1, Event 2, Event 3" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 14.454 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-examples-plot-04-calibration-aj-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/69433fb2217b8212dae5c7779418333e/plot_04_calibration_aj.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">plot_04_calibration_aj.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/3cd2383765d439f17872d3838c768dab/plot_04_calibration_aj.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">plot_04_calibration_aj.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/c53583c524b302656f6fe8253f0e4e52/plot_04_calibration_aj.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">plot_04_calibration_aj.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="plot_03_competing_risks.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Exploring the accuracy in time</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../downloading_seer.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Getting the SEER dataset</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#aj-estimator-as-a-calibrated-baseline">AJ estimator as a calibrated baseline.</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#why-does-the-aj-estimator-have-a-non-zero-calibration-score">Why does the AJ estimator have a non-zero calibration score?</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#comparing-mean-survivalboost-predictions-against-the-aj-reference">Comparing mean SurvivalBoost predictions against the AJ reference.</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#aj-calibration-at-three-levels-of-granularity">AJ calibration at three levels of granularity.</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#visualizing-the-pointwise-calibration-error-for-survivalboost">Visualizing the pointwise calibration error for SurvivalBoost.</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/auto_examples/plot_04_calibration_aj.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+  <div class="sidebar-secondary-item">
+
+
+  <div class="sphx-glr-sidebar-component">
+    
+      
+        <div class="sphx-glr-sidebar-item sphx-glr-download-python-sidebar" title="plot_04_calibration_aj.py">
+          <a download href="../_downloads/3cd2383765d439f17872d3838c768dab/plot_04_calibration_aj.py">
+            <i class="fa-solid fa-download"></i>
+            Download source code
+          </a>
+        </div>
+      
+    
+      
+        <div class="sphx-glr-sidebar-item sphx-glr-download-jupyter-sidebar" title="plot_04_calibration_aj.ipynb">
+          <a download href="../_downloads/69433fb2217b8212dae5c7779418333e/plot_04_calibration_aj.ipynb">
+            <i class="fa-solid fa-download"></i>
+            Download Jupyter notebook
+          </a>
+        </div>
+      
+    
+      
+        <div class="sphx-glr-sidebar-item sphx-glr-download-zip-sidebar" title="plot_04_calibration_aj.zip">
+          <a download href="../_downloads/c53583c524b302656f6fe8253f0e4e52/plot_04_calibration_aj.zip">
+            <i class="fa-solid fa-download"></i>
+            Download zipped
+          </a>
+        </div>
+      
+    
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Hazardous developers.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

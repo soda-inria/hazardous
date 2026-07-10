@@ -1,0 +1,10 @@
+﻿:mod:`hazardous.metrics`.aj_calibration_at_t
+=========================================================
+
+.. currentmodule:: hazardous.metrics
+
+.. autofunction:: aj_calibration_at_t
+
+.. raw:: html
+
+    <div class="clearer"></div>

@@ -57,7 +57,7 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="hazardous.data.make_synthetic_competing_weibull" href="hazardous.data.make_synthetic_competing_weibull.html" />
+    <link rel="next" title="hazardous.metrics.km_calibration" href="hazardous.metrics.km_calibration.html" />
     <link rel="prev" title="hazardous.metrics.concordance_index_incidence" href="hazardous.metrics.concordance_index_incidence.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -359,6 +359,10 @@
 <li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.integrated_brier_score_incidence.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.integrated_brier_score_incidence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.concordance_index_incidence.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.concordance_index_incidence</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.accuracy_in_time</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.km_calibration.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.km_calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.aj_calibration_at_t.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.aj_calibration_at_t</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.aj_calibration_per_event.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.aj_calibration_per_event</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hazardous.metrics.aj_calibration.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.aj_calibration</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="hazardous.data.make_synthetic_competing_weibull.html"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.data</span></code>.make_synthetic_competing_weibull</a></li>
@@ -447,7 +451,7 @@ at <span class="math notranslate nohighlight">\(\zeta\)</span>.</p>
 <li><p><span class="math notranslate nohighlight">\(y_{i,\zeta} = \delta_i ~ I\{t_i \leq \zeta \}\)</span> is the observed event
 for individual <span class="math notranslate nohighlight">\(i\)</span> at <span class="math notranslate nohighlight">\(\zeta\)</span>.</p></li>
 </ul>
-<p>The accuracy in time is a metric introduced in <a class="reference internal" href="#r9850a568a997-alberge2024" id="id1">[Alberge2024]</a> which evaluates
+<p>The accuracy in time is a metric introduced in <a class="reference internal" href="#r9850a568a997-alberge2025" id="id1">[Alberge2025]</a> which evaluates
 whether observed events are predicted as the most likely at given times.
 This metric measures if the highest predicted event (one of the event of interest
 or the survival one) corresponds to the one observed at <span class="math notranslate nohighlight">\(\zeta\)</span> for each
@@ -493,11 +497,11 @@ passed, taus is the time_grid.</p>
 </dl>
 <p class="rubric">References</p>
 <div role="list" class="citation-list">
-<div class="citation" id="r9850a568a997-alberge2024" role="doc-biblioentry">
-<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">Alberge2024</a><span class="fn-bracket">]</span></span>
+<div class="citation" id="r9850a568a997-alberge2025" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">Alberge2025</a><span class="fn-bracket">]</span></span>
 <p>J. Alberge, V. Maladiere,  O. Grisel, J. Abécassis, G. Varoquaux,
-<a class="reference external" href="https://hal.science/hal-04617672">“Survival Models: Proper Scoring Rule and Stochastic Optimization with
-Competing Risks”, 2024</a></p>
+<a class="reference external" href="https://hal.science/hal-04617672v5">“Survival Models: Proper Scoring Rule and Stochastic Optimization with
+Competing Risks”, 2025</a></p>
 </div>
 </div>
 </dd></dl>
@@ -524,11 +528,11 @@ Competing Risks”, 2024</a></p>
       </div>
     </a>
     <a class="right-next"
-       href="hazardous.data.make_synthetic_competing_weibull.html"
+       href="hazardous.metrics.km_calibration.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.data</span></code>.make_synthetic_competing_weibull</p>
+        <p class="prev-next-title"><code class="xref py py-mod docutils literal notranslate"><span class="pre">hazardous.metrics</span></code>.km_calibration</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
