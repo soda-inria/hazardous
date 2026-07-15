@@ -42,7 +42,7 @@ def test_oldest_from_pypi(session):
     _common_test_steps(session)
 
 
-@nox.session(python=["3.11"])
+@nox.session(python=["3.12"])
 def test_latest_sklearn_from_pypi(session):
     # Test the latest released scikit-learn with oldest other dependencies.
     session.install(".[test,oldest_deps,latest_sklearn]")
