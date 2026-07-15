@@ -38,7 +38,14 @@ def test_latest_from_conda_forge(session):
 @nox.session(python=["3.10"])
 def test_oldest_from_pypi(session):
     # Test the oldest supported version of the dependencies.
-    session.install(".[test,oldest_deps]")
+    session.install(".[test,oldest_deps,oldest_sklearn]")
+    _common_test_steps(session)
+
+
+@nox.session(python=["3.10"])
+def test_latest_sklearn_from_pypi(session):
+    # Test the latest released scikit-learn with oldest other dependencies.
+    session.install(".[test,oldest_deps,latest_sklearn]")
     _common_test_steps(session)
 
 
