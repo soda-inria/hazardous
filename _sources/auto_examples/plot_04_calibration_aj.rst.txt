@@ -397,8 +397,8 @@ does not hide it.
  .. code-block:: none
 
 
-    [aj_calibration] overall score (mean): 0.007833
-    [aj_calibration] overall score (sum):  0.031331
+    [aj_calibration] overall score (mean): 0.008065
+    [aj_calibration] overall score (sum):  0.032259
 
 
 
@@ -460,23 +460,23 @@ does not hide it.
 
 
     [aj_calibration_per_event] scores (truncated at 5% at risk vs full grid):
-      Event 0: 0.014979 (full grid: 0.005601)
-      Event 1: 0.015196 (full grid: 0.016443)
-      Event 2: 0.000314 (full grid: 0.000140)
-      Event 3: 0.000841 (full grid: 0.009306)
+      Event 0: 0.015404 (full grid: 0.005797)
+      Event 1: 0.015776 (full grid: 0.017372)
+      Event 2: 0.000274 (full grid: 0.000093)
+      Event 3: 0.000805 (full grid: 0.009273)
 
-    [aj_calibration_per_event] event_of_interest=1: 0.015197
+    [aj_calibration_per_event] event_of_interest=1: 0.015776
 
     [aj_calibration_at_t] pointwise δ_k at t=698.29:
-      Event 0: 0.1239
-      Event 1: 0.1111
-      Event 2: 0.0053
-      Event 3: 0.0078
+      Event 0: 0.1303
+      Event 1: 0.1255
+      Event 2: 0.0000
+      Event 3: 0.0052
     [aj_calibration_at_t] same values via full-time array indexing:
-      Event 0 at t=698.29: 0.1239
-      Event 1 at t=698.29: 0.1111
-      Event 2 at t=698.29: 0.0053
-      Event 3 at t=698.29: 0.0078
+      Event 0 at t=698.29: 0.1303
+      Event 1 at t=698.29: 0.1255
+      Event 2 at t=698.29: 0.0000
+      Event 3 at t=698.29: 0.0052
 
 
 
@@ -548,7 +548,7 @@ calibration problem that truncation does not remove.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 12.080 seconds)
+   **Total running time of the script:** (0 minutes 13.990 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_04_calibration_aj.py:

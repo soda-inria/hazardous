@@ -277,15 +277,15 @@ theoretical CIFs:
 
  .. code-block:: none
 
-    Integrated theoretical any event survival curve in 0.257 s
-    SurvivalBoost fit: 3.856 s
-    SurvivalBoost prediction: 2.706 s
-    Integrated theoretical cumulative incidence curve for event 1 in 2.754 s
-    Aalen-Johansen for event 1 fit in 3.019 s
-    Integrated theoretical cumulative incidence curve for event 2 in 3.098 s
-    Aalen-Johansen for event 2 fit in 3.001 s
-    Integrated theoretical cumulative incidence curve for event 3 in 3.065 s
-    Aalen-Johansen for event 3 fit in 3.016 s
+    Integrated theoretical any event survival curve in 0.605 s
+    SurvivalBoost fit: 4.229 s
+    SurvivalBoost prediction: 2.992 s
+    Integrated theoretical cumulative incidence curve for event 1 in 3.050 s
+    Aalen-Johansen for event 1 fit in 5.399 s
+    Integrated theoretical cumulative incidence curve for event 2 in 5.497 s
+    Aalen-Johansen for event 2 fit in 5.388 s
+    Integrated theoretical cumulative incidence curve for event 3 in 5.468 s
+    Aalen-Johansen for event 3 fit in 5.344 s
 
 
 
@@ -328,15 +328,15 @@ of censoring.
 
  .. code-block:: none
 
-    Integrated theoretical any event survival curve in 0.259 s
-    SurvivalBoost fit: 3.901 s
-    SurvivalBoost prediction: 2.711 s
-    Integrated theoretical cumulative incidence curve for event 1 in 2.761 s
-    Aalen-Johansen for event 1 fit in 3.041 s
-    Integrated theoretical cumulative incidence curve for event 2 in 3.117 s
-    Aalen-Johansen for event 2 fit in 2.967 s
-    Integrated theoretical cumulative incidence curve for event 3 in 3.031 s
-    Aalen-Johansen for event 3 fit in 2.993 s
+    Integrated theoretical any event survival curve in 0.577 s
+    SurvivalBoost fit: 4.308 s
+    SurvivalBoost prediction: 3.011 s
+    Integrated theoretical cumulative incidence curve for event 1 in 3.069 s
+    Aalen-Johansen for event 1 fit in 5.330 s
+    Integrated theoretical cumulative incidence curve for event 2 in 5.426 s
+    Aalen-Johansen for event 2 fit in 5.309 s
+    Integrated theoretical cumulative incidence curve for event 3 in 5.389 s
+    Aalen-Johansen for event 3 fit in 5.316 s
 
 
 
@@ -360,7 +360,7 @@ the large time horizons:
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 32.348 seconds)
+   **Total running time of the script:** (0 minutes 48.606 seconds)
 
 
 .. _sphx_glr_download_auto_examples_plot_02_marginal_cumulative_incidence_estimation.py:
