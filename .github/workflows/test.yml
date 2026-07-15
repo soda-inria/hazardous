@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           allow-prereleases: true
@@ -39,6 +39,10 @@ jobs:
             nox-session: test_latest_from_pypi
           - python-version: "3.12"
             nox-session: test_latest_from_pypi
+          - python-version: "3.13"
+            nox-session: test_latest_from_pypi
+          - python-version: "3.14"
+            nox-session: test_latest_from_pypi
 
       fail-fast: false
 
@@ -46,7 +50,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
@@ -64,7 +68,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - python-version: "3.12"
+          - python-version: "3.14"
             nox-session: test_latest_from_conda_forge
 
       fail-fast: false
