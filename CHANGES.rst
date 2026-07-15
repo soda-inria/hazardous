@@ -9,6 +9,17 @@ Release history
 Ongoing development
 ===================
 
+Release 0.2.0
+=============
+
+* Added the AJ-calibration metrics:
+    * :func:`aj_calibration`
+    * :func:`aj_calibration_at_t``
+    * :func:`aj_calibration_per_event``
+
+* Updating Python version to support 3.13, 3.14 and dropping support for 3.9.
+* Updating code to support the new versions of scikit-learn.
+
 
 Release 0.1.0
 =============
