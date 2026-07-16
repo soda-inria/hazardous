@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from hazardous.utils import check_y_survival
+from ..utils import check_y_survival
 
 
 def d_calibration(
