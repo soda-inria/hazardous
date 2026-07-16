@@ -1,7 +1,7 @@
-"""
-===========================
+r"""
+==========================================
 DCR-Calibration for competing risks models
-===========================
+==========================================
 
 The DCR-calibration metric measures *marginal calibration* of a competing risks
 model across different predicted risk levels. Instead of evaluating predictions
@@ -9,17 +9,20 @@ at fixed time points (like AJ-calibration), DCR-calibration bins observations
 by their predicted probability and checks whether observed frequencies match
 predictions across the full risk spectrum.
 
-A model is *well-calibrated* if among individuals predicted to have :math:`\rho` risk of
-an event, approximately :math:`\rho` fraction actually experience that event. The DCR
-metric quantifies deviations from this property by computing :math:`\hat{b}_k[0, \rho]`
-for each risk level :math:`\rho \in` [0,1]. See [Alberge2026]_ for details.
+A model is *well-calibrated* if among individuals predicted to have :math:`\rho`
+risk of an event, approximately a :math:`\rho` fraction actually experience that
+event. The DCR metric quantifies deviations from this property by computing
+:math:`\hat{b}_k[0, \rho]` for each risk level :math:`\rho \in [0, 1]`.
+See [Alberge2026]_ for details.
 
-In this example, we illustrate the DCR-calibration framework with three levels
+In this example, we illustrate the DCR-calibration framework with four levels
 of granularity:
 
-1. ``d_calibration``: per-bucket calibration curves b̂_k[0,ρ].
+1. ``d_calibration``: per-bucket calibration curves :math:`\hat{b}_k[0, \rho]`.
 2. ``d_cr_calibration_per_event``: integrated calibration score per event
-   using the formula (1/α) ∫₀¹ |b̂_k[0,ρ] - ρ|^α dρ.
+   using the formula
+   :math:`\frac{1}{\alpha} \int_0^1 \left| \hat{b}_k[0, \rho] - \rho`
+   :math:`\right|^\alpha \, d\rho`.
 3. ``d_cr_calibration``: overall aggregated score across events.
 4. ``d_cr_calibration_ks_test``: KS test for calibration significance.
 
@@ -329,7 +332,7 @@ for event_id in range(1, n_events + 1):
     # Plot calibration curve
     ax.plot(
         rho_values,
-        calib_curve.values.flatten(),
+        calib_curve,
         color="C0",
         linewidth=2,
         label="Observed",
@@ -348,7 +351,7 @@ for event_id in range(1, n_events + 1):
     # Fill between to show deviation
     ax.fill_between(
         rho_values,
-        calib_curve.values.flatten(),
+        calib_curve,
         rho_values,
         alpha=0.2,
         color="C0",
@@ -404,7 +407,7 @@ for event_id in range(1, n_events + 1):
     calib_curve_aj = calib_curves_aj[event_id]
     ax.plot(
         rho_values,
-        calib_curve_aj.values.flatten(),
+        calib_curve_aj,
         color="C1",
         linewidth=2,
         linestyle="-",
@@ -423,7 +426,7 @@ for event_id in range(1, n_events + 1):
     )
     ax.plot(
         rho_values,
-        calib_curve_sb.values.flatten(),
+        calib_curve_sb,
         color="C0",
         linewidth=2,
         linestyle="-",
@@ -463,7 +466,7 @@ for event_id in range(1, n_events + 1):
     rho_values = np.linspace(1 / 100, 1, 100)
     ax.plot(
         rho_values,
-        calib_curve.values.flatten(),
+        calib_curve,
         color=colors[event_id - 1],
         linewidth=2,
         label=f"Event {event_id}",

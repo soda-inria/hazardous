@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 from ..utils import check_y_survival
 
@@ -60,11 +59,10 @@ def d_calibration(
 
     Returns
     -------
-    calibration : DataFrame of shape (n_buckets,)
-        Cumulative calibration histogram b̂_k[0,ρ]. Index is bucket number
-        (1 to n_buckets). Values are cumulative counts of (observed events +
-        expected events for censored) normalized by total F̂_k(∞).
-        A well-calibrated model has b̂_k[0,ρ] ≈ ρ.
+    calibration : ndarray of shape (n_buckets,)
+        Cumulative calibration histogram b̂_k[0,ρ]. Values are cumulative
+        counts of (observed events + expected events for censored) normalized
+        by total F̂_k(∞). A well-calibrated model has b̂_k[0,ρ] ≈ ρ.
 
     See Also
     --------
@@ -78,7 +76,6 @@ def d_calibration(
         "On the calibration of survival models with competing risks",
         AISTATS 2026.
         <https://arxiv.org/pdf/2602.00194>
-
     """
 
     events, durations = check_y_survival(y_conf)
@@ -103,65 +100,53 @@ def d_calibration(
     event_bucket_indices = np.clip(event_bucket_indices, 1, n_buckets)
 
     # Count events per bucket
-    event_counts = pd.Series(0, index=range(1, n_buckets + 1))
+    event_counts = np.zeros(n_buckets)
     unique_buckets, counts = np.unique(event_bucket_indices, return_counts=True)
-    event_counts.loc[unique_buckets] = counts
+    event_counts[unique_buckets - 1] = counts
 
     # Handle censored observations (delta_i = 0)
     censored_mask = events == 0
     if censored_mask.sum() == 0:
         # No censored data: normalize and return cumsum
         calibration = event_counts / fk_infty_all.sum()
-        return pd.DataFrame(calibration, columns=["calibration"]).cumsum()
+        return np.cumsum(calibration)
 
     fk_censored = fk[censored_mask]
     fk_infty_censored = fk_infty[censored_mask]
     s_censored = s_t[censored_mask]
 
-    df_censored = pd.DataFrame(
-        {
-            "normalized_inc": fk_censored / (fk_infty_censored + epsilon),
-            "fk_infty": fk_infty_censored,
-            "fk": fk_censored,
-            "s": s_censored + epsilon,
-        }
-    )
-
-    censored_contributions = pd.Series(0.0, index=range(1, n_buckets + 1))
+    normalized_inc_censored = fk_censored / (fk_infty_censored + epsilon)
+    censored_contributions = np.zeros(n_buckets)
     bucket_width = 1.0 / n_buckets
 
-    for bucket_idx in range(1, n_buckets + 1):
-        lower_edge = bucket_edges[bucket_idx - 1]
-        upper_edge = bucket_edges[bucket_idx]
+    for bucket_idx in range(n_buckets):
+        lower_edge = bucket_edges[bucket_idx]
+        upper_edge = bucket_edges[bucket_idx + 1]
 
         # For censored obs with normalized_inc <= lower_edge: contribute
         # bucket_width * F_k(∞) / S(t) [approximation for low-risk censored]
-        below_bucket = df_censored["normalized_inc"] <= lower_edge
-        if below_bucket.sum() > 0:
+        below_bucket = normalized_inc_censored <= lower_edge
+        if below_bucket.any():
             censored_contributions[bucket_idx] += (
                 (
                     bucket_width
-                    * df_censored.loc[below_bucket, "fk_infty"]
-                    / df_censored.loc[below_bucket, "s"]
+                    * fk_infty_censored[below_bucket]
+                    / (s_censored[below_bucket] + epsilon)
                 )
             ).sum()
 
         # For censored obs in bucket: contribute (upper_edge * F_k(∞) - F_k(t)) / S(t)
-        # where upper_edge is the upper bound of the current bucket
-        in_bucket = (df_censored["normalized_inc"] > lower_edge) & (
-            df_censored["normalized_inc"] <= upper_edge
+        in_bucket = (normalized_inc_censored > lower_edge) & (
+            normalized_inc_censored <= upper_edge
         )
-        if in_bucket.sum() > 0:
+        if in_bucket.any():
             censored_contributions[bucket_idx] += (
-                (
-                    upper_edge * df_censored.loc[in_bucket, "fk_infty"]
-                    - df_censored.loc[in_bucket, "fk"]
-                )
-                / df_censored.loc[in_bucket, "s"]
+                (upper_edge * fk_infty_censored[in_bucket] - fk_censored[in_bucket])
+                / (s_censored[in_bucket] + epsilon)
             ).sum()
 
     calibration = (event_counts + censored_contributions) / fk_infty_all.sum()
-    return pd.DataFrame(calibration, columns=["calibration"]).cumsum()
+    return np.cumsum(calibration)
 
 
 def d_cr_calibration_per_event(
@@ -246,7 +231,7 @@ def d_cr_calibration_per_event(
         if event_id == 0:
             continue
 
-        calib_df = d_calibration(
+        b_hat = d_calibration(
             fk,
             fk_infty,
             s_t,
@@ -255,7 +240,6 @@ def d_cr_calibration_per_event(
             epsilon=epsilon,
             n_buckets=n_buckets,
         )
-        b_hat = calib_df.values.flatten()
 
         # Compute ∫ |b̂_k[0,ρ] - ρ|^α dρ using trapezoidal rule
         rho_values = bucket_edges[1:]  # bucket upper edges
@@ -447,7 +431,7 @@ def d_cr_calibration_ks_test(
         if event_id == 0:
             continue
 
-        calib_df = d_calibration(
+        b_hat = d_calibration(
             fk,
             fk_infty,
             s_t,
@@ -456,7 +440,6 @@ def d_cr_calibration_ks_test(
             epsilon=epsilon,
             n_buckets=n_buckets,
         )
-        b_hat = calib_df.values.flatten()
 
         # KS statistic: maximum absolute deviation from identity
         ks_statistic = float(np.max(np.abs(b_hat - rho_values)))

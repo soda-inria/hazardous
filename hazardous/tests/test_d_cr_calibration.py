@@ -41,17 +41,15 @@ def y_single_event():
 class TestDCalibration:
     """Tests for d_calibration (per-bucket values)."""
 
-    def test_returns_dataframe(self, y):
-        """Output should be a pandas DataFrame."""
-        import pandas as pd
-
+    def test_returns_ndarray(self, y):
+        """Output should be a numpy ndarray."""
         n = len(y["event"])
         fk = np.random.uniform(0, 0.5, n)
         fk_infty = np.random.uniform(0.4, 1.0, n)
         s_t = 1 - fk
 
         result = d_calibration(fk, fk_infty, s_t, y)
-        assert isinstance(result, pd.DataFrame)
+        assert isinstance(result, np.ndarray)
 
     def test_returns_correct_shape(self, y):
         """Output shape should match n_buckets."""
@@ -62,8 +60,7 @@ class TestDCalibration:
         n_buckets = 50
 
         result = d_calibration(fk, fk_infty, s_t, y, n_buckets=n_buckets)
-        assert result.shape == (n_buckets, 1)
-        assert result.index.max() == n_buckets
+        assert result.shape == (n_buckets,)
 
     def test_cumsum_property(self, y):
         """Values should be monotonically increasing (cumulative)."""
@@ -73,9 +70,8 @@ class TestDCalibration:
         s_t = 1 - fk
 
         result = d_calibration(fk, fk_infty, s_t, y, n_buckets=50)
-        values = result.iloc[:, 0].values
         # Check monotonic increase
-        assert np.all(np.diff(values) >= -1e-10)
+        assert np.all(np.diff(result) >= -1e-10)
 
     def test_output_positive(self, y):
         """Output values should be non-negative."""
@@ -86,7 +82,7 @@ class TestDCalibration:
 
         result = d_calibration(fk, fk_infty, s_t, y, n_buckets=50)
         # All values should be non-negative
-        assert (result.values >= 0).all()
+        assert (result >= 0).all()
 
     def test_event_of_interest_any(self, y):
         """event_of_interest='any' should work."""
@@ -116,8 +112,8 @@ class TestDCalibration:
         s_t = np.zeros(n) + 1e-6
 
         result = d_calibration(fk, fk_infty, s_t, y, epsilon=1e-3)
-        assert not np.any(np.isnan(result.values))
-        assert not np.any(np.isinf(result.values))
+        assert not np.any(np.isnan(result))
+        assert not np.any(np.isinf(result))
 
 
 # ============================================================================
@@ -328,8 +324,7 @@ class TestDCRCalibrationKSTest:
         s_t = 1 - fk
 
         # Compute calibration curves
-        calib_df = d_calibration(fk, fk_infty, s_t, y, event_of_interest=1)
-        b_hat = calib_df.values.flatten()
+        b_hat = d_calibration(fk, fk_infty, s_t, y, event_of_interest=1)
         rho_values = np.linspace(1 / 100, 1, 100)
 
         # Maximum deviation should match KS statistic
