@@ -131,7 +131,9 @@ class TestDCRCalibrationPerEvent:
         fk_infty = np.random.uniform(0.4, 1.0, n)
         s_t = 1 - fk
 
-        result = d_cr_calibration_per_event(fk, fk_infty, s_t, y)
+        result = d_cr_calibration_per_event(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True
+        )
         assert isinstance(result, dict)
         assert all(isinstance(k, (int, np.integer)) for k in result.keys())
         assert all(isinstance(v, float) for v in result.values())
@@ -143,7 +145,9 @@ class TestDCRCalibrationPerEvent:
         fk_infty = np.random.uniform(0.5, 0.9, n)
         s_t = 1 - fk
 
-        result = d_cr_calibration_per_event(fk, fk_infty, s_t, y, event_of_interest=1)
+        result = d_cr_calibration_per_event(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True, event_of_interest=1
+        )
         assert result >= 0
 
     def test_event_of_interest_returns_float(self, y):
@@ -153,7 +157,9 @@ class TestDCRCalibrationPerEvent:
         fk_infty = np.random.uniform(0.4, 1.0, n)
         s_t = 1 - fk
 
-        result = d_cr_calibration_per_event(fk, fk_infty, s_t, y, event_of_interest=1)
+        result = d_cr_calibration_per_event(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True, event_of_interest=1
+        )
         assert isinstance(result, float)
 
     def test_alpha_changes_scores(self, y):
@@ -163,8 +169,12 @@ class TestDCRCalibrationPerEvent:
         fk_infty = np.random.uniform(0.5, 0.9, n)
         s_t = 1 - fk
 
-        score2 = d_cr_calibration_per_event(fk, fk_infty, s_t, y, alpha=2)
-        score4 = d_cr_calibration_per_event(fk, fk_infty, s_t, y, alpha=4)
+        score2 = d_cr_calibration_per_event(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True, alpha=2
+        )
+        score4 = d_cr_calibration_per_event(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True, alpha=4
+        )
 
         assert score2 != pytest.approx(score4)
 
@@ -177,13 +187,31 @@ class TestDCRCalibrationPerEvent:
         s_t = 1 - fk
 
         score1 = d_cr_calibration_per_event(
-            fk, fk_infty, s_t, y, alpha=1, event_of_interest=1
+            y,
+            fk_t=fk,
+            fk_infty=fk_infty,
+            s_t=s_t,
+            exact=True,
+            alpha=1,
+            event_of_interest=1,
         )
         score2 = d_cr_calibration_per_event(
-            fk, fk_infty, s_t, y, alpha=2, event_of_interest=1
+            y,
+            fk_t=fk,
+            fk_infty=fk_infty,
+            s_t=s_t,
+            exact=True,
+            alpha=2,
+            event_of_interest=1,
         )
         score4 = d_cr_calibration_per_event(
-            fk, fk_infty, s_t, y, alpha=4, event_of_interest=1
+            y,
+            fk_t=fk,
+            fk_infty=fk_infty,
+            s_t=s_t,
+            exact=True,
+            alpha=4,
+            event_of_interest=1,
         )
 
         # All three should be different (alpha affects the integral)
@@ -206,7 +234,7 @@ class TestDCRCalibration:
         fk_infty = np.random.uniform(0.4, 1.0, n)
         s_t = 1 - fk
 
-        result = d_cr_calibration(fk, fk_infty, s_t, y)
+        result = d_cr_calibration(y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True)
         assert isinstance(result, float)
 
     def test_mean_reduction(self, y):
@@ -217,9 +245,13 @@ class TestDCRCalibration:
         fk_infty = rng.uniform(0.5, 0.9, n)
         s_t = 1 - fk
 
-        per_event = d_cr_calibration_per_event(fk, fk_infty, s_t, y)
+        per_event = d_cr_calibration_per_event(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True
+        )
         expected = float(np.mean(list(per_event.values())))
-        score = d_cr_calibration(fk, fk_infty, s_t, y, reduction="mean")
+        score = d_cr_calibration(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True, reduction="mean"
+        )
         assert score == pytest.approx(expected, rel=1e-10)
 
     def test_sum_reduction(self, y):
@@ -230,9 +262,13 @@ class TestDCRCalibration:
         fk_infty = rng.uniform(0.5, 0.9, n)
         s_t = 1 - fk
 
-        per_event = d_cr_calibration_per_event(fk, fk_infty, s_t, y)
+        per_event = d_cr_calibration_per_event(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True
+        )
         expected = float(np.sum(list(per_event.values())))
-        score = d_cr_calibration(fk, fk_infty, s_t, y, reduction="sum")
+        score = d_cr_calibration(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True, reduction="sum"
+        )
         assert score == pytest.approx(expected, rel=1e-10)
 
     def test_max_reduction(self, y):
@@ -243,9 +279,13 @@ class TestDCRCalibration:
         fk_infty = rng.uniform(0.5, 0.9, n)
         s_t = 1 - fk
 
-        per_event = d_cr_calibration_per_event(fk, fk_infty, s_t, y)
+        per_event = d_cr_calibration_per_event(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True
+        )
         expected = float(np.max(list(per_event.values())))
-        score = d_cr_calibration(fk, fk_infty, s_t, y, reduction="max")
+        score = d_cr_calibration(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True, reduction="max"
+        )
         assert score == pytest.approx(expected, rel=1e-10)
 
     def test_invalid_reduction_raises(self, y):
@@ -256,7 +296,9 @@ class TestDCRCalibration:
         s_t = 1 - fk
 
         with pytest.raises(ValueError, match="reduction must be"):
-            d_cr_calibration(fk, fk_infty, s_t, y, reduction="bad")
+            d_cr_calibration(
+                y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True, reduction="bad"
+            )
 
 
 # ============================================================================
@@ -274,7 +316,9 @@ class TestDCRCalibrationKSTest:
         fk_infty = np.random.uniform(0.4, 1.0, n)
         s_t = 1 - fk
 
-        result = d_cr_calibration_ks_test(fk, fk_infty, s_t, y)
+        result = d_cr_calibration_ks_test(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True
+        )
         assert isinstance(result, dict)
         for event_id, test_result in result.items():
             assert "statistic" in test_result
@@ -289,7 +333,9 @@ class TestDCRCalibrationKSTest:
         fk_infty = np.random.uniform(0.4, 1.0, n)
         s_t = 1 - fk
 
-        result = d_cr_calibration_ks_test(fk, fk_infty, s_t, y)
+        result = d_cr_calibration_ks_test(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True
+        )
         for test_result in result.values():
             assert 0 <= test_result["statistic"] <= 1
 
@@ -300,7 +346,9 @@ class TestDCRCalibrationKSTest:
         fk_infty = np.random.uniform(0.4, 1.0, n)
         s_t = 1 - fk
 
-        result = d_cr_calibration_ks_test(fk, fk_infty, s_t, y)
+        result = d_cr_calibration_ks_test(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True
+        )
         for test_result in result.values():
             assert 0 <= test_result["pvalue"] <= 1
 
@@ -311,7 +359,9 @@ class TestDCRCalibrationKSTest:
         fk_infty = np.random.uniform(0.4, 1.0, n)
         s_t = 1 - fk
 
-        result = d_cr_calibration_ks_test(fk, fk_infty, s_t, y, event_of_interest=1)
+        result = d_cr_calibration_ks_test(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True, event_of_interest=1
+        )
         assert isinstance(result, dict)
         assert "statistic" in result
         assert "pvalue" in result
@@ -330,7 +380,9 @@ class TestDCRCalibrationKSTest:
         # Maximum deviation should match KS statistic
         max_deviation = np.max(np.abs(b_hat - rho_values))
 
-        result = d_cr_calibration_ks_test(fk, fk_infty, s_t, y, event_of_interest=1)
+        result = d_cr_calibration_ks_test(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True, event_of_interest=1
+        )
 
         # KS statistic should be close to manual computation
         assert result["statistic"] == pytest.approx(max_deviation, rel=0.01)
@@ -343,7 +395,9 @@ class TestDCRCalibrationKSTest:
         fk_infty = np.ones(n) * 0.95
         s_t = np.ones(n) * 0.05
 
-        result = d_cr_calibration_ks_test(fk, fk_infty, s_t, y)
+        result = d_cr_calibration_ks_test(
+            y, fk_t=fk, fk_infty=fk_infty, s_t=s_t, exact=True
+        )
         # At least some should have low p-values
         pvalues = [r["pvalue"] for r in result.values()]
         assert any(p < 0.5 for p in pvalues)  # Some miscalibration signals
