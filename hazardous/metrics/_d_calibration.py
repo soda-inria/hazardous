@@ -79,21 +79,6 @@ def d_calibration(
         AISTATS 2026.
         <https://arxiv.org/pdf/2602.00194>
 
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from hazardous.metrics import d_calibration
-    >>> n_samples = 200
-    >>> y_conf = {
-    ...     "event": np.array([0, 1, 2] * (n_samples // 3)),
-    ...     "duration": np.random.exponential(10, n_samples)
-    ... }
-    >>> # Predictions for event 1 evaluated at observed time for each individual
-    >>> fk = np.random.uniform(0, 0.5, n_samples)  # F̂_1(tᵢ|xᵢ)
-    >>> fk_infty = np.random.uniform(0.4, 0.9, n_samples)  # F̂_1(∞|xᵢ)
-    >>> s_t = np.random.uniform(0.3, 1.0, n_samples)  # Ŝ(tᵢ|xᵢ)
-    >>> calib = d_calibration(fk, fk_infty, s_t, y_conf, event_of_interest=1)
-    >>> print(calib.head())
     """
 
     events, durations = check_y_survival(y_conf)
