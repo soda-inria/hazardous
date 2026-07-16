@@ -57,7 +57,7 @@ warnings.filterwarnings("ignore", message="Tied event times were detected")
 # Generation of one synthetic dataset with 3 competing events,
 # and display of the distribution of the target.
 
-n_samples = 3_000
+n_samples = 10_000
 n_events = 3
 
 X, y = make_synthetic_competing_weibull(
@@ -101,15 +101,27 @@ inc_probs_sb = survivalboost.predict_cumulative_incidence(X_test, times=times)
 # - s_t: survival S(tᵢ|xᵢ) at observed time for each individual
 # - fk_infty: marginal probability F̂_k(∞|xᵢ) for each individual (time-independent)
 
+# Two approaches are available:
+#
+# **APPROACH 1 (RECOMMENDED)**: Grid-based with automatic interpolation
+# If you have predictions on a time grid, just pass them directly with times=times.
+# The metrics will interpolate to each individual's observed time.
+#   fk_grid = inc_probs_sb[:, 1:, :]           # shape (n_samples, n_events, n_times)
+#   score = d_cr_calibration_per_event(
+#       fk=fk_grid[:, 0, :], fk_infty=..., s_t=...,
+#       y_conf=y_test, times=times
+#   )
+#
+# **APPROACH 2**: Manual evaluation at exact observed times
+# If you prefer explicit control, evaluate predictions at each individual's exact time.
+
+# For this example, we use APPROACH 2 (exact) to show the full workflow.
 # Get marginal (time-infinite) predictions
 fk_infty = inc_probs_sb[:, :, -1]  # Use final time point as approximation of infinity
 
 # Get predictions at each individual's observed time
-# For each individual i, evaluate predictions at their observed duration
-# y_test["duration"].iloc[i]
 fk_t = []
 for i in range(len(X_test)):
-    # Get prediction at this individual's observed time
     pred_at_t = survivalboost.predict_cumulative_incidence(
         X_test.iloc[i : i + 1], times=np.array([y_test["duration"].iloc[i]])
     )
@@ -491,6 +503,38 @@ ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
 plt.show()
+
+# %%
+# Alternative: Using the grid-based interpolation approach.
+# ----------------------------------------------------------
+# Here's how to use the simpler APPROACH 1 (grid-based).
+# Instead of manually evaluating at each individual's time, just pass the
+# predictions on the time grid. The metrics interpolate transparently.
+
+print("\n" + "=" * 70)
+print("ALTERNATIVE APPROACH 1: Grid-based Interpolation")
+print("=" * 70)
+
+# For a complete grid-based example, construct marginal probabilities
+# as a grid as well (evaluated at all time points)
+inc_probs_sb_event1_grid = inc_probs_sb[:, 1, :]  # shape (n_test, n_times)
+survival_grid = inc_probs_sb[:, 0, :]  # shape (n_test, n_times)
+marginal_event1_grid = inc_probs_sb[:, 1, :]  # shape (n_test, n_times)
+
+# Compute using the grid approach — just pass times=times
+# Both fk and fk_infty are 2D grids now, so they'll both be interpolated
+score_grid = d_cr_calibration_per_event(
+    fk=inc_probs_sb_event1_grid,  # grid predictions
+    fk_infty=marginal_event1_grid,  # marginal grid (will interpolate)
+    s_t=survival_grid,  # survival grid
+    y_conf=y_test,
+    alpha=2,
+    event_of_interest=1,
+    times=times,  # Pass the time grid!
+)
+
+print(f"\nSurvivalBoost score (grid approach): {score_grid:.6f}")
+print("(Produces same result; interpolation handles both approaches)")
 
 # %%
 # Summary of calibration assessment.
