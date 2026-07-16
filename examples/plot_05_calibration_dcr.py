@@ -21,8 +21,8 @@ of granularity:
 1. ``d_calibration``: per-bucket calibration curves :math:`\hat{b}_k[0, \rho]`.
 2. ``d_cr_calibration_per_event``: integrated calibration score per event
    using the formula
-   :math:`\frac{1}{\alpha} \int_0^1 \left| \hat{b}_k[0, \rho] - \rho`
-   :math:`\right|^\alpha \, d\rho`.
+   :math:`\frac{1}{\alpha} \int_0^1 \left| \hat{b}_k[0, \rho] - \rho\right|^\alpha`
+   :math:`\, d\rho`.
 3. ``d_cr_calibration``: overall aggregated score across events.
 4. ``d_cr_calibration_ks_test``: KS test for calibration significance.
 
@@ -57,7 +57,7 @@ warnings.filterwarnings("ignore", message="Tied event times were detected")
 # Generation of one synthetic dataset with 3 competing events,
 # and display of the distribution of the target.
 
-n_samples = 10_000
+n_samples = 3_000
 n_events = 3
 
 X, y = make_synthetic_competing_weibull(
