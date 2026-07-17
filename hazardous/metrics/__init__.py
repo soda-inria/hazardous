@@ -11,6 +11,12 @@ from ._brier_score import (
     integrated_brier_score_survival,
 )
 from ._concordance_index import concordance_index_incidence
+from ._d_calibration import (
+    d_calibration,
+    d_cr_calibration,
+    d_cr_calibration_ks_test,
+    d_cr_calibration_per_event,
+)
 from ._km_calibration import km_calibration
 
 __all__ = [
@@ -24,4 +30,8 @@ __all__ = [
     "aj_calibration_at_t",
     "aj_calibration_per_event",
     "aj_calibration",
+    "d_calibration",
+    "d_cr_calibration_per_event",
+    "d_cr_calibration",
+    "d_cr_calibration_ks_test",
 ]
