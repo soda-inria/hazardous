@@ -109,7 +109,7 @@ inc_probs_sb = survivalboost.predict_cumulative_incidence(X_test, times=times)
 #   fk_grid = inc_probs_sb[:, 1:, :]           # shape (n_samples, n_events, n_times)
 #   score = d_cr_calibration_per_event(
 #       fk=fk_grid[:, 0, :], fk_infty=..., s_t=...,
-#       y_conf=y_test, times=times
+#       y_test=y_test, times=times
 #   )
 #
 # **APPROACH 2**: Manual evaluation at exact observed times
@@ -144,6 +144,24 @@ print("=" * 70)
 
 aalen_sampler = _AalenJohansenSampler().fit(y_train)
 
+incidence_funcs_aj = dict(aalen_sampler.incidence_func_)
+incidence_funcs_aj[0] = aalen_sampler.survival_func_
+
+
+def _aj_predictions(sampler_funcs, n_samples, n_events, times):
+    """
+    Broadcast marginal AJ predictions to shape
+    (n_samples, n_events+1, n_times).
+    """
+    preds = np.array(
+        [np.tile(sampler_funcs[i](times), (n_samples, 1)) for i in range(n_events + 1)]
+    )
+    return preds.transpose(1, 0, 2)  # (n_samples, n_events+1, n_times)
+
+
+inc_probs_aj_test = _aj_predictions(incidence_funcs_aj, len(y_test), n_events, times)
+
+
 # Generate AJ predictions at each individual's observed time
 fk_aj = np.zeros((len(y_test), n_events + 1))
 fk_infty_aj = np.zeros((len(y_test), n_events + 1))
@@ -168,10 +186,11 @@ print("\n1. AJ Estimator: Per-event DCR-calibration scores")
 aj_scores = {}
 for event_id in range(1, n_events + 1):
     aj_score = d_cr_calibration_per_event(
-        fk=fk_aj[:, event_id],
+        y_test=y_test,
+        fk_t=fk_aj[:, event_id],
         fk_infty=fk_infty_aj[:, event_id],
         s_t=s_t_aj,
-        y_conf=y_test,
+        exact=True,
         alpha=2,
         event_of_interest=event_id,
     )
@@ -180,12 +199,12 @@ for event_id in range(1, n_events + 1):
 
 # Overall AJ calibration
 aj_overall = d_cr_calibration(
-    fk=fk_aj[:, 1],
-    fk_infty=fk_infty_aj[:, 1],
-    s_t=s_t_aj,
-    y_conf=y_test,
+    y_test_pred=inc_probs_aj_test,  # Full predictions (n_samples, n_events+1, n_times)
+    times=times,
+    y_test=y_test,
     alpha=2,
     reduction="mean",
+    exact=False,
 )
 print("\n2. AJ Estimator: Overall DCR-calibration score")
 print(f"   Mean: {aj_overall:.6f} (close to 0 = well-calibrated)")
@@ -193,10 +212,12 @@ print(f"   Mean: {aj_overall:.6f} (close to 0 = well-calibrated)")
 # KS test for AJ
 print("\n3. AJ Estimator: KS test for calibration significance")
 aj_ks_results = d_cr_calibration_ks_test(
-    fk=fk_aj[:, 1],
-    fk_infty=fk_infty_aj[:, 1],
-    s_t=s_t_aj,
-    y_conf=y_test,
+    y_test,
+    event_of_interest=None,
+    n_buckets=100,
+    epsilon=1e-3,
+    y_test_pred=inc_probs_aj_test,
+    times=times,
 )
 for event_id, result in aj_ks_results.items():
     print(
@@ -236,7 +257,7 @@ for event_id in range(1, n_events + 1):
         fk=fk[:, event_id],
         fk_infty=fk_infty[:, event_id],
         s_t=s_t,
-        y_conf=y_test,
+        y_test=y_test,
         event_of_interest=event_id,
         n_buckets=100,
     )
@@ -244,29 +265,14 @@ for event_id in range(1, n_events + 1):
 # %%
 # 2 — Per-event integrated scores with alpha parameter
 
-scores_per_event = d_cr_calibration_per_event(
-    fk=fk[:, 1],
-    fk_infty=fk_infty[:, 1],
-    s_t=s_t,
-    y_conf=y_test,
-    alpha=2,
-)
-
-scores_alpha1 = d_cr_calibration_per_event(
-    fk=fk[:, 1],
-    fk_infty=fk_infty[:, 1],
-    s_t=s_t,
-    y_conf=y_test,
-    alpha=1,
-)
-
 print("\nSURVIVALBOOST: Per-event integrated DCR-calibration scores (α=2)")
 for event_id in range(1, n_events + 1):
     score_a2 = d_cr_calibration_per_event(
-        fk=fk[:, event_id],
+        y_test=y_test,
+        fk_t=fk[:, event_id],
         fk_infty=fk_infty[:, event_id],
         s_t=s_t,
-        y_conf=y_test,
+        exact=True,
         alpha=2,
         event_of_interest=event_id,
     )
@@ -280,35 +286,26 @@ for event_id in range(1, n_events + 1):
 # 3 — Overall aggregated score
 
 score_overall = d_cr_calibration(
-    fk=fk[:, 1],
-    fk_infty=fk_infty[:, 1],
-    s_t=s_t,
-    y_conf=y_test,
+    y_test=y_test,
+    y_test_pred=inc_probs_sb,  # Full predictions (n_samples, n_events+1, n_times)
+    times=times,  # Pass the time grid!
+    exact=False,
     alpha=2,
     reduction="mean",
 )
 
-score_sum = d_cr_calibration(
-    fk=fk[:, 1],
-    fk_infty=fk_infty[:, 1],
-    s_t=s_t,
-    y_conf=y_test,
-    alpha=2,
-    reduction="sum",
-)
 
 print("\nSURVIVALBOOST: Overall DCR-calibration score")
 print(f"  Mean: {score_overall:.6f}  (AJ baseline: {aj_overall:.6f})")
-print(f"  Sum:  {score_sum:.6f}")
 
 # %%
 # 4 — KS test for calibration significance
 
 ks_results = d_cr_calibration_ks_test(
-    fk=fk[:, 1],
-    fk_infty=fk_infty[:, 1],
-    s_t=s_t,
-    y_conf=y_test,
+    y_test=y_test,
+    y_test_pred=inc_probs_sb,  # Full predictions (n_samples, n_events+1, n_times)
+    times=times,
+    exact=False,
 )
 
 print("\nSURVIVALBOOST: KS test results")
@@ -400,7 +397,7 @@ for event_id in range(1, n_events + 1):
         fk=fk_aj[:, event_id],
         fk_infty=fk_infty_aj[:, event_id],
         s_t=s_t_aj,
-        y_conf=y_test,
+        y_test=y_test,
         event_of_interest=event_id,
         n_buckets=100,
     )
@@ -429,10 +426,11 @@ for event_id in range(1, n_events + 1):
     # Plot SurvivalBoost calibration curve
     calib_curve_sb = calib_curves[event_id]
     sb_score = d_cr_calibration_per_event(
-        fk=fk[:, event_id],
+        y_test=y_test,
+        fk_t=fk[:, event_id],
         fk_infty=fk_infty[:, event_id],
         s_t=s_t,
-        y_conf=y_test,
+        exact=True,
         alpha=2,
         event_of_interest=event_id,
     )
@@ -462,80 +460,6 @@ if n_events % 2 == 1:
 
 plt.tight_layout()
 plt.show()
-
-# %%
-# Comparison of calibration curves across events.
-# -----------------------------------------------
-# A single plot showing all events overlaid helps identify which event(s)
-# have the most calibration problems.
-
-fig, ax = plt.subplots(figsize=(8, 6))
-fig.suptitle("Per-bucket calibration curves — all events")
-
-colors = ["C0", "C1", "C2"]
-for event_id in range(1, n_events + 1):
-    calib_curve = calib_curves[event_id]
-    rho_values = np.linspace(1 / 100, 1, 100)
-    ax.plot(
-        rho_values,
-        calib_curve,
-        color=colors[event_id - 1],
-        linewidth=2,
-        label=f"Event {event_id}",
-    )
-
-# Perfect calibration diagonal
-ax.plot(
-    [0, 1],
-    [0, 1],
-    color="black",
-    linewidth=1,
-    linestyle="--",
-    label="Perfect calibration",
-)
-
-ax.set_xlim(0, 1)
-ax.set_ylim(0, 1)
-ax.set_xlabel("Predicted probability ρ")
-ax.set_ylabel("Observed frequency b̂_k[0,ρ]")
-ax.legend(fontsize=9)
-ax.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.show()
-
-# %%
-# Alternative: Using the grid-based interpolation approach.
-# ----------------------------------------------------------
-# Here's how to use the simpler APPROACH 1 (grid-based).
-# Instead of manually evaluating at each individual's time, just pass the
-# predictions on the time grid. The metrics interpolate transparently.
-
-print("\n" + "=" * 70)
-print("ALTERNATIVE APPROACH 1: Grid-based Interpolation")
-print("=" * 70)
-
-# For a complete grid-based example, construct marginal probabilities
-# as a grid as well (evaluated at all time points)
-inc_probs_sb_event1_grid = inc_probs_sb[:, 1, :]  # shape (n_test, n_times)
-survival_grid = inc_probs_sb[:, 0, :]  # shape (n_test, n_times)
-marginal_event1_grid = inc_probs_sb[:, 1, :]  # shape (n_test, n_times)
-
-# Compute using the grid approach — just pass times=times
-# Both fk and fk_infty are 2D grids now, so they'll both be interpolated
-score_grid = d_cr_calibration_per_event(
-    fk=inc_probs_sb_event1_grid,  # grid predictions
-    fk_infty=marginal_event1_grid,  # marginal grid (will interpolate)
-    s_t=survival_grid,  # survival grid
-    y_conf=y_test,
-    alpha=2,
-    event_of_interest=1,
-    times=times,  # Pass the time grid!
-)
-
-print(f"\nSurvivalBoost score (grid approach): {score_grid:.6f}")
-print("(Produces same result; interpolation handles both approaches)")
-
 # %%
 # Summary of calibration assessment.
 # -----------------------------------

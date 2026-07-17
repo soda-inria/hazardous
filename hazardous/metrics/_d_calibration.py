@@ -7,7 +7,7 @@ def d_calibration(
     fk,
     fk_infty,
     s_t,
-    y_conf,
+    y_test,
     event_of_interest="any",
     epsilon=1e-3,
     n_buckets=100,
@@ -42,7 +42,7 @@ def d_calibration(
         Predicted survival probability at observed time: Ŝ(tᵢ|xᵢ).
         dtype: float
 
-    y_conf : dict or structured array, shape (n_samples,)
+    y_test : dict or structured array, shape (n_samples,)
         Survival outcomes with two fields:
             "event": ndarray of shape (n_samples,), dtype int
                 0 for censored, positive integers for event type.
@@ -82,7 +82,7 @@ def d_calibration(
         <https://arxiv.org/pdf/2602.00194>
     """
 
-    events, durations = check_y_survival(y_conf)
+    events, durations = check_y_survival(y_test)
     check_event_of_interest(event_of_interest)
     fk = np.asarray(fk)
     fk_infty = np.asarray(fk_infty)
@@ -155,7 +155,7 @@ def d_calibration(
 
 
 def d_cr_calibration_per_event(
-    y_conf,
+    y_test,
     event_of_interest=None,
     alpha=2,
     epsilon=1e-3,
@@ -164,7 +164,7 @@ def d_cr_calibration_per_event(
     fk_t=None,
     fk_infty=None,
     s_t=None,
-    y_conf_pred=None,
+    y_test_pred=None,
     times=None,
 ):
     r"""DCR-calibration score per event, integrated over risk buckets.
@@ -184,7 +184,7 @@ def d_cr_calibration_per_event(
 
     Parameters
     ----------
-    y_conf : dict or structured array, shape (n_samples,)
+    y_test : dict or structured array, shape (n_samples,)
         Survival outcomes with two fields:
             "event": ndarray of shape (n_samples,), dtype int
                 0 for censored, positive integers for event type.
@@ -194,7 +194,7 @@ def d_cr_calibration_per_event(
     event_of_interest : int or None, default=None
         Which event(s) to compute calibration for.
 
-        If None: Compute for all events found in y_conf.
+        If None: Compute for all events found in y_test.
             Returns: dict of {event_id: score}.
 
         If int (e.g., 1, 2, 3): Compute only for that event.
@@ -215,7 +215,7 @@ def d_cr_calibration_per_event(
         Whether predictions are already evaluated at observed times.
 
         If False (default): Use interpolation approach
-            Requires: y_conf_pred and times parameters.
+            Requires: y_test_pred and times parameters.
             Automatically extracts and interpolates predictions.
 
         If True: Use exact approach
@@ -243,14 +243,14 @@ def d_cr_calibration_per_event(
         shape: (n_samples,)
         dtype: float
 
-    y_conf_pred : ndarray or None, default=None
+    y_test_pred : ndarray or None, default=None
         Model predictions for all events at all times.
         Required if exact=False (default).
 
         shape: (n_samples, n_events+1, n_times)
         dtype: float
-        y_conf_pred[:, 0, :] = survival probabilities at all times
-        y_conf_pred[:, i, :] = CIF for event i at all times
+        y_test_pred[:, 0, :] = survival probabilities at all times
+        y_test_pred[:, i, :] = CIF for event i at all times
 
     times : ndarray or None, default=None
         Time grid at which predictions are evaluated.
@@ -258,7 +258,7 @@ def d_cr_calibration_per_event(
 
         shape: (n_times,)
         dtype: float
-        Time points where y_conf_pred is computed.
+        Time points where y_test_pred is computed.
 
     Returns
     -------
@@ -279,7 +279,7 @@ def d_cr_calibration_per_event(
         AISTATS 2026.
         <https://arxiv.org/pdf/2602.00194>
     """
-    events, durations = check_y_survival(y_conf)
+    events, durations = check_y_survival(y_test)
     event_ids = np.array(sorted(set([0]) | set(events)))
 
     # Extract predictions based on exact flag
@@ -298,22 +298,22 @@ def d_cr_calibration_per_event(
             events_to_compute = [e for e in event_ids if e > 0]
     else:
         # Extract from time-grid predictions via interpolation
-        if y_conf_pred is None or times is None:
+        if y_test_pred is None or times is None:
             raise ValueError(
-                "If exact=False (default), must provide y_conf_pred and times"
+                "If exact=False (default), must provide y_test_pred and times"
             )
 
-        y_conf_pred = np.asarray(y_conf_pred)
+        y_test_pred = np.asarray(y_test_pred)
         times = np.asarray(times)
         durations = np.asarray(durations)
 
-        if y_conf_pred.ndim != 3:
+        if y_test_pred.ndim != 3:
             raise ValueError(
-                "y_conf_pred must be 3D: (n_samples, n_events+1, n_times), "
-                f"got shape {y_conf_pred.shape}"
+                "y_test_pred must be 3D: (n_samples, n_events+1, n_times), "
+                f"got shape {y_test_pred.shape}"
             )
 
-        n_samples, n_events_plus_1, n_times = y_conf_pred.shape
+        n_samples, n_events_plus_1, n_times = y_test_pred.shape
         n_events = n_events_plus_1 - 1
 
         # Interpolate to observed times for each sample and event
@@ -323,12 +323,12 @@ def d_cr_calibration_per_event(
 
         for i in range(n_samples):
             # Survival at observed time
-            s_t[i] = np.interp(durations[i], times, y_conf_pred[i, 0, :])
+            s_t[i] = np.interp(durations[i], times, y_test_pred[i, 0, :])
 
             # Each event's CIF at observed time and at infinity
             for j in range(n_events):
-                fk_t[i, j] = np.interp(durations[i], times, y_conf_pred[i, j + 1, :])
-                fk_infty[i, j] = y_conf_pred[i, j + 1, -1]
+                fk_t[i, j] = np.interp(durations[i], times, y_test_pred[i, j + 1, :])
+                fk_infty[i, j] = y_test_pred[i, j + 1, -1]
 
         # Determine which events to compute for
         if event_of_interest is not None:
@@ -354,7 +354,7 @@ def d_cr_calibration_per_event(
             fk_t_event,
             fk_infty_event,
             s_t,
-            y_conf,
+            y_test,
             event_of_interest=event_id,
             epsilon=epsilon,
             n_buckets=n_buckets,
@@ -374,17 +374,17 @@ def d_cr_calibration_per_event(
 
 
 def d_cr_calibration(
-    y_conf,
+    y_test,
     alpha=2,
     reduction="mean",
     epsilon=1e-3,
     n_buckets=100,
     exact=False,
+    y_test_pred=None,
+    times=None,
     fk_t=None,
     fk_infty=None,
     s_t=None,
-    y_conf_pred=None,
-    times=None,
 ):
     r"""Overall DCR-calibration score aggregated across all events.
 
@@ -403,7 +403,7 @@ def d_cr_calibration(
 
     Parameters
     ----------
-    y_conf : dict or structured array, shape (n_samples,)
+    y_test : dict or structured array, shape (n_samples,)
         Survival outcomes with two fields:
             "event": ndarray of shape (n_samples,), dtype int
                 0 for censored, positive integers for each event type.
@@ -427,11 +427,20 @@ def d_cr_calibration(
         Number of calibration buckets.
         Creates bucket edges at [0, 1/n, 2/n, ..., 1].
 
+    y_test_pred : ndarray of shape (n_samples, n_events+1, n_times)
+        or None, default=None
+        Model predictions for all events at all times.
+        Required if exact=False (default).
+
+    times : ndarray of shape (n_times,) or None, default=None
+        Time grid at which predictions are evaluated.
+        Required if exact=False (default).
+
     exact : bool, default=False
         Whether predictions are already evaluated at observed times.
 
         If False (default): Use interpolation approach
-            Requires: y_conf_pred and times parameters.
+            Requires: y_test_pred and times parameters.
             Automatically extracts and interpolates predictions.
 
         If True: Use exact approach
@@ -449,15 +458,6 @@ def d_cr_calibration(
     s_t : ndarray or None, default=None
         Survival probability at observed times. Required if exact=True.
         shape: (n_samples,), dtype: float
-
-    y_conf_pred : ndarray of shape (n_samples, n_events+1, n_times)
-        or None, default=None
-        Model predictions for all events at all times.
-        Required if exact=False (default).
-
-    times : ndarray of shape (n_times,) or None, default=None
-        Time grid at which predictions are evaluated.
-        Required if exact=False (default).
 
     Returns
     -------
@@ -483,7 +483,7 @@ def d_cr_calibration(
         )
 
     scores = d_cr_calibration_per_event(
-        y_conf,
+        y_test,
         alpha=alpha,
         epsilon=epsilon,
         n_buckets=n_buckets,
@@ -491,7 +491,7 @@ def d_cr_calibration(
         fk_t=fk_t,
         fk_infty=fk_infty,
         s_t=s_t,
-        y_conf_pred=y_conf_pred,
+        y_test_pred=y_test_pred,
         times=times,
     )
     values = np.array(list(scores.values()))
@@ -504,16 +504,16 @@ def d_cr_calibration(
 
 
 def d_cr_calibration_ks_test(
-    y_conf,
+    y_test,
     event_of_interest=None,
     n_buckets=100,
     epsilon=1e-3,
     exact=False,
+    y_test_pred=None,
+    times=None,
     fk_t=None,
     fk_infty=None,
     s_t=None,
-    y_conf_pred=None,
-    times=None,
 ):
     r"""Kolmogorov-Smirnov test for DCR-calibration.
 
@@ -543,7 +543,7 @@ def d_cr_calibration_ks_test(
             shape: (n_samples, n_events)
             dtype: float
             fk[:, i-1] is the CIF for event i.
-            Returns tests for all events in y_conf.
+            Returns tests for all events in y_test.
 
         Grid-based interpolation (2D):
             shape: (n_samples, n_times)
@@ -578,7 +578,7 @@ def d_cr_calibration_ks_test(
             dtype: float
         Same for all events (not event-specific).
 
-    y_conf : dict or structured array, shape (n_samples,)
+    y_test : dict or structured array, shape (n_samples,)
         Survival outcomes with two fields:
             "event": ndarray of shape (n_samples,), dtype int
                 0 for censored, positive integers for event type.
@@ -588,7 +588,7 @@ def d_cr_calibration_ks_test(
     event_of_interest : int or None, default=None
         Which event(s) to test.
 
-        If None: Test all events found in y_conf.
+        If None: Test all events found in y_test.
             fk must be 2D (n_samples, n_events).
             Returns: dict of {event_id: test_results}.
 
@@ -636,7 +636,7 @@ def d_cr_calibration_ks_test(
         AISTATS 2026.
         <https://arxiv.org/pdf/2602.00194>
     """
-    events, durations = check_y_survival(y_conf)
+    events, durations = check_y_survival(y_test)
     event_ids = np.array(sorted(set([0]) | set(events)))
 
     # Extract predictions based on exact flag
@@ -655,22 +655,22 @@ def d_cr_calibration_ks_test(
             events_to_test = [e for e in event_ids if e > 0]
     else:
         # Extract from time-grid predictions via interpolation
-        if y_conf_pred is None or times is None:
+        if y_test_pred is None or times is None:
             raise ValueError(
-                "If exact=False (default), must provide y_conf_pred and times"
+                "If exact=False (default), must provide y_test_pred and times"
             )
 
-        y_conf_pred = np.asarray(y_conf_pred)
+        y_test_pred = np.asarray(y_test_pred)
         times = np.asarray(times)
         durations = np.asarray(durations)
 
-        if y_conf_pred.ndim != 3:
+        if y_test_pred.ndim != 3:
             raise ValueError(
-                "y_conf_pred must be 3D: (n_samples, n_events+1, n_times), "
-                f"got shape {y_conf_pred.shape}"
+                "y_test_pred must be 3D: (n_samples, n_events+1, n_times), "
+                f"got shape {y_test_pred.shape}"
             )
 
-        n_samples, n_events_plus_1, n_times = y_conf_pred.shape
+        n_samples, n_events_plus_1, n_times = y_test_pred.shape
         n_events = n_events_plus_1 - 1
 
         # Interpolate to observed times
@@ -679,10 +679,10 @@ def d_cr_calibration_ks_test(
         s_t = np.zeros(n_samples)
 
         for i in range(n_samples):
-            s_t[i] = np.interp(durations[i], times, y_conf_pred[i, 0, :])
+            s_t[i] = np.interp(durations[i], times, y_test_pred[i, 0, :])
             for j in range(n_events):
-                fk_t[i, j] = np.interp(durations[i], times, y_conf_pred[i, j + 1, :])
-                fk_infty[i, j] = y_conf_pred[i, j + 1, -1]
+                fk_t[i, j] = np.interp(durations[i], times, y_test_pred[i, j + 1, :])
+                fk_infty[i, j] = y_test_pred[i, j + 1, -1]
 
         # Determine which events to test
         if event_of_interest is not None:
@@ -708,7 +708,7 @@ def d_cr_calibration_ks_test(
             fk_t_event,
             fk_infty_event,
             s_t,
-            y_conf,
+            y_test,
             event_of_interest=event_id,
             epsilon=epsilon,
             n_buckets=n_buckets,
