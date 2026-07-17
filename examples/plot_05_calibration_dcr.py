@@ -13,7 +13,8 @@ A model is *well-calibrated* if among individuals predicted to have :math:`\rho`
 risk of an event, approximately a :math:`\rho` fraction actually experience that
 event. The DCR metric quantifies deviations from this property by computing
 :math:`\hat{b}_k[0, \rho]` for each risk level :math:`\rho \in [0, 1]`.
-See [Alberge2026]_ for details.
+See [Alberge2026]_ for details. This is a generalization of the D-calibration
+metric for single-event survival models introduced in [Haider2020]_.
 
 In this example, we illustrate the DCR-calibration framework with four levels
 of granularity:
@@ -30,6 +31,10 @@ of granularity:
     "On the calibration of survival models with competing risks",
     AISTATS 2026.
     <https://arxiv.org/pdf/2602.00194>
+.. [Haider2020] H. Haider, B. Hoehn, S. Davis, R. Greiner,
+    "Effective Ways to Build and Evaluate Individual Survival Distributions",
+    JMLR 2020.
+    <https://jmlr.org/papers/v21/18-772.html>
 """
 
 # %%
@@ -90,12 +95,6 @@ times = make_time_grid(
 # risk buckets: do individuals predicted to have ρ probability of an event
 # actually experience it at frequency ρ?
 
-survivalboost = SurvivalBoost(n_iter=50, show_progressbar=False, random_state=0)
-survivalboost.fit(X_train, y_train)
-
-# Predictions on the test cohort — shape (n_test, n_events+1, n_times)
-inc_probs_sb = survivalboost.predict_cumulative_incidence(X_test, times=times)
-
 # For DCR-calibration, we need predictions evaluated at observed times:
 # - fk: cumulative incidence F̂_k(tᵢ|xᵢ) at observed time for each individual
 # - s_t: survival S(tᵢ|xᵢ) at observed time for each individual
@@ -114,9 +113,16 @@ inc_probs_sb = survivalboost.predict_cumulative_incidence(X_test, times=times)
 #
 # **APPROACH 2**: Manual evaluation at exact observed times
 # If you prefer explicit control, evaluate predictions at each individual's exact time.
+#
+# For this example, we use APPROACH 2 (exact) on the evaluation of the DCR-calibration
+# for each event, and APPROACH 1 (grid-based) for the overall DCR-calibration score.
 
-# For this example, we use APPROACH 2 (exact) to show the full workflow.
-# Get marginal (time-infinite) predictions
+survivalboost = SurvivalBoost(n_iter=50, show_progressbar=False, random_state=0)
+survivalboost.fit(X_train, y_train)
+
+# Predictions on the test cohort — shape (n_test, n_events+1, n_times)
+inc_probs_sb = survivalboost.predict_cumulative_incidence(X_test, times=times)
+
 fk_infty = inc_probs_sb[:, :, -1]  # Use final time point as approximation of infinity
 
 # Get predictions at each individual's observed time
@@ -237,16 +243,16 @@ print("=" * 70)
 # The DCR-calibration metric can be computed at three levels of granularity:
 #
 # 1. ``d_calibration``: per-bucket calibration curves b̂_k[0,ρ].
-# 2. ``d_cr_calibration_per_event``: one scalar score per event,
-# integrated over buckets.
+# 2. ``d_cr_calibration_per_event``: integrated calibration score per event.
 # 3. ``d_cr_calibration``: single scalar score aggregated across all events.
 #
 # Additionally, ``d_cr_calibration_ks_test`` provides a statistical test for
-# whether the model can be considered calibrated.
+# whether the model can be considered calibrated for each different event.
 #
 # We now evaluate SurvivalBoost and compare it to the AJ baseline.
 
 # 1 — Per-bucket calibration curves
+# -----------------------------------------------
 
 print("Computing per-bucket calibration curves...")
 
@@ -264,6 +270,7 @@ for event_id in range(1, n_events + 1):
 
 # %%
 # 2 — Per-event integrated scores with alpha parameter
+# -----------------------------------------------
 
 print("\nSURVIVALBOOST: Per-event integrated DCR-calibration scores (α=2)")
 for event_id in range(1, n_events + 1):
@@ -284,6 +291,7 @@ for event_id in range(1, n_events + 1):
 
 # %%
 # 3 — Overall aggregated score
+# -----------------------------------------------
 
 score_overall = d_cr_calibration(
     y_test=y_test,
@@ -300,6 +308,7 @@ print(f"  Mean: {score_overall:.6f}  (AJ baseline: {aj_overall:.6f})")
 
 # %%
 # 4 — KS test for calibration significance
+# -----------------------------------------------
 
 ks_results = d_cr_calibration_ks_test(
     y_test=y_test,
@@ -463,36 +472,15 @@ plt.show()
 # %%
 # Summary of calibration assessment.
 # -----------------------------------
+# In this example, we evaluated the DCR-calibration of a SurvivalBoost model
+# on a synthetic competing risks dataset with three events. We compared its
+# calibration to the Aalen-Johansen (AJ) estimator, which serves as a
+# well-calibrated baseline.
+#
 # The three-level assessment of calibration provides complementary perspectives:
 #
 # - **Per-bucket curves** show where (at which risk levels) the model errs.
 # - **Per-event integrated scores** quantify total deviation for each event.
 # - **Overall scores** provide a single number for model comparison.
-# - **KS test** indicates whether deviations are statistically significant.
-#
-# A well-calibrated model should have curves close to the diagonal and low
-# integrated scores. High KS test p-values (>0.05) indicate the deviations
-# are consistent with sampling noise rather than genuine miscalibration.
-#
-# **Key Observation**: The AJ estimator is theoretically perfectly calibrated
-# (marginal model by construction), so its near-zero DCR score and high KS
-# test p-value confirm that the metric correctly identifies calibration.
-
-print("\n" + "=" * 70)
-print("CALIBRATION SUMMARY & COMPARISON")
-print("=" * 70)
-
-print("\nOVERALL SCORES:")
-print(f"  SurvivalBoost: {score_overall:.6f}")
-print(f"  AJ Estimator:  {aj_overall:.6f} ← baseline (theoretically perfect)")
-print("  → Lower is better; AJ ≈ 0 validates the metric")
-
-print("\nKS TEST (Event 1):")
-print(f"  SurvivalBoost: p={ks_results[1]['pvalue']:.4e}")
-print(f"  AJ Estimator:  p={aj_ks_results[1]['pvalue']:.4e} ← passes test")
-print("  → p > 0.05 = well-calibrated; AJ passes, confirming metric validity")
-
-print("\n✓ VALIDATION: AJ estimator correctly identified as well-calibrated")
-print("=" * 70)
 
 # %%
