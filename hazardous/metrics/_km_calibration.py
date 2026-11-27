@@ -122,13 +122,14 @@ class _KMCalibration:
         Returns
         -------
         diff_at_t : ndarray of shape (n_times,)
-            Pointwise difference :math:`|\\bar{S}(t) - \\hat{S}_{KM}(t)|`,
-            returned in ascending time order.
+            Signed pointwise difference :math:`\\bar{S}(t) - \\hat{S}_{KM}(t)`,
+            ordered to match ``times``.
         """
-        times, pred_calibration = self._sort_by_time(times, pred_calibration)
+        times = np.asarray(times)
+        pred_calibration = np.asarray(pred_calibration)
         pred_km = self.kaplan_meier_sampler_.survival_func_(times)
         mean_predictions = pred_calibration.mean(axis=0)
-        return np.abs(mean_predictions - pred_km)
+        return mean_predictions - pred_km
 
     @staticmethod
     def _sort_by_time(times, preds_2d):
